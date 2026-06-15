@@ -12319,8 +12319,10 @@ function renderCrossView(){
     .sort((a,b) => b.saleScore - a.saleScore)
     .slice(0, 20);
 
-  // ── Trend-Based: collectedColors 빈도 × 소스 다양성 기준 상위 20 ──
-  const trendPool = [...collectedColors]
+  // ── Trend-Based: 선택 브랜드 색(getTrendSourceColors) 빈도 × 소스 다양성 기준 상위 20 ──
+  // ★ 체크한 CSV 브랜드가 있으면 그 브랜드 색만 사용 (없으면 collectedColors 전체)
+  const _trendPoolSrc = (window.getTrendSourceColors ? window.getTrendSourceColors() : collectedColors);
+  const trendPool = [..._trendPoolSrc]
     .filter(c => c.hex)
     .map(c => ({...c, trendScore: (c.freq||1) * (1 + ((c.sources||[]).length * 0.3))}))
     .sort((a,b) => b.trendScore - a.trendScore)
@@ -15672,37 +15674,57 @@ function _persistMarketSel(){
   try{ localStorage.setItem('fnf_marketSel_'+fb, JSON.stringify([...window._curMarketSel()])); }catch(e){}
 }
 
-// ── TREND BASED PALETTE 소스 — 선택된 CSV 브랜드 색만 (없으면 기존 collectedColors 전체) ──
+// ── TREND BASED PALETTE 소스 ─────────────────────────────────
+// newsletter + WGSN + Peclers + 마켓(compData) 을 모두 합쳐 하나의 빈도 풀 생성.
+// 마켓은 체크한 브랜드만(체크 없으면 전체) 포함. 이후 classify3rows 가
+// 이 풀을 KEY/SUB/BASIC 색군으로 나누고 각 군 안에서 빈도순 정렬함.
 function getTrendSourceColors(){
   var sel = window._curMarketSel();
-  var all = (typeof collectedColors !== 'undefined') ? collectedColors : [];
-  if(!sel || sel.size === 0) return all;
-
   var out = [], byHex = {};
-  // 1) 시장 데이터(compData)에서 선택 브랜드 색 추출 — Sheets/파일 양쪽 경로 모두 여기로 들어옴
-  var src = (typeof compData !== 'undefined' && compData.length) ? compData : [];
-  src.forEach(function(c){
-    if(!c.hex) return;
-    if(!sel.has(window._brandKeyNorm(c.brand))) return;
-    var k = (c.hex||'').toUpperCase();
+
+  function add(c, srcTag, freq){
+    if(!c || !c.hex) return;
+    if(!/^#[0-9A-Fa-f]{6}$/.test(c.hex)) return;
+    if(c.hex.toUpperCase() === '#888888') return;   // 미매핑 플레이스홀더 제외
+    var k = c.hex.toUpperCase();
+    var f = freq != null ? freq : (c.freq || 1);
     if(byHex[k]){
-      byHex[k].freq += (c.count||c.freq||1);
-      if(c.brand && byHex[k].brands.indexOf(c.brand)<0) byHex[k].brands.push(c.brand);
+      byHex[k].freq += f;                                  // 같은 색이 여러 소스에 있으면 빈도 누적
+      if(srcTag && byHex[k].sources.indexOf(srcTag) < 0) byHex[k].sources.push(srcTag);
+      if(c.brand && byHex[k].brands.indexOf(c.brand) < 0) byHex[k].brands.push(c.brand);
     } else {
-      byHex[k] = { hex:c.hex, name:c.name||c.brand||'', brand:c.brand||'', brands:c.brand?[c.brand]:[],
-                   group:c.group||'A', pantone:c.pantone||c.tcxCode||'', freq:(c.count||c.freq||1),
-                   compCount:(c.count||1), compBrands:c.brand?[c.brand]:[], sources:['comp'] };
+      byHex[k] = {
+        hex: c.hex, name: c.name || c.code || c.hex,
+        pantone: c.pantone || (c.tcxCode ? c.tcxCode+' TCX' : ''),
+        tcxCode: c.tcxCode || '', finalCode: c.finalCode || c.tcxCode || '',
+        brand: c.brand || '', brands: c.brand ? [c.brand] : [],
+        group: c.group || 'A', freq: f, sources: srcTag ? [srcTag] : []
+      };
       out.push(byHex[k]);
     }
+  }
+
+  // 1) 트렌드 3소스 — 항상 포함 (Peclers 포함!)
+  if(typeof newsletterColors !== 'undefined') newsletterColors.forEach(function(c){ add(c, 'newsletter'); });
+  if(typeof wgsnColors     !== 'undefined') wgsnColors.forEach(function(c){ add(c, 'wgsn'); });
+  if(typeof peclersColors  !== 'undefined') peclersColors.forEach(function(c){ add(c, 'peclers', c.freq); });
+  // collectedColors 안의 PDF/Article 등 비-시트 트렌드 색도 포함 (시트/마켓성은 아래 compData에서 처리)
+  if(typeof collectedColors !== 'undefined') collectedColors.forEach(function(c){
+    var s = (c.source || '').toLowerCase();
+    if(/csv|sheets|comp/.test(s)) return;
+    add(c, s || 'trend');
   });
-  // 2) collectedColors 중 선택 브랜드에 속한 트렌드 색도 포함 (파일 업로드 경로 호환)
-  all.forEach(function(c){
+
+  // 2) 마켓 (compData) — 체크한 브랜드만(체크 없으면 전체), 출현 횟수를 빈도로
+  var market = (typeof compData !== 'undefined') ? compData : [];
+  var hasSel = sel && sel.size > 0;
+  market.forEach(function(c){
     if(!c.hex) return;
-    var bs = [c.brand].concat(c.brands||[]).concat(c.compBrands||[]).filter(Boolean);
-    if(!bs.some(function(b){ return sel.has(window._brandKeyNorm(b)); })) return;
-    var k = (c.hex||'').toUpperCase();
-    if(!byHex[k]){ var o = Object.assign({}, c); o.sources = c.sources||['comp']; byHex[k]=o; out.push(o); }
+    if(hasSel && !sel.has(window._brandKeyNorm(c.brand))) return;
+    add({ hex:c.hex, name:c.name || c.brand, brand:c.brand, group:c.group || 'A',
+          pantone:c.pantone || c.tcxCode || '' }, 'comp', (c.count || c.freq || 1));
   });
+
   return out;
 }
 window.getTrendSourceColors = getTrendSourceColors;
