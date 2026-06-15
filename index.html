@@ -6339,6 +6339,15 @@ function renderPalCrossView(){
   const starGrid = document.getElementById('cv-star-grid');
   if(!salesEl||!trendEl) return;
 
+  // ★ 시즌 미로드(브랜드만 고른 리셋 상태) → 화면 비우고 종료
+  if (typeof _activeSeason === 'undefined' || !_activeSeason) {
+    ['cv-trend-sub','cv-trend-key','cv-trend-list','cv-sales-sub','cv-sales-key','cv-sales-list','cv-cross-col','cv-star-grid'].forEach(id=>{ const el=document.getElementById(id); if(el) el.innerHTML=''; });
+    ['cv-trend-cnt','cv-sales-cnt','cv-star-cnt'].forEach(id=>{ const el=document.getElementById(id); if(el) el.textContent='0'; });
+    window._trendKeyPool = [];
+    if (typeof refreshSeasonDist === 'function') refreshSeasonDist();
+    return;
+  }
+
   // 트렌드 순 30개 (Colors별 SUB/KEY/BASIC 분류 포함)
   // ★ 선택된 CSV 브랜드가 있으면 그 브랜드 색만 트렌드 소스로 사용
   const _trendSrc = (window.getTrendSourceColors ? window.getTrendSourceColors() : collectedColors);
@@ -6788,6 +6797,13 @@ function renderSplitScoreList(){
   const interEl = document.getElementById('score-intersect-grid');
   const interWrap = document.getElementById('score-intersect-wrap');
   if(!trendEl||!salesEl) return;
+
+  // 시즌 미로드(리셋) 상태 → 비움
+  if (typeof _activeSeason === 'undefined' || !_activeSeason) {
+    trendEl.innerHTML=''; salesEl.innerHTML='';
+    if(interEl) interEl.innerHTML='';
+    return;
+  }
 
   // ── 트렌드 순 30개: collectedColors 빈도×소스다양성 ──
   // ★ 선택된 CSV 브랜드가 있으면 그 브랜드 색만 트렌드 소스로 사용
@@ -15729,6 +15745,8 @@ function _persistMarketSel(){
 // 마켓은 체크한 브랜드만(체크 없으면 전체) 포함. 이후 classify3rows 가
 // 이 풀을 KEY/SUB/BASIC 색군으로 나누고 각 군 안에서 빈도순 정렬함.
 function getTrendSourceColors(){
+  // 시즌 미로드(리셋) 상태 → 빈 풀
+  if (typeof _activeSeason === 'undefined' || !_activeSeason) return [];
   var sel = window._curMarketSel();
   var out = [], byHex = {};
 
