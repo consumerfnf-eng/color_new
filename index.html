@@ -469,11 +469,21 @@ function pickSeason(brand, season) {
   // ── 브랜드+시즌 기준으로 마켓/시트 데이터 로드 ──
   // autoLoadAllSheets 는 시즌으로 competitor CSV 를 필터링 → 이후 CSV 내 브랜드를 읽어 선택 가능
   autoLoadAllSheets(season).then(() => {
-    if (st) { st.textContent = '✓ ' + season + ' loaded'; st.style.color = '#5A7A30'; }
+    const sum = window._lastLoadSummary || {};
+    if (st) {
+      if (sum.total === 0) {
+        st.textContent = '⚠ ' + season + ' 데이터 없음';
+        st.style.color = 'var(--warn,#C08A2A)';
+      } else {
+        const c = sum.counts || {};
+        st.textContent = '✓ ' + season + ' · news ' + (c.newsletter||0) + ' / wgsn ' + (c.wgsn||0) + ' / mkt ' + (c.comp||0);
+        st.style.color = '#5A7A30';
+      }
+    }
     setTimeout(() => {
       const picker = document.getElementById(brand + '-season-picker');
       if (picker) picker.style.display = 'none';
-    }, 1500);
+    }, 2200);
   }).catch(e => {
     if (st) { st.textContent = 'Load failed'; st.style.color = 'var(--red,#c0392b)'; }
   });
@@ -4129,6 +4139,19 @@ const SHEETS_URLS = {
   competitor:  'https://docs.google.com/spreadsheets/d/e/2PACX-1vQRPXMR8WgKH1bBwpzj1PgjS0MVWu1Ru8005QsuxnMlUsmglmBcnckXkQ3XyoVuCVtKLPbL2V7LzstA/pub?output=csv',
 };
 
+// ── 브랜드별 판매 데이터 시트 ───────────────────────────────
+// 권장 구조: 판매 스프레드시트 1개에 브랜드별 "탭(page)"을 만들고,
+//   각 탭을 파일 > 웹에 게시 > 해당 탭 선택 > CSV 로 게시하면
+//   .../pub?gid=<탭GID>&single=true&output=csv 형태의 URL 이 나옵니다.
+// 그 URL 을 아래 브랜드 키에 붙여넣으면 사이드바에서 그 브랜드를 고를 때
+// 해당 탭의 판매 데이터가 로드됩니다. (비워두면 그 브랜드는 판매 데이터 없이 Trend 기반만 동작)
+const SALES_SHEETS_BY_BRAND = {
+  MLB:       SHEETS_URLS.mlbSales,
+  DISCOVERY: '',   // 예: https://docs.google.com/spreadsheets/d/e/XXXX/pub?gid=123456789&single=true&output=csv
+  SERGIO:    '',
+  DUVETICA:  '',
+};
+
 // ── MLB_SIGNAL Google Sheets 연동 ──────────────────────────
 window._mlbSignalSheetUrl = SHEETS_URLS.mlbSales; // 기본값 설정
 
@@ -4378,10 +4401,36 @@ function triggerMLBSheetsLoad(season) {
 
 // season 파라미터로 해당 시즌 행만 필터링해서 로드
 // — CSV 탭에 season 컬럼이 없으면 전체 로드 (하위 호환)
+// 시즌 전환 시 이전 시즌 데이터가 남지 않도록 초기화
+// (MLB_SIGNAL/compData/collectedColors가 시즌마다 누적되던 문제 해결)
+function clearSeasonScopedData(){
+  try { Object.keys(MLB_SIGNAL).forEach(k=>delete MLB_SIGNAL[k]); } catch(e){}
+  try { if(typeof compData!=='undefined') compData.length = 0; } catch(e){}
+  try { if(typeof cnMarketData!=='undefined') cnMarketData.length = 0; } catch(e){}
+  // collectedColors: 시트/마켓 출처 색만 제거, PDF/Article/수동 업로드 트렌드 색은 보존
+  try {
+    if(typeof collectedColors!=='undefined'){
+      const isSheetSrc = c => {
+        const blob = ((c.sources||[]).join(',') + ',' + (c.source||'')).toLowerCase();
+        return /csv|sheets|comp|newsletter|wgsn|peclers/.test(blob);
+      };
+      const keep = collectedColors.filter(c=>!isSheetSrc(c));
+      collectedColors.length = 0; keep.forEach(c=>collectedColors.push(c));
+    }
+  } catch(e){}
+  // 배지/상태 초기화
+  ['unified-gl-badge','unified-kr-badge','unified-cn-badge'].forEach(id=>{
+    const el=document.getElementById(id); if(el){ el.style.display='none'; el.textContent=''; }
+  });
+}
+
 async function autoLoadAllSheets(season) {
   const s = (season || _activeSeason || '27FW').toUpperCase();
   showSheetsLoadBanner('loading');
+  // ★ 시즌 전환마다 이전 데이터 초기화 → 빈 시즌 클릭 시 옛 27FW 데이터가 남지 않음
+  clearSeasonScopedData();
   const results = { comp: false, peclers: false, mlb: false, season: s };
+  const counts  = { newsletter: 0, wgsn: 0, mlb: 0, comp: 0, peclers: 0 };
 
   try {
     // 0. Newsletter Sheets — season 필터
@@ -4389,8 +4438,9 @@ async function autoLoadAllSheets(season) {
       const newsCsv = await fetchSheetsCsv(SHEETS_URLS.newsletter);
       if (newsCsv) {
         const entries = parseTrendCsv(newsCsv, 'newsletter', s);
+        counts.newsletter = entries.length;
         if (entries.length) _applyNewsletterEntries(entries, `Google Sheets [${s}]`);
-        else console.warn(`Newsletter: ${s} 시즌 데이터 없음 (season 컬럼 없으면 전체 로드)`);
+        else console.warn(`Newsletter: ${s} 시즌 데이터 없음`);
       }
     } catch(e) { console.warn('Newsletter Sheets 로드 오류:', e); }
 
@@ -4399,27 +4449,35 @@ async function autoLoadAllSheets(season) {
       const wgsnCsv = await fetchSheetsCsv(SHEETS_URLS.wgsn);
       if (wgsnCsv) {
         const entries = parseTrendCsv(wgsnCsv, 'wgsn', s);
+        counts.wgsn = entries.length;
         if (entries.length) _applyWgsnEntries(entries, `Google Sheets [${s}]`);
         else console.warn(`WGSN: ${s} 시즌 데이터 없음`);
       }
     } catch(e) { console.warn('WGSN Sheets 로드 오류:', e); }
 
-    // 1. MLB 판매 (MLB_SIGNAL) — mlbSales는 시즌 필터 불필요 (자체 컬럼 구조)
+    // 1. 판매 데이터 (MLB_SIGNAL) — 활성 브랜드의 판매 탭 사용, season 필터
     try {
-      const input = document.getElementById('sheets-url-input');
-      if (input) input.value = SHEETS_URLS.mlbSales;
-      const mlbCsv = await fetchSheetsCsv(SHEETS_URLS.mlbSales);
-      if (mlbCsv) {
-        results.mlb = await loadMLBSignalFromCsvText(mlbCsv, s);
-        const st = document.getElementById('sheets-status');
-        if (st && results.mlb) { st.style.color='var(--teal)'; st.textContent=`✓ ${Object.keys(MLB_SIGNAL).length}개 Load됨`; }
+      const salesUrl = (typeof SALES_SHEETS_BY_BRAND !== 'undefined' && SALES_SHEETS_BY_BRAND[_activeBrand]) || '';
+      if (salesUrl) {
+        const input = document.getElementById('sheets-url-input');
+        if (input) input.value = salesUrl;
+        const mlbCsv = await fetchSheetsCsv(salesUrl);
+        if (mlbCsv) {
+          results.mlb = await loadMLBSignalFromCsvText(mlbCsv, s);
+          counts.mlb = Object.keys(MLB_SIGNAL).length;
+          const st = document.getElementById('sheets-status');
+          if (st && results.mlb) { st.style.color='var(--teal)'; st.textContent=`✓ ${counts.mlb}개 Load됨`; }
+        }
+      } else {
+        console.warn(`${_activeBrand}: 판매 시트 미연결 (SALES_SHEETS_BY_BRAND 비어있음)`);
       }
-    } catch(e) { console.warn('MLB 판매 Load 오류:', e); }
+    } catch(e) { console.warn('판매 데이터 Load 오류:', e); }
 
-    // 2. 경쟁사 — season 필터 (competitor CSV에 season 컬럼 있으면 자동 필터)
+    // 2. 경쟁사 — season 필터
     try {
       const compCsv = await fetchSheetsCsv(SHEETS_URLS.competitor);
       if (compCsv) results.comp = await loadCompFromCsvText(compCsv, s);
+      counts.comp = (typeof compData !== 'undefined') ? compData.length : 0;
     } catch(e) { console.warn('경쟁사 Load 오류:', e); }
 
     // 3. Peclers — season 필터, 최대 3회 재시도
@@ -4433,14 +4491,35 @@ async function autoLoadAllSheets(season) {
         console.warn('Peclers 재시도:', attempt + 1);
       }
       if (pecCsv) results.peclers = await loadPeclersFromCsvText(pecCsv, s);
+      counts.peclers = (typeof peclersColors !== 'undefined') ? peclersColors.length : 0;
     } catch(e) { console.warn('Peclers Load 오류:', e); }
 
   } finally {
+    const total = counts.newsletter + counts.wgsn + counts.mlb + counts.comp + counts.peclers;
+    window._lastLoadSummary = { season: s, counts, total };
     showSheetsLoadBanner('done', results);
+    // 빈 시즌 안내 (모든 소스 0건이면 명확히 표시)
+    if (total === 0 && typeof showSeasonEmptyNotice === 'function') showSeasonEmptyNotice(s);
+    else { const n=document.getElementById('_season-empty-notice'); if(n) n.remove(); }
+    if (typeof renderCompBrandPage === 'function') renderCompBrandPage();
     if (typeof renderSplitScoreList === 'function' && typeof scoredColors !== 'undefined') renderSplitScoreList(scoredColors);
     if (typeof updateScoringCounts === 'function') updateScoringCounts();
     if (typeof updateTrendPreview === 'function') updateTrendPreview();
   }
+}
+
+// 시즌에 데이터가 하나도 없을 때 안내 토스트
+function showSeasonEmptyNotice(season){
+  let n = document.getElementById('_season-empty-notice');
+  if(!n){
+    n = document.createElement('div');
+    n.id = '_season-empty-notice';
+    n.style.cssText = 'position:fixed;bottom:16px;right:16px;z-index:99999;background:var(--bg2);border:1px solid var(--warn,#C08A2A);border-radius:10px;padding:10px 16px;font-family:var(--mono);font-size:10px;min-width:240px;';
+    document.body.appendChild(n);
+  }
+  n.innerHTML = '<div style="color:var(--text2);display:flex;align-items:center;gap:8px">'
+    + '<span style="color:var(--warn,#C08A2A)">●</span><b>' + season + '</b> — 이 시즌 데이터 없음</div>'
+    + '<div style="color:var(--text4);margin-top:4px">각 시트 A행 season 컬럼에 ' + season + ' 데이터가 없습니다</div>';
 }
 
 // ── Google Sheets CSV → 프록시 경유 fetch ──
@@ -15648,24 +15727,24 @@ window.renderMarketCsvBrands = function(brands, season) {
   box.innerHTML =
       '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:6px">'
     +   '<span style="color:var(--text2);font-weight:700">CSV 브랜드 ' + list.length + '개' + seasonTxt + '</span>'
-    +   '<span style="color:var(--text4)">— 분석할 브랜드 다중 선택</span>'
-    +   '<span id="mbsel-count" style="color:var(--accent);font-weight:700">· 선택 ' + sel.size + '개</span>'
+    +   '<span style="color:var(--text4)">— 분석할 브랜드 체크 (다중, ' + (_activeBrand||'MLB') + ' 선택 기억됨)</span>'
+    +   '<span id="mbsel-count" style="color:var(--accent);font-weight:700">· 체크 ' + sel.size + '개</span>'
     +   '<span style="flex:1"></span>'
-    +   '<button onclick="window.marketSelectAll()" style="font-family:var(--mono);font-size:9px;background:var(--bg3);border:1px solid var(--border2);border-radius:4px;color:var(--text2);padding:3px 8px;cursor:pointer">전체 선택</button>'
+    +   '<button onclick="window.marketSelectAll()" style="font-family:var(--mono);font-size:9px;background:var(--bg3);border:1px solid var(--border2);border-radius:4px;color:var(--text2);padding:3px 8px;cursor:pointer">전체 체크</button>'
     +   '<button onclick="window.marketClearSel()" style="font-family:var(--mono);font-size:9px;background:var(--bg3);border:1px solid var(--border2);border-radius:4px;color:var(--text2);padding:3px 8px;cursor:pointer">전체 해제</button>'
-    +   '<button onclick="window.applyMarketBrandSelection()" style="font-family:var(--mono);font-size:9px;font-weight:700;background:#A07840;border:none;border-radius:4px;color:#fff;padding:3px 10px;cursor:pointer">✓ 선택 브랜드로 Trend Palette 생성</button>'
+    +   '<button onclick="window.applyMarketBrandSelection()" style="font-family:var(--mono);font-size:9px;font-weight:700;background:#A07840;border:none;border-radius:4px;color:#fff;padding:3px 10px;cursor:pointer">✓ 체크한 브랜드로 Trend Palette 생성</button>'
     + '</div>'
     + '<div>'
     + list.map(function(b){
         var key = window._brandKeyNorm(b);
         var on  = sel.has(key);
         var st  = on
-          ? 'background:#A07840;border:1px solid #A07840;color:#fff;'
+          ? 'background:#A07840;border:1px solid #A07840;color:#fff;font-weight:600;'
           : 'background:var(--bg3);border:1px solid var(--border);color:var(--text2);';
         return '<span data-mbkey="' + key + '" style="display:inline-block;' + st
-             + 'border-radius:3px;padding:2px 8px;margin:2px 3px 0 0;cursor:pointer;user-select:none" '
+             + 'border-radius:4px;padding:3px 9px;margin:3px 4px 0 0;cursor:pointer;user-select:none" '
              + 'onclick="window.toggleMarketBrand(\'' + String(b).replace(/'/g,"\\'") + '\')">'
-             + (on ? '✓ ' : '') + b + '</span>';
+             + (on ? '☑ ' : '☐ ') + b + '</span>';
       }).join('')
     + '</div>';
 };
