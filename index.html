@@ -4788,10 +4788,10 @@ async function loadPeclersFromCsvText(csv, filterSeason) {
   lines.slice(1).forEach(line => {
     const cols = line.split(sep).map(c => c.trim().replace(/^['"]|['"]$/g, ''));
 
-    // season 필터
+    // season 필터 — 시즌 값이 비었거나 불일치면 제외 (엄격)
     if (seasonIdx >= 0 && filterSeason) {
       const rowSeason = (cols[seasonIdx] || '').trim().toUpperCase();
-      if (rowSeason && rowSeason !== filterSeason.toUpperCase()) return;
+      if (rowSeason !== filterSeason.toUpperCase()) return;   // 빈 시즌도 제외 → 매 시즌 누출 방지
     }
 
     const name    = nameIdx    >= 0 ? (cols[nameIdx]    || '') : '';
