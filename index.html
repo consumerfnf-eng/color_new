@@ -6213,7 +6213,9 @@ function renderPalCrossView(){
   if(!salesEl||!trendEl) return;
 
   // 트렌드 순 30개 (Colors별 SUB/KEY/BASIC 분류 포함)
-  const trendList = [...collectedColors]
+  // ★ 선택된 CSV 브랜드가 있으면 그 브랜드 색만 트렌드 소스로 사용
+  const _trendSrc = (window.getTrendSourceColors ? window.getTrendSourceColors() : collectedColors);
+  const trendList = [..._trendSrc]
     .filter(c=>c.hex)
     .map(c=>{
       const srcs = c.sources||[];
@@ -6659,7 +6661,9 @@ function renderSplitScoreList(){
   if(!trendEl||!salesEl) return;
 
   // ── 트렌드 순 30개: collectedColors 빈도×소스다양성 ──
-  const trendList = [...collectedColors]
+  // ★ 선택된 CSV 브랜드가 있으면 그 브랜드 색만 트렌드 소스로 사용
+  const _trendSrc2 = (window.getTrendSourceColors ? window.getTrendSourceColors() : collectedColors);
+  const trendList = [..._trendSrc2]
     .filter(c=>c.hex)
     .map(c=>({...c, tScore:(c.freq||1)*(1+((c.sources||[]).length*0.3))}))
     .sort((a,b)=>b.tScore-a.tScore); // All 전달
@@ -14433,8 +14437,13 @@ function renderCompBrandPage() {
   // Colors 바는 브랜드 카드 아래 맨 끝에 특정 Lifestyle 선택 시에만 표시
 
 
+  const _mbSel = (window._curMarketSel ? window._curMarketSel() : null);
+  const _bkn   = (window._brandKeyNorm ? window._brandKeyNorm : (s=>(s||'').toLowerCase().replace(/[\s._\-]+/g,'').trim()));
   const filteredBrands = allBrands.filter(b => {
-    if (activeBrand && b.brand !== activeBrand) return false;
+    // 다중 선택 셋이 있으면 선택된 브랜드만 (정규화 비교)
+    if (_mbSel && _mbSel.size > 0 && !_mbSel.has(_bkn(b.brand))) return false;
+    // 단일 셀렉터 (정규화 비교로 표기 차이 흡수 → "No matching brands found" 방지)
+    if (activeBrand && _bkn(b.brand) !== _bkn(activeBrand)) return false;
     if (activeLS    && b.lifestyle !== activeLS) return false;
     // country 필터: all이면 전체 표시
     if (activeCountry === 'korea'  && b.lifestyle !== 'KR Brands') return false;
@@ -15552,33 +15561,166 @@ function applySidebarFilters() {
   if (mcs) mcs.textContent = _activeSeason || '—';
 }
 
-// ── 마켓 CSV 에서 읽어들인 브랜드 목록 표시 (시즌 필터 후) ──
-// loadCompFromCsvText / handleUnifiedCompFile 에서 호출
+// ══════════════════════════════════════════════════════════════
+//  마켓 CSV 브랜드 다중 선택 → 선택 브랜드만으로 TREND BASED PALETTE
+//  F&F 브랜드(MLB/DISCOVERY/SERGIO/DUVETICA)별로 선택 셋을 따로 기억
+// ══════════════════════════════════════════════════════════════
+
+// 브랜드명 정규화 (대소문자·공백·점·하이픈 무시)
+window._brandKeyNorm = function(s){ return (s||'').toLowerCase().replace(/[\s._\-]+/g,'').trim(); };
+
+// F&F 브랜드별 선택 셋  { MLB:Set, DISCOVERY:Set, ... }  — key = 정규화된 경쟁사 브랜드명
+window._marketBrandSelMap = window._marketBrandSelMap || {};
+// 표시용 원본명 매핑 { normKey: '원본 표기' }
+window._marketBrandLabel  = window._marketBrandLabel  || {};
+
+window._curMarketSel = function(){
+  var fb = (typeof _activeBrand !== 'undefined' && _activeBrand) ? _activeBrand : 'MLB';
+  if(!window._marketBrandSelMap[fb]) window._marketBrandSelMap[fb] = new Set();
+  // 첫 진입 시 localStorage 복원
+  if(!window._marketBrandSelMap[fb]._loaded){
+    try{
+      var raw = localStorage.getItem('fnf_marketSel_'+fb);
+      if(raw){ JSON.parse(raw).forEach(function(k){ window._marketBrandSelMap[fb].add(k); }); }
+    }catch(e){}
+    window._marketBrandSelMap[fb]._loaded = true;
+  }
+  return window._marketBrandSelMap[fb];
+};
+
+function _persistMarketSel(){
+  var fb = (typeof _activeBrand !== 'undefined' && _activeBrand) ? _activeBrand : 'MLB';
+  try{ localStorage.setItem('fnf_marketSel_'+fb, JSON.stringify([...window._curMarketSel()])); }catch(e){}
+}
+
+// ── TREND BASED PALETTE 소스 — 선택된 CSV 브랜드 색만 (없으면 기존 collectedColors 전체) ──
+function getTrendSourceColors(){
+  var sel = window._curMarketSel();
+  var all = (typeof collectedColors !== 'undefined') ? collectedColors : [];
+  if(!sel || sel.size === 0) return all;
+
+  var out = [], byHex = {};
+  // 1) 시장 데이터(compData)에서 선택 브랜드 색 추출 — Sheets/파일 양쪽 경로 모두 여기로 들어옴
+  var src = (typeof compData !== 'undefined' && compData.length) ? compData : [];
+  src.forEach(function(c){
+    if(!c.hex) return;
+    if(!sel.has(window._brandKeyNorm(c.brand))) return;
+    var k = (c.hex||'').toUpperCase();
+    if(byHex[k]){
+      byHex[k].freq += (c.count||c.freq||1);
+      if(c.brand && byHex[k].brands.indexOf(c.brand)<0) byHex[k].brands.push(c.brand);
+    } else {
+      byHex[k] = { hex:c.hex, name:c.name||c.brand||'', brand:c.brand||'', brands:c.brand?[c.brand]:[],
+                   group:c.group||'A', pantone:c.pantone||c.tcxCode||'', freq:(c.count||c.freq||1),
+                   compCount:(c.count||1), compBrands:c.brand?[c.brand]:[], sources:['comp'] };
+      out.push(byHex[k]);
+    }
+  });
+  // 2) collectedColors 중 선택 브랜드에 속한 트렌드 색도 포함 (파일 업로드 경로 호환)
+  all.forEach(function(c){
+    if(!c.hex) return;
+    var bs = [c.brand].concat(c.brands||[]).concat(c.compBrands||[]).filter(Boolean);
+    if(!bs.some(function(b){ return sel.has(window._brandKeyNorm(b)); })) return;
+    var k = (c.hex||'').toUpperCase();
+    if(!byHex[k]){ var o = Object.assign({}, c); o.sources = c.sources||['comp']; byHex[k]=o; out.push(o); }
+  });
+  return out;
+}
+window.getTrendSourceColors = getTrendSourceColors;
+
+// ── 마켓 CSV 브랜드 목록(다중 선택 UI) 렌더 ──
 window.renderMarketCsvBrands = function(brands, season) {
   var box = document.getElementById('market-csv-brands');
   if (!box) return;
-  var list = [...new Set((brands || []).filter(Boolean))].sort();
+  // 가용 브랜드 목록 저장 (전체 선택용) — 호출 인자가 있으면 갱신
+  if (brands && brands.length) {
+    window._marketCsvBrands = [...new Set(brands.filter(Boolean))].sort(function(a,b){ return a.localeCompare(b); });
+    window._marketCsvSeason = season || '';
+    window._marketCsvBrands.forEach(function(b){ window._marketBrandLabel[window._brandKeyNorm(b)] = b; });
+  }
+  var list = window._marketCsvBrands || [];
   if (!list.length) { box.style.display = 'none'; return; }
-  var seasonTxt = season ? (' [' + season + ']') : '';
+
+  var sel = window._curMarketSel();
+  var seasonTxt = window._marketCsvSeason ? (' [' + window._marketCsvSeason + ']') : '';
+
   box.style.display = 'block';
   box.innerHTML =
-    '<span style="color:var(--text2);font-weight:700">CSV 브랜드 ' + list.length + '개' + seasonTxt + '</span>'
-    + ' &nbsp;<span style="color:var(--text4)">— 아래 Brand 셀렉터에서 선택해 분석</span><br>'
+      '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:6px">'
+    +   '<span style="color:var(--text2);font-weight:700">CSV 브랜드 ' + list.length + '개' + seasonTxt + '</span>'
+    +   '<span style="color:var(--text4)">— 분석할 브랜드 다중 선택</span>'
+    +   '<span id="mbsel-count" style="color:var(--accent);font-weight:700">· 선택 ' + sel.size + '개</span>'
+    +   '<span style="flex:1"></span>'
+    +   '<button onclick="window.marketSelectAll()" style="font-family:var(--mono);font-size:9px;background:var(--bg3);border:1px solid var(--border2);border-radius:4px;color:var(--text2);padding:3px 8px;cursor:pointer">전체 선택</button>'
+    +   '<button onclick="window.marketClearSel()" style="font-family:var(--mono);font-size:9px;background:var(--bg3);border:1px solid var(--border2);border-radius:4px;color:var(--text2);padding:3px 8px;cursor:pointer">전체 해제</button>'
+    +   '<button onclick="window.applyMarketBrandSelection()" style="font-family:var(--mono);font-size:9px;font-weight:700;background:#A07840;border:none;border-radius:4px;color:#fff;padding:3px 10px;cursor:pointer">✓ 선택 브랜드로 Trend Palette 생성</button>'
+    + '</div>'
+    + '<div>'
     + list.map(function(b){
-        return '<span style="display:inline-block;background:var(--bg3);border:1px solid var(--border);'
-             + 'border-radius:3px;padding:1px 7px;margin:2px 3px 0 0;color:var(--text2);cursor:pointer" '
-             + 'onclick="window.selectMarketBrand(\'' + String(b).replace(/'/g,"\\'") + '\')">' + b + '</span>';
-      }).join('');
+        var key = window._brandKeyNorm(b);
+        var on  = sel.has(key);
+        var st  = on
+          ? 'background:#A07840;border:1px solid #A07840;color:#fff;'
+          : 'background:var(--bg3);border:1px solid var(--border);color:var(--text2);';
+        return '<span data-mbkey="' + key + '" style="display:inline-block;' + st
+             + 'border-radius:3px;padding:2px 8px;margin:2px 3px 0 0;cursor:pointer;user-select:none" '
+             + 'onclick="window.toggleMarketBrand(\'' + String(b).replace(/'/g,"\\'") + '\')">'
+             + (on ? '✓ ' : '') + b + '</span>';
+      }).join('')
+    + '</div>';
 };
 
-// 칩 클릭 또는 외부 호출로 브랜드 선택 → 분석 (renderCompBrandPage 필터 연동)
-window.selectMarketBrand = function(brand) {
+// 칩 토글 (다중 선택)
+window.toggleMarketBrand = function(brandRaw){
+  var key = window._brandKeyNorm(brandRaw);
+  var sel = window._curMarketSel();
+  if(sel.has(key)) sel.delete(key); else sel.add(key);
+  window.renderMarketCsvBrands();   // 칩 상태·카운트 갱신
+};
+window.marketSelectAll = function(){
+  var sel = window._curMarketSel();
+  (window._marketCsvBrands||[]).forEach(function(b){ sel.add(window._brandKeyNorm(b)); });
+  window.renderMarketCsvBrands();
+};
+window.marketClearSel = function(){
+  window._curMarketSel().clear();
+  window.renderMarketCsvBrands();
+};
+
+// 선택 확정 → 그리드 + TREND BASED PALETTE 재생성
+window.applyMarketBrandSelection = function(){
+  _persistMarketSel();
+  var sel = window._curMarketSel();
+
+  // 1) 마켓 그리드 — 선택 브랜드만 표시 (단일 필터 해제)
   var wrap = document.getElementById('comp-brand-grid-wrap');
-  if (wrap) { wrap.dataset.filterBrand = brand || ''; wrap.dataset.filterLS = ''; }
+  if (wrap) { wrap.dataset.filterBrand = ''; wrap.dataset.filterLS = ''; }
   if (typeof renderCompBrandPage === 'function') renderCompBrandPage();
-  // 셀렉터 값도 동기화
-  var sel = document.getElementById('comp-brand-sel');
-  if (sel) sel.value = brand || '';
+
+  // 2) TREND BASED PALETTE 재계산 (getTrendSourceColors 가 선택 브랜드만 사용)
+  try { if (typeof renderSplitScoreList === 'function') renderSplitScoreList(typeof scoredColors!=='undefined'?scoredColors:[]); } catch(e){}
+  try { if (typeof renderPalCrossView === 'function') renderPalCrossView(); } catch(e){}
+  try { if (typeof renderPalettePage === 'function') renderPalettePage(); } catch(e){}
+  try { if (typeof updateTrendPreview === 'function') updateTrendPreview(); } catch(e){}
+
+  // 3) Palette Proposal 탭으로 이동해서 바로 확인
+  if (typeof switchTabByName === 'function') switchTabByName('palette');
+
+  // 상태 토스트
+  var st = document.getElementById('market-reload-status');
+  if (st) {
+    var names = [...sel].map(function(k){ return window._marketBrandLabel[k]||k; });
+    st.style.color = '#5A7A30';
+    st.textContent = '✓ ' + sel.size + '개 브랜드로 Trend Palette 생성: ' + names.slice(0,8).join(', ') + (names.length>8?(' 외 '+(names.length-8)):'');
+  }
+};
+
+// (하위 호환) 단일 브랜드 선택 → 다중셋에 단독 적용
+window.selectMarketBrand = function(brand) {
+  var sel = window._curMarketSel();
+  sel.clear(); if(brand) sel.add(window._brandKeyNorm(brand));
+  window.renderMarketCsvBrands();
+  window.applyMarketBrandSelection();
 };
 </script>
 
