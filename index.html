@@ -16336,19 +16336,24 @@ function _distFamily(hex){
   }catch(e){ return {k:'Other', c:'#888888'}; }
 }
 
+// 활성 브랜드의 고정 시즌 분포 팔레트 반환 (없으면 null → blank)
+function _seasonPaletteForBrand(brand){
+  if(brand === 'MLB' && typeof MLB_SEASON_PALETTE !== 'undefined') return MLB_SEASON_PALETTE;
+  if(typeof window.SEASON_PALETTE_BY_BRAND !== 'undefined' && window.SEASON_PALETTE_BY_BRAND[brand]) return window.SEASON_PALETTE_BY_BRAND[brand];
+  return null;
+}
+
 // 제목/부제목을 활성 브랜드 기준으로 갱신 + 열려있으면 재렌더
 function refreshSeasonDist(){
   var titleEl = document.getElementById('season-dist-title');
   var subEl   = document.getElementById('season-dist-sub');
   var body    = document.getElementById('season-palette-body');
   var brand   = (typeof _activeBrand !== 'undefined' && _activeBrand) ? _activeBrand : '';
-  var season  = (typeof _activeSeason !== 'undefined' && _activeSeason) ? _activeSeason : '';
-  var sig     = (typeof MLB_SIGNAL !== 'undefined') ? Object.values(MLB_SIGNAL) : [];
-  var hasData = sig.some(function(s){ return s && s.hex && /^#[0-9A-Fa-f]{6}$/.test(s.hex); });
+  var pal     = _seasonPaletteForBrand(brand);
   if(titleEl) titleEl.textContent = 'Season Color Distribution';
   if(subEl){
-    subEl.textContent = hasData
-      ? (brand + (season ? ' · ' + season : '') + ' · 색군별 판매 비중')
+    subEl.textContent = pal
+      ? (brand + ' · FW2025 · SS2026 · FW2026 · Style % by Color Group')
       : (brand + ' · Sales 데이터 미연결');
   }
   if(body && body.style.display === 'block') renderSeasonPaletteBars();
@@ -16363,57 +16368,51 @@ function renderSeasonPaletteBars() {
     return (0.299*r + 0.587*g + 0.114*b) > 180;
   }
 
-  const brand  = (typeof _activeBrand !== 'undefined' && _activeBrand) ? _activeBrand : '';
-  const season = (typeof _activeSeason !== 'undefined' && _activeSeason) ? _activeSeason : '';
-  const sig    = (typeof MLB_SIGNAL !== 'undefined') ? Object.values(MLB_SIGNAL) : [];
-  const rows   = sig.filter(s => s && s.hex && /^#[0-9A-Fa-f]{6}$/.test(s.hex));
+  const brand = (typeof _activeBrand !== 'undefined' && _activeBrand) ? _activeBrand : '';
+  const pal   = _seasonPaletteForBrand(brand);
 
-  // ── 판매 데이터 미연결/없음 → BLANK ──
-  if (!rows.length) {
+  // ── 판매 분포 미연결 브랜드 → BLANK ──
+  if (!pal) {
     body.innerHTML = '<div style="font-family:var(--mono);font-size:10px;color:var(--text4);padding:14px 4px;text-align:center">'
       + (brand ? brand + ' — ' : '') + 'Sales 데이터 미연결 · 분포 없음</div>';
     return;
   }
 
-  // ── 시트(MLB_SIGNAL)에서 색군별 판매 비중 계산 ──
-  const fam = {};
-  rows.forEach(s => {
-    const f = _distFamily(s.hex);
-    const w = (s.qty || s.ord_qty || s.sale_amt || 1);
-    if (!fam[f.k]) fam[f.k] = { name:f.k, hex:f.c, w:0 };
-    fam[f.k].w += w;
-  });
-  const sorted = Object.values(fam).sort((a,b) => b.w - a.w);
-  const total  = sorted.reduce((x,g) => x + g.w, 0) || 1;
-  sorted.forEach(g => g.pct = +(g.w / total * 100).toFixed(1));
+  // ── 고정 시즌 분포 렌더 (시즌 선택과 무관하게 항상 FW2025/SS2026/FW2026) ──
+  let html = '<div style="display:flex;flex-direction:column;gap:20px;padding:4px 0 8px">';
+  for (const [season, data] of Object.entries(pal)) {
+    const sorted = [...data.groups].sort((a,b) => b.pct - a.pct);
+    const total = sorted.reduce((s,g) => s + g.pct, 0) || 1;
 
-  const segments = sorted.map(g => {
-    const w = (g.w / total * 100).toFixed(2);
-    const textColor = isLight(g.hex) ? '#1a1a1a' : '#ffffff';
-    const showLabel = g.pct >= 5;
-    return `<div title="${g.name} · ${g.pct}%" style="flex:0 0 ${w}%;background:${g.hex};height:100%;display:flex;align-items:center;justify-content:center;overflow:hidden;cursor:default;transition:flex .3s">`
-      + (showLabel ? `<span style="font-family:var(--mono);font-size:8px;font-weight:700;color:${textColor};opacity:0.85;white-space:nowrap;padding:0 3px">${g.pct}%</span>` : '')
-      + `</div>`;
-  }).join('');
+    const segments = sorted.map(g => {
+      const w = (g.pct / total * 100).toFixed(2);
+      const needsBorder = g.hex === '#f0ede8' || g.hex === '#f8f8f8' || g.hex === '#efe2c4' || g.hex === '#f3eddc';
+      const textColor = isLight(g.hex) ? '#1a1a1a' : '#ffffff';
+      const showLabel = g.pct >= 5;
+      return `<div title="${g.name} · ${g.pct}%" style="flex:0 0 ${w}%;background:${g.hex};height:100%;display:flex;align-items:center;justify-content:center;overflow:hidden;${needsBorder ? 'border-left:1px solid rgba(0,0,0,0.08);border-right:1px solid rgba(0,0,0,0.08);' : ''}cursor:default;transition:flex .3s;position:relative">`
+        + (showLabel ? `<span style="font-family:var(--mono);font-size:8px;font-weight:700;color:${textColor};opacity:0.85;white-space:nowrap;padding:0 3px">${g.pct}%</span>` : '')
+        + `</div>`;
+    }).join('');
 
-  const legend = sorted.filter(g => g.pct >= 1).map(g =>
-    `<div style="display:flex;align-items:center;gap:4px;white-space:nowrap">
-      <div style="width:10px;height:10px;border-radius:2px;background:${g.hex};flex-shrink:0"></div>
-      <span style="font-family:var(--mono);font-size:8px;color:var(--text3)">${g.name}</span>
-      <span style="font-family:var(--mono);font-size:8px;color:var(--text2);font-weight:600">${g.pct}%</span>
-    </div>`).join('');
+    const legend = sorted.filter(g => g.pct >= 1).map(g =>
+      `<div style="display:flex;align-items:center;gap:4px;white-space:nowrap">
+        <div style="width:10px;height:10px;border-radius:2px;background:${g.hex};flex-shrink:0;${(g.hex==='#f0ede8'||g.hex==='#f8f8f8'||g.hex==='#efe2c4'||g.hex==='#f3eddc') ? 'border:1px solid rgba(0,0,0,0.15);' : ''}"></div>
+        <span style="font-family:var(--mono);font-size:8px;color:var(--text3)">${g.name}</span>
+        <span style="font-family:var(--mono);font-size:8px;color:var(--text2);font-weight:600">${g.pct}%</span>
+      </div>`).join('');
 
-  body.innerHTML =
-    `<div style="display:flex;flex-direction:column;gap:12px;padding:4px 0 8px">
+    html += `
       <div>
         <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:8px">
-          <span style="font-family:var(--mono);font-size:10px;font-weight:700;color:var(--accent);letter-spacing:0.06em">${brand}${season ? ' · ' + season : ''}</span>
-          <span style="font-family:var(--mono);font-size:8px;color:var(--text4)">${rows.length} colors · 판매수량 기준</span>
+          <span style="font-family:var(--mono);font-size:10px;font-weight:700;color:var(--accent);letter-spacing:0.06em">${season}</span>
+          <span style="font-family:var(--mono);font-size:8px;color:var(--text4)">${data.total} styles total</span>
         </div>
         <div style="display:flex;height:40px;border-radius:8px;overflow:hidden;border:1px solid rgba(0,0,0,0.06)">${segments}</div>
         <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px">${legend}</div>
-      </div>
-    </div>`;
+      </div>`;
+  }
+  html += '</div>';
+  body.innerHTML = html;
 }
 // ══ END Season Color Distribution Bar ═════════════════════════════════════
 
