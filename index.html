@@ -419,6 +419,17 @@ function selectBrand(brand) {
   document.querySelectorAll('.sidebar-item[data-brand]').forEach(el => el.classList.remove('checked'));
   if (item) item.classList.add('checked');
   _activeBrand = brand;
+
+  // ── 브랜드 재선택 = 전체 리셋 (시즌 다시 골라 새로 로드) ──
+  _activeSeason = null;
+  document.querySelectorAll('.brand-season-badge').forEach(el => { el.style.display = 'none'; });
+  ['27FW','28SS','28FW'].forEach(s => {
+    const b = document.getElementById('spk-' + brand + '-' + s);
+    if (b) { b.style.background='transparent'; b.style.color='var(--text2)'; b.style.borderColor='var(--border)'; }
+  });
+  if (typeof clearSeasonScopedData === 'function') clearSeasonScopedData();
+  if (typeof resetSeasonUI === 'function') resetSeasonUI();
+
   if (typeof applySidebarFilters === 'function') applySidebarFilters();
 }
 
@@ -430,6 +441,9 @@ function pickSeason(brand, season) {
 
   _activeBrand  = brand;
   _activeSeason = season;
+
+  // ── 시즌 재선택 = 화면 깨끗이 비우고 새로 로드 ──
+  if (typeof resetSeasonUI === 'function') resetSeasonUI();
 
   // 해당 브랜드 시즌 버튼 활성 스타일
   ['27FW','28SS','28FW'].forEach(s => {
@@ -480,6 +494,11 @@ function pickSeason(brand, season) {
         st.style.color = '#5A7A30';
       }
     }
+    // 새 데이터로 팔레트/분포/마켓칩 재렌더
+    try { if (typeof renderMarketCsvBrands === 'function') renderMarketCsvBrands(); } catch(e){}
+    try { if (typeof renderPalCrossView === 'function') renderPalCrossView(); } catch(e){}
+    try { if (typeof renderSplitScoreList === 'function' && typeof scoredColors !== 'undefined') renderSplitScoreList(scoredColors); } catch(e){}
+    try { if (typeof refreshSeasonDist === 'function') refreshSeasonDist(); } catch(e){}
     setTimeout(() => {
       const picker = document.getElementById(brand + '-season-picker');
       if (picker) picker.style.display = 'none';
@@ -4407,6 +4426,11 @@ function clearSeasonScopedData(){
   try { Object.keys(MLB_SIGNAL).forEach(k=>delete MLB_SIGNAL[k]); } catch(e){}
   try { if(typeof compData!=='undefined') compData.length = 0; } catch(e){}
   try { if(typeof cnMarketData!=='undefined') cnMarketData.length = 0; } catch(e){}
+  // 트렌드 소스 배열도 비움 (getTrendSourceColors가 직접 읽으므로 시즌 전환 시 잔존 방지)
+  try { if(typeof newsletterColors!=='undefined') newsletterColors.length = 0; } catch(e){}
+  try { if(typeof wgsnColors!=='undefined')       wgsnColors.length = 0; } catch(e){}
+  try { if(typeof peclersColors!=='undefined')    peclersColors.length = 0; } catch(e){}
+  try { window._trendKeyPool = []; } catch(e){}
   // collectedColors: 시트/마켓 출처 색만 제거, PDF/Article/수동 업로드 트렌드 색은 보존
   try {
     if(typeof collectedColors!=='undefined'){
@@ -4422,6 +4446,30 @@ function clearSeasonScopedData(){
   ['unified-gl-badge','unified-kr-badge','unified-cn-badge'].forEach(id=>{
     const el=document.getElementById(id); if(el){ el.style.display='none'; el.textContent=''; }
   });
+}
+
+// 화면(팔레트/제안/교집합/분포/마켓칩) 표시를 깨끗이 비움
+function resetSeasonUI(){
+  const clear = id => { const el=document.getElementById(id); if(el) el.innerHTML=''; };
+  // Trend / Sales / Intersection 칩
+  ['cv-trend-sub','cv-trend-key','cv-trend-list',
+   'cv-sales-sub','cv-sales-key','cv-sales-list',
+   'cv-cross-col','cv-star-grid','score-trend-list','score-sales-list',
+   'season-proposal-grid'].forEach(clear);
+  // 카운트 배지
+  ['cv-trend-cnt','cv-sales-cnt','cv-star-cnt'].forEach(id=>{ const el=document.getElementById(id); if(el) el.textContent='0'; });
+  // 분포 패널 접고 비움 (다음에 펼칠 때 현재 브랜드로 재렌더)
+  const distBody=document.getElementById('season-palette-body');
+  if(distBody){ distBody.style.display='none'; distBody.innerHTML=''; }
+  const distArrow=document.getElementById('season-palette-arrow');
+  if(distArrow) distArrow.style.transform='';
+  // 제안 패널 접기
+  const propPanel=document.getElementById('season-proposal-panel');
+  if(propPanel) propPanel.style.display='none';
+  // 제목/부제목 갱신
+  if(typeof refreshSeasonDist==='function') refreshSeasonDist();
+  // 마켓 체크박스 목록 갱신 (현재 브랜드 기준)
+  if(typeof renderMarketCsvBrands==='function'){ try{ renderMarketCsvBrands(); }catch(e){} }
 }
 
 async function autoLoadAllSheets(season) {
