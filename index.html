@@ -16989,12 +16989,12 @@ const SPP_INTERSECTION_DIST= 30;
 const SPP_INTERSECTION_CATS = [
   { label:'Red',           color:'#CC3333', hueMin:338, hueMax:18,  satMin:0.40, lMin:0.18, lMax:0.58 },
   { label:'Pink',          color:'#E87090', hueMin:300, hueMax:355, satMin:0.20, lMin:0.40 },
-  { label:'Orange·Yellow', color:'#D07020', hueMin:18,  hueMax:72,  satMin:0.35, lMin:0.28 },
+  { label:'Orange·Yellow', color:'#D07020', hueMin:18,  hueMax:72,  satMin:0.45, lMin:0.45 },
   { label:'Green',         color:'#3A8050', hueMin:72,  hueMax:168, satMin:0.15 },
   { label:'Navy',          color:'#152848', hueMin:195, hueMax:255, satMin:0.10, lMin:0.06, lMax:0.38 },
   { label:'Blue',          color:'#3060B0', hueMin:168, hueMax:245, satMin:0.20, lMin:0.38 },
   { label:'Purple',        color:'#7040A0', hueMin:252, hueMax:315, satMin:0.18 },
-  { label:'Brown·Khaki',   color:'#7A5530', hueMin:18,  hueMax:60,  satMin:0.08, satMax:0.38, lMin:0.12, lMax:0.58 },
+  { label:'Brown·Khaki',   color:'#7A5530', hueMin:18,  hueMax:60,  satMin:0.08, satMax:0.65, lMin:0.12, lMax:0.62 },
 ];
 const SPP_INTERSECTION_PINNED = ['Red','Pink','Navy','Blue'];
 const SPP_MARKET_LABEL = { kr:'KR', eu:'EU', global:'GLOBAL' };
@@ -17402,8 +17402,17 @@ function _sppRenderIntersection(){
   const wrap=document.getElementById('spp-intersection-groups'); if(!wrap) return;
   if(!_sppMarketPalettes.kr&&!_sppMarketPalettes.eu&&!_sppMarketPalettes.global){ wrap.innerHTML='<div class="spp-empty">02 Market Analysis 데이터를 로드하면 GLOBAL/EU 공통 컬러가 표시됩니다.</div>'; return; }
   const allChips=_sppGetAllMarketChips(), groups=_sppFindCrossMarketGroups(allChips);
+  const allItems = groups.flatMap(g=>g.items);
+  // 한 컬러가 여러 카테고리 조건을 동시에 만족할 수 있으므로, 정의 순서상 첫 번째로 매칭되는 카테고리에만 할당 (중복 방지)
+  const assigned = new Set();
   const catGroups=SPP_INTERSECTION_CATS.map(cat=>{
-    const items=groups.flatMap(g=>g.items).filter(c=>_sppIntersectionCatMatch(c.hex,cat));
+    const items=allItems.filter(c=>{
+      const key = c.hex.toUpperCase()+'_'+c._market;
+      if(assigned.has(key)) return false;
+      if(!_sppIntersectionCatMatch(c.hex,cat)) return false;
+      assigned.add(key);
+      return true;
+    });
     return {...cat,items,isPinned:SPP_INTERSECTION_PINNED.includes(cat.label)};
   }).filter(g=>g.isPinned||g.items.length>0);
   if(!catGroups.length){ wrap.innerHTML='<div class="spp-empty">KR/EU/GLOBAL 간 공통 컬러가 없습니다.</div>'; return; }
