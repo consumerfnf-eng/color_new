@@ -1173,7 +1173,7 @@ function enterBrandFromHome(brand) {
         </div>
 
         <!-- 분류 안내 -->
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:12px;margin-top:14px">
+        <div id="unified-country-grid" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-top:14px">
           <div>
             <div style="font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:0.06em;color:var(--pos)">
               GL Global <span id="unified-gl-badge" style="display:none;color:var(--pos);font-weight:600;margin-left:4px"></span>
@@ -1186,13 +1186,13 @@ function enterBrandFromHome(brand) {
             </div>
             <div style="font-family:var(--mono);font-size:9px;color:var(--text3);margin-top:3px">country = KR</div>
           </div>
-          <div>
+          <div id="unified-eu-col" style="display:none">
             <div style="font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:0.06em;color:var(--purple)">
               EU Europe <span id="unified-eu-badge" style="display:none;color:var(--purple);font-weight:600;margin-left:4px"></span>
             </div>
             <div style="font-family:var(--mono);font-size:9px;color:var(--text3);margin-top:3px">country = EU</div>
           </div>
-          <div>
+          <div id="unified-cn-col">
             <div style="font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:0.06em;color:var(--blue)">
               CN China <span id="unified-cn-badge" style="display:none;color:var(--blue);font-weight:600;margin-left:4px"></span>
             </div>
@@ -14764,8 +14764,18 @@ function renderCompBrandPage() {
     return score(b) > score(a) ? b : a;
   };
   const brandMap = {};
+  // ── country 탭에 따라 source 필터링 (SERGIO 브랜드일 때만 적용) ──
+  const _euSources = new Set(['sheets-eu']);
+  const _krSources = new Set(['sheets-kr','csv-kr']);
+  const _applySourceFilter = (typeof _activeBrand !== 'undefined' && _activeBrand === 'SERGIO');
   compData.forEach(c => {
     if (!c.hex || !c.brand) return;
+    if(_applySourceFilter) {
+      // EU source 데이터는 EU 탭일 때만 표시
+      if(_euSources.has(c.source) && activeCountry !== 'eu' && activeCountry !== 'all') return;
+      // KR source 데이터는 EU 탭일 때 제외
+      if(_krSources.has(c.source) && activeCountry === 'eu') return;
+    }
     const key = brandKey(c.brand);
     if (!key) return;
     if (!brandMap[key]) {
@@ -16812,11 +16822,19 @@ function renderSeasonPaletteBars() {
 function _spp_syncActive(){
   const tabPalette = document.getElementById('tab-palette');
   if(!tabPalette) return;
-  if(typeof _activeBrand !== 'undefined' && _activeBrand === 'SERGIO'){
+  const isSERGIO = (typeof _activeBrand !== 'undefined' && _activeBrand === 'SERGIO');
+  if(isSERGIO){
     tabPalette.classList.add('sergio-active');
   } else {
     tabPalette.classList.remove('sergio-active');
   }
+  // EU 열 표시 + CN 열 숨김 + 그리드 컬럼: SERGIO는 GL·KR·EU 3열, 그 외는 GL·KR·CN 3열
+  const euCol = document.getElementById('unified-eu-col');
+  const cnCol = document.getElementById('unified-cn-col');
+  const countryGrid = document.getElementById('unified-country-grid');
+  if(euCol) euCol.style.display = isSERGIO ? '' : 'none';
+  if(cnCol) cnCol.style.display = isSERGIO ? 'none' : '';
+  if(countryGrid) countryGrid.style.gridTemplateColumns = '1fr 1fr 1fr';
 }
 
 // ── renderPalettePage 원본을 감싸서 SERGIO 분기 추가 ──
