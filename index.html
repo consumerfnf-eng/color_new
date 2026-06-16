@@ -1264,17 +1264,17 @@ function enterBrandFromHome(brand) {
 
         <!-- KR / EU / GLOBAL -->
         <div id="spp-market-wrap">
-          <div class="spp-empty">02 Market Analysis에서 데이터를 로드하면 KR / EU / GLOBAL 컬러 팔레트가 생성됩니다.</div>
+          <div class="spp-empty">02 Market Analysis에서 데이터를 로드하면 GLOBAL / EU 컬러 팔레트가 생성됩니다.</div>
         </div>
 
         <!-- Intersection -->
         <div class="spp-intersection-section" id="spp-intersection-section">
           <div class="spp-intersection-section-hd">
             <span class="spp-intersection-section-title">★ Intersection</span>
-            <span class="spp-intersection-section-sub">KR ∩ EU ∩ GLOBAL — Cross-Market Colors</span>
+            <span class="spp-intersection-section-sub">GLOBAL ∩ EU — Cross-Market Colors</span>
           </div>
           <div id="spp-intersection-groups">
-            <div class="spp-empty">02 Market Analysis 데이터를 로드하면 KR/EU/GLOBAL 공통 컬러가 표시됩니다.</div>
+            <div class="spp-empty">02 Market Analysis 데이터를 로드하면 GLOBAL/EU 공통 컬러가 표시됩니다.</div>
           </div>
         </div>
 
@@ -14226,8 +14226,9 @@ function brandMatches(brand, dictEntry){
 }
 
 function getLifestyle(brand, group, source, court) {
-  // 0) source 기반 강제 오버라이드 — KR 데이터는 무조건 KR Brands
+  // 0) source 기반 강제 오버라이드 — KR/EU 데이터는 country로 결정 (브랜드명·group 매칭보다 우선)
   if(source === 'sheets-kr' || source === 'csv-kr') return 'KR Brands';
+  if(source === 'sheets-eu') return 'EU Brands Raw'; // EU는 별도 키로 분리 (KR Brands와 혼동 방지)
   // 0.5) CSV court 컬럼(D열) = 'Y' → Court Active 최우선
   if((court||'').toString().trim().toUpperCase() === 'Y') return 'Court Active';
   // 1) COMP_LIFESTYLE_MAP 브랜드명 정확 매칭 우선
@@ -14857,8 +14858,7 @@ function renderCompBrandPage() {
     const key = brandKey(c.brand);
     if (!key) return;
     if (!brandMap[key]) {
-      // EU 탭(SERGIO)일 때는 lifestyle 분류 없이 모두 EU 그룹으로 통일
-      const _ls = (_applySourceFilter && activeCountry === 'eu') ? 'KR Brands' : getLifestyle(c.brand, c.group, c.source, c.court);
+      const _ls = getLifestyle(c.brand, c.group, c.source, c.court);
       brandMap[key] = { brand: c.brand, group: c.group||'Other', lifestyle: _ls, colors: [] };
     } else {
       brandMap[key].brand = prettierBrand(brandMap[key].brand, c.brand); // 더 보기 좋은 표기로 갱신
@@ -14871,21 +14871,21 @@ function renderCompBrandPage() {
   const allBrands = Object.values(brandMap);
   // ── 전역 Save — Category Curation이 이 데이터를 직접 참조 ──
   compBrandMap = brandMap;
-  const lsOrder = ['Luxury','Athleisure','Outdoor/Sports','Court Active','KR Brands','Other'];
+  const lsOrder = ['Luxury','Athleisure','Outdoor/Sports','Court Active','KR Brands','EU Brands Raw','Other'];
   const allLS = [...new Set(allBrands.map(b=>b.lifestyle))];
   const sortedLS = [...new Set([...lsOrder,...allLS])].filter(ls=>allLS.includes(ls));
   const brandNames = allBrands.map(b=>b.brand).sort();
 
   const lsAccent = {
     'Court Active':'#D08838','Luxury':'#E0A0C0','Athleisure':'#9966FF',
-    'Outdoor/Sports':'#00C8A0','KR Brands':'#E8C060','Other':'#6A6760',
+    'Outdoor/Sports':'#00C8A0','KR Brands':'#E8C060','EU Brands Raw':'#6699CC','Other':'#6A6760',
   };
 
   const activeBrand = wrap.dataset.filterBrand || '';
   const activeLS    = wrap.dataset.filterLS    || '';
 
   const brandOptions = brandNames.map(b=>`<option value="${b}" ${activeBrand===b?'selected':''}>${b}</option>`).join('');
-  const lsOptions    = sortedLS.map(ls=>`<option value="${ls}" ${activeLS===ls?'selected':''}>${ls}</option>`).join('');
+  const lsOptions    = sortedLS.map(ls=>`<option value="${ls}" ${activeLS===ls?'selected':''}>${ls==='EU Brands Raw'?'EU Brands':ls}</option>`).join('');
 
   // Country 셀렉터 (SERGIO: China 제거 → EU 추가)
   const _isSERGIO = (typeof _activeBrand !== 'undefined' && _activeBrand === 'SERGIO');
@@ -14996,9 +14996,9 @@ function renderCompBrandPage() {
 
   const lsToShow = activeLS ? [activeLS] : sortedLS.filter(ls=>filteredBrands.some(b=>b.lifestyle===ls));
 
-  // EU 탭이면 KR Brands 라벨을 EU Brands로 표시
+  // EU Brands Raw 키는 항상 EU Brands로 표시
   const _lsDisplayLabel = function(ls){
-    if(ls === 'KR Brands' && activeCountry === 'eu') return 'EU Brands';
+    if(ls === 'EU Brands Raw') return 'EU Brands';
     return ls;
   };
 
@@ -15231,7 +15231,7 @@ function renderCompBrandPage() {
     barEl.innerHTML = `
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
         <div style="width:3px;height:16px;background:${ac};border-radius:2px"></div>
-        <span style="font-family:var(--mono);font-size:10px;font-weight:700;color:${ac};letter-spacing:0.06em;text-transform:uppercase">${activeCountry==='eu'&&activeLS==='KR Brands'?'EU Brands':activeLS} COLORS</span>
+        <span style="font-family:var(--mono);font-size:10px;font-weight:700;color:${ac};letter-spacing:0.06em;text-transform:uppercase">${activeLS==='EU Brands Raw'?'EU Brands':activeLS} COLORS</span>
         <span style="font-family:var(--mono);font-size:9px;color:var(--text3)">${bList.length} Brands · ${top.length} colors</span>
         <span style="font-family:var(--mono);font-size:8px;color:var(--text4)">Click swatch for Pantone</span>
       </div>
@@ -17303,6 +17303,8 @@ function _spp_renderPaletteProposal(){
   const krRows  = _sppGetFilteredRows('kr');
   const euRows  = _sppGetFilteredRows('eu');
   const glRows  = _sppGetFilteredRows('global');
+  // ★ KR + GLOBAL을 합쳐서 하나의 GLOBAL 마켓으로 통합 (KR 단독으로는 브랜드 다양성이 부족하므로)
+  const mergedGlobalRows = [...glRows, ...krRows];
 
   if(!krRows.length && !euRows.length && !glRows.length){
     const sel = window._curMarketSel ? window._curMarketSel() : null;
@@ -17314,9 +17316,9 @@ function _spp_renderPaletteProposal(){
     return;
   }
 
-  _sppMarketPalettes.kr     = krRows.length ? _sppBuildMarketPalette(krRows) : null;
   _sppMarketPalettes.eu     = euRows.length ? _sppBuildMarketPalette(euRows) : null;
-  _sppMarketPalettes.global = glRows.length ? _sppBuildMarketPalette(glRows) : null;
+  _sppMarketPalettes.global = mergedGlobalRows.length ? _sppBuildMarketPalette(mergedGlobalRows) : null;
+  _sppMarketPalettes.kr     = null; // KR은 GLOBAL에 통합되어 별도 박스로 표시하지 않음
 
   // 선택 브랜드 정보 표시
   const sel = window._curMarketSel ? window._curMarketSel() : null;
@@ -17327,9 +17329,8 @@ function _spp_renderPaletteProposal(){
     : '';
 
   const MARKETS = [
-    {key:'kr',     title:'KR',     sub:'Korea Domestic Market'},
-    {key:'eu',     title:'EU',     sub:'Europe Market'},
     {key:'global', title:'GLOBAL', sub:'Global Market'},
+    {key:'eu',     title:'EU',     sub:'Europe Market'},
   ];
   wrap.innerHTML = selNote + MARKETS.map(m=>{
     const pal = _sppMarketPalettes[m.key];
@@ -17399,7 +17400,7 @@ function _sppIntersectionChipHtml(co){
 }
 function _sppRenderIntersection(){
   const wrap=document.getElementById('spp-intersection-groups'); if(!wrap) return;
-  if(!_sppMarketPalettes.kr&&!_sppMarketPalettes.eu&&!_sppMarketPalettes.global){ wrap.innerHTML='<div class="spp-empty">02 Market Analysis 데이터를 로드하면 KR/EU/GLOBAL 공통 컬러가 표시됩니다.</div>'; return; }
+  if(!_sppMarketPalettes.kr&&!_sppMarketPalettes.eu&&!_sppMarketPalettes.global){ wrap.innerHTML='<div class="spp-empty">02 Market Analysis 데이터를 로드하면 GLOBAL/EU 공통 컬러가 표시됩니다.</div>'; return; }
   const allChips=_sppGetAllMarketChips(), groups=_sppFindCrossMarketGroups(allChips);
   const catGroups=SPP_INTERSECTION_CATS.map(cat=>{
     const items=groups.flatMap(g=>g.items).filter(c=>_sppIntersectionCatMatch(c.hex,cat));
