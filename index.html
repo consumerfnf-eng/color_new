@@ -5166,17 +5166,21 @@ function showSheetsLoadBanner(state, results) {
   }
   if (state === 'loading') {
     el.style.opacity = '1';
-    el.innerHTML = `<div style="color:var(--gold);display:flex;align-items:center;gap:8px"><span class="running">●</span> MLB · Google Loading Sheets……</div>`;
+    el.innerHTML = `<div style="color:var(--gold);display:flex;align-items:center;gap:8px"><span class="running">●</span> Google Loading Sheets……</div>`;
   } else {
     const ok = c => c
       ? `<span style="color:var(--teal)">✓</span>`
       : `<span style="color:var(--red)">✗</span>`;
+    const _isSERGIO = (typeof _activeBrand !== 'undefined' && _activeBrand === 'SERGIO');
+    const lastLine = _isSERGIO
+      ? `${ok(window._lastLoadSummary && window._lastLoadSummary.counts && window._lastLoadSummary.counts.wgsn)} WGSN`
+      : `${ok(results && results.mlb)} MLB 판매`;
     el.innerHTML = `
       <div style="color:var(--text2);font-weight:600;margin-bottom:6px;font-size:11px">📡 Sheets Auto-Sync Complete</div>
       <div style="color:var(--text3)">
         ${ok(results && results.comp)} 경쟁사 &nbsp;
         ${ok(results && results.peclers)} Peclers &nbsp;
-        ${ok(results && results.mlb)} MLB 판매
+        ${lastLine}
       </div>
       <div style="color:var(--text4);font-size:9px;margin-top:3px">Data has been applied automatically</div>`;
     setTimeout(() => { el.style.opacity = '0'; setTimeout(() => el.remove(), 400); }, 4000);
