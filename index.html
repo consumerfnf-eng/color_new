@@ -289,6 +289,115 @@ html,body{background:#FFFFFF;color:var(--text);font-family:var(--sans);height:10
 .step-nav{display:flex;align-items:center;justify-content:space-between;padding:16px 24px;border-top:1px solid rgba(0,0,0,0.08);background:#FFFFFF;flex-shrink:0}
 .step-nav-info{font-family:var(--mono);font-size:10px;color:var(--text3);text-align:center}
 .step-nav-info strong{color:#3A3530;font-size:13px}
+
+/* ════════════════════════════════════════════
+   SERGIO TACCHINI — Palette Proposal 전용 CSS
+   ════════════════════════════════════════════ */
+#sergio-palette-wrap{display:none}
+.sergio-active #sergio-palette-wrap{display:block}
+.sergio-active #cross-view,.sergio-active #palette-empty,.sergio-active #palette-content{display:none!important}
+.sergio-active .pal-material-section{display:none!important}
+
+.spp-market-section{border-top:1px solid var(--border);padding-top:18px;margin-top:18px}
+.spp-market-section:first-child{border-top:none;padding-top:0;margin-top:0}
+.spp-market-hd{display:flex;align-items:baseline;gap:10px;margin-bottom:14px}
+.spp-market-title{font-family:var(--sans);font-size:16px;font-weight:700;color:var(--text)}
+.spp-market-sub{font-family:var(--mono);font-size:9px;color:var(--text3);letter-spacing:0.06em;text-transform:uppercase}
+.spp-cat-row{margin-bottom:14px}
+.spp-cat-label{font-family:var(--mono);font-size:9px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--text3);margin-bottom:7px;display:flex;align-items:center;gap:6px}
+.spp-cat-label .cnt{font-weight:400;color:var(--text4)}
+.spp-chip-row{display:flex;flex-wrap:wrap;gap:8px}
+.spp-chip{display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer}
+.spp-chip-sw{width:46px;height:46px;border-radius:6px;transition:transform .15s;position:relative}
+.spp-chip:hover .spp-chip-sw{transform:scale(1.08)}
+.spp-trend-badge{position:absolute;top:-5px;right:-5px;width:14px;height:14px;border-radius:50%;background:var(--gold);color:#fff;font-family:var(--mono);font-size:8px;font-weight:700;display:flex;align-items:center;justify-content:center;border:1px solid #fff;line-height:1}
+.spp-chip-name{font-family:var(--mono);font-size:7px;color:var(--text3);text-align:center;max-width:52px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.spp-chip-code{font-family:var(--mono);font-size:6.5px;color:var(--text4);text-align:center}
+.spp-empty{font-family:var(--mono);font-size:10px;color:var(--text4);padding:14px;text-align:center;border:1px dashed var(--border);border-radius:6px}
+
+.spp-intersection-section{border-top:1px solid var(--border);padding-top:20px;margin-top:20px}
+.spp-intersection-section-hd{display:flex;align-items:baseline;gap:12px;margin-bottom:14px}
+.spp-intersection-section-title{font-family:var(--sans);font-size:16px;font-weight:700;color:var(--text)}
+.spp-intersection-section-sub{font-family:var(--mono);font-size:9px;color:var(--text3);letter-spacing:0.06em;text-transform:uppercase}
+.spp-intersection-groups-row{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-start}
+.spp-intersection-group{display:flex;flex-direction:column;gap:8px;padding:10px 12px;border:3px dashed rgba(160,160,160,0.40);border-radius:10px}
+.spp-intersection-group.has-data{border-color:rgba(60,180,100,0.7)}
+.spp-intersection-group-hd{display:flex;align-items:center;gap:5px}
+.spp-intersection-group-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.spp-intersection-group-label{font-family:var(--mono);font-size:8px;color:var(--text3);font-weight:700;letter-spacing:0.05em}
+.spp-intersection-group-pinned{font-family:var(--mono);font-size:7px;color:var(--text4);margin-left:2px}
+.spp-intersection-chips{display:flex;gap:6px;flex-wrap:wrap;align-items:flex-start}
+.spp-intersection-chip{display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer}
+.spp-intersection-chip-sw{width:44px;height:44px;border-radius:7px}
+.spp-intersection-chip-market{font-family:var(--mono);font-size:6px;letter-spacing:0.04em;text-align:center}
+.spp-intersection-chip-code{font-family:var(--mono);font-size:7px;color:var(--text3);text-align:center;max-width:52px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.spp-intersection-empty{font-family:var(--mono);font-size:8px;color:var(--text4);padding:6px 2px;font-style:italic}
+
+.spp-seasonal-section{border-top:1px solid var(--border);padding-top:20px;margin-top:20px}
+.spp-seasonal-section-hd{display:flex;align-items:baseline;gap:12px;margin-bottom:14px}
+.spp-seasonal-section-title{font-family:var(--sans);font-size:16px;font-weight:700;color:var(--text)}
+.spp-seasonal-section-sub{font-family:var(--mono);font-size:9px;color:var(--text3);letter-spacing:0.06em;text-transform:uppercase}
+.spp-seasonal-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.spp-seasonal-col{background:var(--bg2);border:1px solid var(--border);border-radius:8px;overflow:hidden}
+.spp-seasonal-col-hd{padding:12px 14px 10px;border-bottom:1px solid var(--border)}
+.spp-seasonal-col-badge{font-family:var(--mono);font-size:8px;letter-spacing:0.12em;text-transform:uppercase;padding:3px 8px;border-radius:3px;display:inline-block;margin-bottom:6px}
+.spp-badge-fall{background:rgba(120,160,175,0.12);color:#5C7A8A;border:1px solid rgba(120,160,175,0.3)}
+.spp-badge-prewinter{background:rgba(120,180,120,0.12);color:#4A8A58;border:1px solid rgba(120,180,120,0.3)}
+.spp-badge-winter{background:rgba(160,60,60,0.12);color:#8A4040;border:1px solid rgba(160,60,60,0.3)}
+.spp-seasonal-col-name{font-family:var(--sans);font-size:13px;font-weight:600;color:var(--text2)}
+.spp-seasonal-col-desc{font-family:var(--mono);font-size:8px;color:var(--text4);margin-top:3px;line-height:1.5}
+.spp-seasonal-col-body{padding:10px 14px 14px}
+.spp-seasonal-swatches{display:flex;flex-wrap:wrap;gap:6px}
+.spp-seasonal-chip{display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer}
+.spp-seasonal-sw{width:36px;height:36px;border-radius:4px;transition:transform .15s}
+.spp-seasonal-chip:hover .spp-seasonal-sw{transform:scale(1.08)}
+.spp-seasonal-chip-name{font-family:var(--mono);font-size:7px;color:var(--text3);text-align:center;max-width:44px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.spp-seasonal-chip-code{font-family:var(--mono);font-size:6.5px;color:var(--text4);text-align:center}
+.spp-seasonal-count{font-family:var(--mono);font-size:8px;color:var(--text4);margin-top:8px;text-align:right}
+.spp-seasonal-empty{font-family:var(--mono);font-size:9px;color:var(--text4);padding:8px;text-align:center}
+
+.spp-cat-section{border-top:1px solid var(--border);padding-top:20px;margin-top:20px}
+.spp-cat-section-hd{display:flex;align-items:baseline;gap:12px;margin-bottom:14px}
+.spp-cat-section-title{font-family:var(--sans);font-size:16px;font-weight:700;color:var(--text)}
+.spp-cat-section-sub{font-family:var(--mono);font-size:9px;color:var(--text3);letter-spacing:0.06em;text-transform:uppercase}
+.spp-ls-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:14px}
+.spp-ls-col{background:var(--bg2);border:1px solid var(--border);border-radius:8px;overflow:hidden}
+.spp-ls-col-hd{padding:12px 14px 10px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.spp-ls-badge{font-family:var(--mono);font-size:8px;letter-spacing:0.12em;text-transform:uppercase;padding:3px 9px;border-radius:20px;font-weight:600}
+.spp-ls-active-badge{background:rgba(46,107,62,0.12);color:var(--pos);border:1px solid rgba(46,107,62,0.3)}
+.spp-ls-ath-badge{background:rgba(138,96,32,0.12);color:var(--gold);border:1px solid rgba(138,96,32,0.3)}
+.spp-ls-cls-badge{background:rgba(90,58,138,0.12);color:var(--purple);border:1px solid rgba(90,58,138,0.3)}
+.spp-ls-col-meta{font-family:var(--mono);font-size:8px;color:var(--text3)}
+.spp-ls-col-body{padding:12px 14px}
+.spp-ls-cat-label{font-family:var(--mono);font-size:8px;letter-spacing:0.1em;text-transform:uppercase;color:var(--text3);padding-bottom:5px;border-bottom:1px solid var(--border);margin-bottom:8px}
+.spp-ls-chip-row{display:flex;flex-wrap:wrap;gap:10px;padding:4px 0;margin-bottom:6px}
+.spp-ls-chip{display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer}
+.spp-ls-chip-sw{width:46px;height:46px;border-radius:6px;transition:transform .15s}
+.spp-ls-chip:hover .spp-ls-chip-sw{transform:scale(1.08)}
+.spp-ls-chip-name{font-family:var(--mono);font-size:7px;color:var(--text3);text-align:center;max-width:54px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.spp-ls-chip-code{font-family:var(--mono);font-size:6.5px;color:var(--text4);text-align:center}
+.spp-ls-basic-common{border-top:1px solid var(--border);padding-top:14px;margin-top:6px}
+.spp-ls-basic-common-hd{display:flex;align-items:baseline;gap:10px;margin-bottom:10px}
+.spp-ls-basic-common-title{font-family:var(--mono);font-size:9px;letter-spacing:0.12em;text-transform:uppercase;color:var(--text3)}
+.spp-ls-basic-common-sub{font-family:var(--mono);font-size:8px;color:var(--text4)}
+.spp-ls-basic-common-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.spp-ls-basic-common-row{display:flex;align-items:center;gap:7px;padding:6px 9px;border-radius:4px;background:var(--bg2);border:1px solid var(--border);cursor:pointer;transition:border-color .15s}
+.spp-ls-basic-common-row:hover{border-color:var(--gold)}
+.spp-ls-basic-common-sw{width:22px;height:22px;border-radius:3px;flex-shrink:0}
+.spp-ls-basic-common-label{font-family:var(--mono);font-size:8px;color:var(--text3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+#spp-swatch-overlay{display:none;position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,0.4)}
+#spp-swatch-popover{display:none;position:fixed;z-index:10001;background:#fff;border:1px solid var(--border2);border-radius:8px;padding:18px;width:420px;max-height:78vh;overflow-y:auto;box-shadow:var(--sh-3);top:50%;left:50%;transform:translate(-50%,-50%)}
+.spp-pick-chip{width:32px;height:32px;border-radius:6px;cursor:pointer;border:2px solid var(--border2);transition:all .15s;flex-shrink:0}
+.spp-pick-chip:hover{transform:scale(1.12);border-color:var(--accent)}
+.spp-evidence-row{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border);font-family:var(--mono);font-size:9px}
+.spp-evidence-row:last-child{border-bottom:none}
+.spp-evidence-label{color:var(--text3)}
+.spp-evidence-val{color:var(--text);font-weight:600}
+.spp-evidence-title{font-family:var(--mono);font-size:8px;color:var(--text3);letter-spacing:0.08em;margin-bottom:6px;text-transform:uppercase}
+.spp-evidence-brands{font-family:var(--mono);font-size:8px;color:var(--text4);margin-top:4px;line-height:1.6}
+.spp-trend-match-item{display:flex;align-items:center;gap:6px;padding:4px 0;font-family:var(--mono);font-size:9px}
+.spp-trend-match-sw{width:16px;height:16px;border-radius:3px;border:1px solid var(--border2);flex-shrink:0}
 </style>
 </head>
 <body>
@@ -435,6 +544,8 @@ function selectBrand(brand) {
   if (typeof resetSeasonUI === 'function') resetSeasonUI();
 
   if (typeof applySidebarFilters === 'function') applySidebarFilters();
+  // SERGIO 브랜드 활성 시 Palette Proposal 탭 분기 동기화
+  if (typeof _spp_syncActive === 'function') _spp_syncActive();
 }
 
 // 시즌 선택 → 브랜드+시즌 확정 → 마켓 데이터 로드
@@ -1055,14 +1166,14 @@ function enterBrandFromHome(brand) {
           ondragleave="this.classList.remove('drag')"
           ondrop="this.classList.remove('drag');handleUnifiedCompDrop(event)"
           style="width:100%;padding:36px 16px;text-align:center">
-          <strong style="font-size:14px">🌐 Global / Korea / China Unified CSV</strong>
+          <strong style="font-size:14px">🌐 Global / Korea / EU / China Unified CSV</strong>
           <p style="margin:10px 0 4px">📁 Drag & drop or click to upload</p>
-          <p style="font-size:10px;opacity:0.55">Auto-classified by <b>GL · KR · CN</b> in country column</p>
+          <p style="font-size:10px;opacity:0.55">Auto-classified by <b>GL · KR · EU · CN</b> in country column</p>
         </div>
         </div>
 
         <!-- 분류 안내 -->
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-top:14px">
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:12px;margin-top:14px">
           <div>
             <div style="font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:0.06em;color:var(--pos)">
               GL Global <span id="unified-gl-badge" style="display:none;color:var(--pos);font-weight:600;margin-left:4px"></span>
@@ -1076,6 +1187,12 @@ function enterBrandFromHome(brand) {
             <div style="font-family:var(--mono);font-size:9px;color:var(--text3);margin-top:3px">country = KR</div>
           </div>
           <div>
+            <div style="font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:0.06em;color:var(--purple)">
+              EU Europe <span id="unified-eu-badge" style="display:none;color:var(--purple);font-weight:600;margin-left:4px"></span>
+            </div>
+            <div style="font-family:var(--mono);font-size:9px;color:var(--text3);margin-top:3px">country = EU</div>
+          </div>
+          <div>
             <div style="font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:0.06em;color:var(--blue)">
               CN China <span id="unified-cn-badge" style="display:none;color:var(--blue);font-weight:600;margin-left:4px"></span>
             </div>
@@ -1086,7 +1203,7 @@ function enterBrandFromHome(brand) {
         <!-- CSV 형식 예시 -->
         <div style="font-family:var(--mono);font-size:9px;color:var(--text3);margin-top:12px;line-height:1.7;padding:8px 10px;background:var(--bg2);border-radius:5px">
           <span style="color:var(--accent)">country,brand,brand_group,season,hex</span><br>
-          GL,Nike,A,26F,#2D6A4F&nbsp;&nbsp;·&nbsp;&nbsp;KR,MLB,B,26F,#1A1A2E&nbsp;&nbsp;·&nbsp;&nbsp;CN,FILA,A,26F,#FF0000 / #FFFFFF
+          GL,Nike,A,26F,#2D6A4F&nbsp;&nbsp;·&nbsp;&nbsp;KR,MLB,B,26F,#1A1A2E&nbsp;&nbsp;·&nbsp;&nbsp;EU,Adidas,A,26F,#3C5A99&nbsp;&nbsp;·&nbsp;&nbsp;CN,FILA,A,26F,#FF0000
         </div>
         <div id="unified-comp-status" style="font-family:var(--mono);font-size:10px;color:var(--text3);margin-top:8px"></div>
 
@@ -1122,6 +1239,131 @@ function enterBrandFromHome(brand) {
        ════════════════════════════════════════════════ -->
   <div id="tab-palette" class="tab-content">
     <div class="tab-scroll">
+
+      <!-- ════ SERGIO TACCHINI 27FW — Palette Proposal (브랜드 분기) ════ -->
+      <div id="sergio-palette-wrap">
+
+        <!-- KR / EU / GLOBAL -->
+        <div id="spp-market-wrap">
+          <div class="spp-empty">02 Market Analysis에서 데이터를 로드하면 KR / EU / GLOBAL 컬러 팔레트가 생성됩니다.</div>
+        </div>
+
+        <!-- Intersection -->
+        <div class="spp-intersection-section" id="spp-intersection-section">
+          <div class="spp-intersection-section-hd">
+            <span class="spp-intersection-section-title">★ Intersection</span>
+            <span class="spp-intersection-section-sub">KR ∩ EU ∩ GLOBAL — Cross-Market Colors</span>
+          </div>
+          <div id="spp-intersection-groups">
+            <div class="spp-empty">02 Market Analysis 데이터를 로드하면 KR/EU/GLOBAL 공통 컬러가 표시됩니다.</div>
+          </div>
+        </div>
+
+        <!-- Seasonal Color -->
+        <div class="spp-seasonal-section" id="spp-seasonal-section">
+          <div class="spp-seasonal-section-hd">
+            <span class="spp-seasonal-section-title">Seasonal Color</span>
+            <span class="spp-seasonal-section-sub">27FW · FALL / PRE-WINTER / WINTER Palette Distribution</span>
+          </div>
+          <div class="spp-seasonal-grid" id="spp-seasonal-grid">
+            <div class="spp-empty" style="grid-column:1/-1">02 Market Analysis 데이터를 로드하면 시즌별 컬러가 자동 분류됩니다.</div>
+          </div>
+        </div>
+
+        <!-- Category Curation -->
+        <div class="spp-cat-section" id="spp-cat-curation-section">
+          <div class="spp-cat-section-hd">
+            <span class="spp-cat-section-title">Category Curation</span>
+            <span class="spp-cat-section-sub">Court Active · Athleisure · Classic</span>
+          </div>
+          <div class="spp-ls-grid" id="spp-ls-grid">
+            <!-- Court Active -->
+            <div class="spp-ls-col">
+              <div class="spp-ls-col-hd">
+                <div style="display:flex;align-items:center;gap:8px">
+                  <span class="spp-ls-badge spp-ls-active-badge">COURT ACTIVE</span>
+                  <span style="font-size:11px;color:var(--text3)">퍼포먼스 · 테니스 · 기능성</span>
+                </div>
+                <span class="spp-ls-col-meta" id="spp-ls-active-meta"></span>
+              </div>
+              <div class="spp-ls-col-body">
+                <div class="spp-ls-cat-label">Point</div>
+                <div class="spp-ls-chip-row" id="spp-active-point"></div>
+                <div class="spp-ls-cat-label" style="margin-top:8px">Sub</div>
+                <div class="spp-ls-chip-row" id="spp-active-sub"></div>
+              </div>
+            </div>
+            <!-- Athleisure -->
+            <div class="spp-ls-col">
+              <div class="spp-ls-col-hd">
+                <div style="display:flex;align-items:center;gap:8px">
+                  <span class="spp-ls-badge spp-ls-ath-badge">ATHLEISURE</span>
+                  <span style="font-size:11px;color:var(--text3)">캐주얼 · 라이프스타일</span>
+                </div>
+                <span class="spp-ls-col-meta" id="spp-ls-ath-meta"></span>
+              </div>
+              <div class="spp-ls-col-body">
+                <div class="spp-ls-cat-label">Point</div>
+                <div class="spp-ls-chip-row" id="spp-ath-point"></div>
+                <div class="spp-ls-cat-label" style="margin-top:8px">Sub</div>
+                <div class="spp-ls-chip-row" id="spp-ath-sub"></div>
+              </div>
+            </div>
+            <!-- Classic -->
+            <div class="spp-ls-col">
+              <div class="spp-ls-col-hd">
+                <div style="display:flex;align-items:center;gap:8px">
+                  <span class="spp-ls-badge spp-ls-cls-badge">CLASSIC</span>
+                  <span style="font-size:11px;color:var(--text3)">헤리티지 · 프리미엄 · 클래식</span>
+                </div>
+                <span class="spp-ls-col-meta" id="spp-ls-cls-meta"></span>
+              </div>
+              <div class="spp-ls-col-body">
+                <div class="spp-ls-cat-label">Point</div>
+                <div class="spp-ls-chip-row" id="spp-cls-point"></div>
+                <div class="spp-ls-cat-label" style="margin-top:8px">Sub</div>
+                <div class="spp-ls-chip-row" id="spp-cls-sub"></div>
+              </div>
+            </div>
+          </div>
+          <!-- Basic 공통 -->
+          <div class="spp-ls-basic-common" id="spp-ls-basic-common">
+            <div class="spp-ls-basic-common-hd">
+              <span class="spp-ls-basic-common-title">Basic Colors — 공통</span>
+              <span class="spp-ls-basic-common-sub">3개 카테고리 공유 · White · Black · Navy · Grey 계열</span>
+            </div>
+            <div class="spp-ls-basic-common-grid" id="spp-ls-basic-common-grid">
+              <div class="spp-empty" style="grid-column:1/-1">02 Market Analysis 데이터를 로드하면 Basic 컬러가 표시됩니다.</div>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /#sergio-palette-wrap -->
+
+      <!-- 팝업 (SERGIO용) -->
+      <div id="spp-swatch-overlay" onclick="closeSppSwatchPopover()"></div>
+      <div id="spp-swatch-popover">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+          <div>
+            <div style="font-size:12px;font-weight:700;color:var(--text);letter-spacing:0.04em">유사 컬러 제안</div>
+            <div id="spp-pop-label" style="font-size:9px;font-family:var(--mono);color:var(--text3);margin-top:2px"></div>
+          </div>
+          <button onclick="closeSppSwatchPopover()" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:20px;padding:0 4px;line-height:1">×</button>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;margin-bottom:14px">
+          <div id="spp-pop-sw" style="width:36px;height:36px;border-radius:6px;background:#888;flex-shrink:0;border:1px solid var(--border2)"></div>
+          <div>
+            <div id="spp-pop-name" style="font-size:11px;font-weight:600;color:var(--text)">—</div>
+            <div id="spp-pop-hex" style="font-family:var(--mono);font-size:10px;color:var(--text3)">—</div>
+            <div id="spp-pop-code" style="font-family:var(--mono);font-size:10px;color:var(--gold)">—</div>
+          </div>
+        </div>
+        <div id="spp-pop-evidence" style="margin-bottom:14px"></div>
+        <div style="font-family:var(--mono);font-size:8px;color:var(--text3);letter-spacing:0.08em;margin-bottom:8px;text-transform:uppercase">Similar Pantone TCX</div>
+        <div id="spp-pop-similar" style="display:flex;flex-wrap:wrap;gap:8px"></div>
+      </div>
+
+      <!-- ════ 기존 MLB 팔레트 UI (SERGIO가 아닐 때만 보임) ════ -->
       <div id="palette-empty" style="display:none"></div>
 
       <!-- ★ 판매 × 트렌드 통합 뷰 -->
@@ -4665,7 +4907,7 @@ async function loadCompFromCsvText(csv, filterSeason) {
 
   if (idxHex < 0) { console.warn('Market CSV: hex 컬럼 없음'); return false; }
 
-  const glRows=[], krRows=[], cnRows=[];
+  const glRows=[], krRows=[], euRows=[], cnRows=[];
   const hexCounter={}, hexBrands={};
 
   lines.slice(1).forEach(l => {
@@ -4689,6 +4931,8 @@ async function loadCompFromCsvText(csv, filterSeason) {
 
     if (country === 'KR') {
       hexes.forEach(hx => krRows.push({hex:hx, name:brand, brand, group, freq:1, source:'sheets-kr', season}));
+    } else if (country === 'EU') {
+      hexes.forEach(hx => euRows.push({hex:hx, name:brand, brand, group, freq:1, source:'sheets-eu', season}));
     } else if (country === 'CN') {
       hexes.forEach(hx => {
         hexCounter[hx] = (hexCounter[hx]||0)+1;
@@ -4711,6 +4955,20 @@ async function loadCompFromCsvText(csv, filterSeason) {
       if (j!=null) { compData[j].count=(compData[j].count||1)+1; }
       else { r.count=1; _idx.set(k, compData.length); compData.push(r); }
     });
+  }
+
+    // EU → Competitor Data 병합
+  if (euRows.length > 0 && typeof compData !== 'undefined') {
+    const _idx = new Map();
+    compData.forEach((c,i) => _idx.set(c.brand+'|'+c.hex, i));
+    euRows.forEach(r => {
+      r.group = r.group || 'EU Brands';
+      const k = r.brand+'|'+r.hex, j = _idx.get(k);
+      if (j!=null) { compData[j].count=(compData[j].count||1)+1; }
+      else { r.count=1; _idx.set(k, compData.length); compData.push(r); }
+    });
+    const euBadge = document.getElementById('unified-eu-badge');
+    if(euBadge){ euBadge.style.display='inline'; euBadge.textContent=`${euRows.length}개`; }
   }
 
   // KR → compData 병합
@@ -4741,16 +4999,16 @@ async function loadCompFromCsvText(csv, filterSeason) {
     if (typeof renderCNMarketPalette==='function') renderCNMarketPalette();
   }
 
-  const total = glRows.length + krRows.length + cnRows.length;
+  const total = glRows.length + krRows.length + euRows.length + cnRows.length;
   if (!total) { console.warn(`Market: ${filterSeason||'전체'} 데이터 없음`); return false; }
 
   // ── CSV 내 브랜드 리딩 → 선택 UI 표시 ──
-  const _foundBrands = [...new Set([...glRows, ...krRows, ...cnRows].map(r => r.brand).filter(Boolean))];
+  const _foundBrands = [...new Set([...glRows, ...krRows, ...euRows, ...cnRows].map(r => r.brand).filter(Boolean))];
   if (typeof window.renderMarketCsvBrands === 'function') window.renderMarketCsvBrands(_foundBrands, filterSeason);
 
   if (typeof renderCompBrandPage === 'function') renderCompBrandPage();
   if (typeof renderCompPreview === 'function') renderCompPreview();
-  console.log(`Market Load Done [${filterSeason||'전체'}] — GL:${glRows.length} KR:${krRows.length} CN:${cnRows.length} · Brands:${_foundBrands.length}`);
+  console.log(`Market Load Done [${filterSeason||'전체'}] — GL:${glRows.length} KR:${krRows.length} EU:${euRows.length} CN:${cnRows.length} · Brands:${_foundBrands.length}`);
   return true;
 }
 
@@ -13472,7 +13730,7 @@ function handleUnifiedCompFile(input){
     if(idxHex < 0){ alert('hex 컬럼을 찾을 수 없습니다. 컬럼명에 "hex"가 포함되어야 합니다.'); return; }
 
     // 나라별 분류
-    const glRows=[], krRows=[], cnRows=[];
+    const glRows=[], krRows=[], euRows=[], cnRows=[];
     const hexCounter = {}; // CN용 빈도 집계
     const hexBrands  = {};
 
@@ -13496,6 +13754,8 @@ function handleUnifiedCompFile(input){
 
       if(country === 'KR'){
         hexes.forEach(hx => krRows.push({hex:hx, name:brand, brand, group, freq:1, source:'csv-kr', season}));
+      } else if(country === 'EU'){
+        hexes.forEach(hx => euRows.push({hex:hx, name:brand, brand, group, freq:1, source:'sheets-eu', season}));
       } else if(country === 'CN'){
         hexes.forEach(hx=>{
           hexCounter[hx]=(hexCounter[hx]||0)+1;
@@ -13534,6 +13794,23 @@ function handleUnifiedCompFile(input){
       const el = document.getElementById('unified-gl-badge');
       if(el){ el.style.display='inline'; el.textContent=`🌐 GL ${glRows.length}개`; }
       msg += `GL ${glRows.length}개 `;
+    }
+
+    // EU → Competitor Data 병합
+    if(euRows.length > 0){
+      if(typeof compData !== 'undefined'){
+        const _idx=new Map();
+        compData.forEach((c,i)=>_idx.set(c.brand+'|'+c.hex,i));
+        euRows.forEach(r=>{
+          r.group = r.group || 'EU Brands';
+          const k=r.brand+'|'+r.hex, j=_idx.get(k);
+          if(j!=null){ const c=compData[j]; c.count=(c.count||c.freq||1)+1; }
+          else { r.count=1; _idx.set(k,compData.length); compData.push(r); }
+        });
+      }
+      const euBadge = document.getElementById('unified-eu-badge');
+      if(euBadge){ euBadge.style.display='inline'; euBadge.textContent=`${euRows.length}개`; }
+      msg += `EU ${euRows.length}개 `;
     }
 
     // KR → Competitor Data 병합 (KR 태그 포함)
@@ -13579,7 +13856,7 @@ function handleUnifiedCompFile(input){
     }
 
     // ── CSV 내 브랜드 리딩 → 선택 UI 표시 ──
-    const _foundBrands = [...new Set([...glRows, ...krRows, ...cnRows].map(r=>r.brand).filter(Boolean))];
+    const _foundBrands = [...new Set([...glRows, ...krRows, ...euRows, ...cnRows].map(r=>r.brand).filter(Boolean))];
     if(typeof window.renderMarketCsvBrands === 'function') window.renderMarketCsvBrands(_foundBrands, _filterSeason);
 
     if(typeof renderCompBrandPage==='function') renderCompBrandPage();
@@ -16507,6 +16784,501 @@ function renderSeasonPaletteBars() {
 
 
 
+// ══ END Season Color Distribution Bar ═════════════════════════════════════
+
+
+
+// ════════════════════════════════════════════════════════════════════════════
+// SERGIO TACCHINI — 03 Palette Proposal (브랜드 분기 렌더링)
+// ★ KR/EU/GLOBAL 컬러 칩은 CSV 브랜드 체크박스에서 선택된 브랜드만 반영
+// ════════════════════════════════════════════════════════════════════════════
+
+// ── SERGIO 활성 여부에 따라 tab-palette 클래스 토글 ──
+function _spp_syncActive(){
+  const tabPalette = document.getElementById('tab-palette');
+  if(!tabPalette) return;
+  if(typeof _activeBrand !== 'undefined' && _activeBrand === 'SERGIO'){
+    tabPalette.classList.add('sergio-active');
+  } else {
+    tabPalette.classList.remove('sergio-active');
+  }
+}
+
+// ── renderPalettePage 원본을 감싸서 SERGIO 분기 추가 ──
+(function(){
+  const _origRenderPalettePage = window.renderPalettePage || function(){};
+  window.renderPalettePage = function(){
+    _spp_syncActive();
+    if(typeof _activeBrand !== 'undefined' && _activeBrand === 'SERGIO'){
+      _spp_renderPaletteProposal();
+      return;
+    }
+    _origRenderPalettePage.apply(this, arguments);
+  };
+})();
+
+// ── 상수 ──
+const SPP_SAT_POINT        = 0.50;
+const SPP_SAT_SUB          = 0.15;
+const SPP_TREND_POOL_TOP_N = 20;
+const SPP_TREND_MATCH_DIST = 30;
+const SPP_TREND_MATCH_BONUS= 0.12;
+const SPP_INTERSECTION_DIST= 30;
+
+const SPP_INTERSECTION_CATS = [
+  { label:'Red',           color:'#CC3333', hueMin:338, hueMax:18,  satMin:0.40, lMin:0.18, lMax:0.58 },
+  { label:'Pink',          color:'#E87090', hueMin:300, hueMax:355, satMin:0.20, lMin:0.40 },
+  { label:'Orange·Yellow', color:'#D07020', hueMin:18,  hueMax:72,  satMin:0.35, lMin:0.28 },
+  { label:'Green',         color:'#3A8050', hueMin:72,  hueMax:168, satMin:0.15 },
+  { label:'Navy',          color:'#152848', hueMin:195, hueMax:255, satMin:0.10, lMin:0.06, lMax:0.38 },
+  { label:'Blue',          color:'#3060B0', hueMin:168, hueMax:245, satMin:0.20, lMin:0.38 },
+  { label:'Purple',        color:'#7040A0', hueMin:252, hueMax:315, satMin:0.18 },
+  { label:'Brown·Khaki',   color:'#7A5530', hueMin:18,  hueMax:60,  satMin:0.08, satMax:0.38, lMin:0.12, lMax:0.58 },
+];
+const SPP_INTERSECTION_PINNED = ['Red','Pink','Navy','Blue'];
+const SPP_MARKET_LABEL = { kr:'KR', eu:'EU', global:'GLOBAL' };
+const SPP_MARKET_COLOR = { kr:'#B8860B', eu:'var(--blue)', global:'var(--text2)' };
+const SPP_SEASON_META = {
+  fall:      { label:'FALL',       name:'Fall 어스톤',    desc:'웜뉴트럴 · 올리브 · 어스톤 · 미드브라운', badgeClass:'spp-badge-fall' },
+  preWinter: { label:'PRE-WINTER', name:'Pre-Winter 딥톤', desc:'딥톤 · 네이비 · 버건디 · 다크뉴트럴',    badgeClass:'spp-badge-prewinter' },
+  winter:    { label:'WINTER',     name:'Winter 아이시',   desc:'블랙 · 화이트 · 아이보리 · 아이시톤',    badgeClass:'spp-badge-winter' },
+};
+const SPP_LS_RATIO = {
+  active:     { point:0.30, sub:0.25 },
+  athleisure: { point:0.35, sub:0.30 },
+  classic:    { point:0.20, sub:0.50 },
+};
+
+let _sppMarketPalettes = { kr:null, eu:null, global:null };
+let _sppLifestylePalette = { active:{point:[],sub:[]}, athleisure:{point:[],sub:[]}, classic:{point:[],sub:[]} };
+window._sppChipRegistry = [];
+
+// ── 유틸: HSL 변환 (index.html 내 rgbToHsl 재사용) ──
+function _sppRgbToHsl(hex){
+  if(typeof rgbToHsl === 'function') return rgbToHsl(hex);
+  const x=hex.replace('#','');
+  const r=parseInt(x.slice(0,2),16)/255, g=parseInt(x.slice(2,4),16)/255, b=parseInt(x.slice(4,6),16)/255;
+  const max=Math.max(r,g,b), min=Math.min(r,g,b), l=(max+min)/2;
+  if(max===min) return [0,0,l];
+  const d=max-min; const s=l>0.5?d/(2-max-min):d/(max+min);
+  let h; switch(max){ case r:h=(g-b)/d+(g<b?6:0);break; case g:h=(b-r)/d+2;break; default:h=(r-g)/d+4; }
+  return [h*60, s, l];
+}
+function _sppRgbDist(h1,h2){
+  if(typeof rgbDist === 'function') return rgbDist(h1,h2);
+  const x1=h1.replace('#',''),x2=h2.replace('#','');
+  const r1=parseInt(x1.slice(0,2),16), g1=parseInt(x1.slice(2,4),16), b1=parseInt(x1.slice(4,6),16);
+  const r2=parseInt(x2.slice(0,2),16), g2=parseInt(x2.slice(2,4),16), b2=parseInt(x2.slice(4,6),16);
+  return Math.sqrt((r1-r2)**2+(g1-g2)**2+(b1-b2)**2);
+}
+function _sppPantoneApprox(hex){
+  if(typeof pantoneApprox === 'function') return pantoneApprox(hex);
+  return '';
+}
+function _sppInHueRange(h,mn,mx){ return mn<=mx?(h>=mn&&h<=mx):(h>=mn||h<=mx); }
+function _sppIntersectionCatMatch(hex, cat){
+  const [h,s,l] = _sppRgbToHsl(hex);
+  if(s < (cat.satMin||0)) return false;
+  if(cat.satMax !== undefined && s > cat.satMax) return false;
+  if(cat.lMin !== undefined && l < cat.lMin) return false;
+  if(cat.lMax !== undefined && l > cat.lMax) return false;
+  return _sppInHueRange(h, cat.hueMin, cat.hueMax);
+}
+function _sppIsNearWhiteOrAchromatic(hex){
+  const [,s,l] = _sppRgbToHsl(hex);
+  if(l > 0.88 && s < 0.25) return true;
+  if(l < 0.35) return !(s >= 0.10 && l >= 0.08);
+  return !(s >= 0.18 && l >= 0.12 && l <= 0.88);
+}
+function _sppPickDiverse(arr, n, minDist){
+  minDist = minDist || 45;
+  const out=[], used=[];
+  for(const co of arr){
+    if(out.length >= n) break;
+    if(!co.hex) continue;
+    if(used.some(u=>_sppRgbDist(u,co.hex) < minDist)) continue;
+    out.push(co); used.push(co.hex);
+  }
+  return out;
+}
+function _sppDedupSimilar(arr, minDist){
+  minDist = minDist || 45;
+  const out=[];
+  for(const co of arr){
+    if(!co.hex) continue;
+    if(out.some(u=>_sppRgbDist(u.hex,co.hex) < minDist)) continue;
+    out.push(co);
+  }
+  return out;
+}
+
+// ── ★ 선택 브랜드 필터링된 compData 행 반환 ──
+function _sppGetFilteredRows(source){
+  const sel = (window._curMarketSel ? window._curMarketSel() : null);
+  const bkn = (window._brandKeyNorm ? window._brandKeyNorm : (s=>(s||'').toLowerCase().replace(/[\s._\-]+/g,'').trim()));
+  const hasSel = sel && sel.size > 0;
+  let rows;
+  if(source === 'kr'){
+    rows = (typeof compData !== 'undefined' ? compData : []).filter(c=>c.source==='sheets-kr');
+  } else if(source === 'eu'){
+    rows = (typeof compData !== 'undefined' ? compData : []).filter(c=>c.source==='sheets-eu');
+  } else if(source === 'global'){
+    rows = (typeof compData !== 'undefined' ? compData : []).filter(c=>c.source==='sheets-gl');
+  } else {
+    rows = [];
+  }
+  if(hasSel){
+    rows = rows.filter(c=>sel.has(bkn(c.brand)));
+  }
+  return rows;
+}
+
+// ── 트렌드 풀 (index.html 기존 트렌드 색 재사용) ──
+function _sppGetTrendPool(){
+  const src = window.getTrendSourceColors ? window.getTrendSourceColors() : [];
+  return [...src].sort((a,b)=>(b.freq||1)-(a.freq||1)).slice(0, SPP_TREND_POOL_TOP_N);
+}
+
+// ── rows 집계 + 트렌드 보너스 ──
+function _sppAggregateRows(rows){
+  const map = new Map();
+  rows.forEach(r=>{
+    if(!r.hex || !/^#[0-9A-Fa-f]{6}$/i.test(r.hex)) return;
+    const hex = r.hex.toUpperCase();
+    const freq = r.count || r.freq || 1;
+    if(map.has(hex)){ const e=map.get(hex); e.freq+=freq; if(r.brand&&!e.brands.includes(r.brand)) e.brands.push(r.brand); }
+    else map.set(hex, { hex, freq, name:r.name||r.brand||hex, brands:r.brand?[r.brand]:[] });
+  });
+  const trendPool = _sppGetTrendPool();
+  const out = [...map.values()];
+  out.forEach(co=>{
+    if(!trendPool.length){ co.score=co.freq; co.trendMatch=false; co._trendMatches=[]; return; }
+    const matches = trendPool.map(t=>({...t,_dist:_sppRgbDist(co.hex,t.hex)})).filter(t=>t._dist<SPP_TREND_MATCH_DIST).sort((a,b)=>a._dist-b._dist);
+    co.trendMatch = matches.length>0;
+    co._trendMatches = matches;
+    co.score = co.trendMatch ? co.freq*(1+SPP_TREND_MATCH_BONUS) : co.freq;
+  });
+  return out.sort((a,b)=>b.score-a.score);
+}
+
+// ── 분류 → 팔레트 빌드 ──
+function _sppBuildMarketPalette(rows){
+  const entries = _sppAggregateRows(rows);
+  const raw = {key:[],sub:[],basic:[]};
+  entries.forEach(co=>{
+    const [,sat,light] = _sppRgbToHsl(co.hex);
+    if(light<0.18||light>0.92){ raw.basic.push({...co,marketCat:'basic'}); return; }
+    if(sat>=SPP_SAT_POINT&&light>=0.20&&light<=0.80){ raw.key.push({...co,marketCat:'key'}); return; }
+    if(sat>=SPP_SAT_SUB){ raw.sub.push({...co,marketCat:'sub'}); return; }
+    raw.basic.push({...co,marketCat:'basic'});
+  });
+  const classified = { key:_sppDedupSimilar(raw.key,48), sub:_sppDedupSimilar(raw.sub,38), basic:_sppDedupSimilar(raw.basic,30) };
+  let basic = _sppPickDiverse(classified.basic.sort((a,b)=>b.score-a.score),8,45);
+  if(basic.length<8){ const used=new Set(basic.map(c=>c.hex)); const extra=[...classified.sub,...classified.key].filter(c=>!used.has(c.hex)).sort((a,b)=>{const[,sa]=_sppRgbToHsl(a.hex),[,sb]=_sppRgbToHsl(b.hex);return sa-sb;}); for(const co of extra){if(basic.length>=8)break;basic.push(co);} }
+  const basicHexSet=new Set(basic.map(c=>c.hex));
+  let key=_sppPickDiverse(classified.key.filter(c=>!basicHexSet.has(c.hex)).sort((a,b)=>b.score-a.score),8,50);
+  if(key.length<8) key=_sppPickDiverse(classified.key.filter(c=>!basicHexSet.has(c.hex)).sort((a,b)=>b.score-a.score),8,35);
+  const keyHexSet=new Set(key.map(c=>c.hex));
+  let sub=_sppPickDiverse(classified.sub.filter(c=>!basicHexSet.has(c.hex)&&!keyHexSet.has(c.hex)).sort((a,b)=>b.score-a.score),8,38);
+  if(sub.length<8){ const used=new Set([...basicHexSet,...keyHexSet,...sub.map(c=>c.hex)]); const extra=[...classified.key,...classified.basic].filter(c=>!used.has(c.hex)).sort((a,b)=>b.score-a.score); for(const co of extra){if(sub.length>=8)break;sub.push(co);} }
+  return { key, sub, basic };
+}
+
+// ── 칩 레지스트리 ──
+function _sppRegisterChip(co){ window._sppChipRegistry.push(co); return window._sppChipRegistry.length-1; }
+
+function _sppChipHtml(co, marketKey, catKey){
+  const code = co.pantone || (co.tcxCode?co.tcxCode+' TCX':'') || _sppPantoneApprox(co.hex) || '';
+  const safeName = (co.name||co.hex).replace(/"/g,'&quot;');
+  const trendBadge = co.trendMatch ? '<div class="spp-trend-badge" title="트렌드 매칭">T</div>' : '';
+  const regIdx = _sppRegisterChip({...co,_marketKey:marketKey,_catKey:catKey});
+  return `<div class="spp-chip" onclick="openSppSwatchPopover(${regIdx})" title="${safeName}">
+    <div style="position:relative">
+      <div class="spp-chip-sw" style="background:${co.hex}"></div>
+      ${trendBadge}
+    </div>
+    <div class="spp-chip-name">${co.name||co.hex}</div>
+    <div class="spp-chip-code">${code}</div>
+  </div>`;
+}
+
+// ── KR/EU/GLOBAL 팔레트 렌더 ──
+function _spp_renderPaletteProposal(){
+  const wrap = document.getElementById('spp-market-wrap');
+  if(!wrap) return;
+  window._sppChipRegistry = [];
+
+  const krRows  = _sppGetFilteredRows('kr');
+  const euRows  = _sppGetFilteredRows('eu');
+  const glRows  = _sppGetFilteredRows('global');
+
+  if(!krRows.length && !euRows.length && !glRows.length){
+    wrap.innerHTML = '<div class="spp-empty">02 Market Analysis에서 데이터를 로드하면 KR / EU / GLOBAL 컬러 팔레트가 생성됩니다.<br><span style="font-size:9px;color:var(--text4);margin-top:4px;display:block">CSV 브랜드를 선택한 경우 체크된 브랜드 데이터만 반영됩니다.</span></div>';
+    _sppMarketPalettes = { kr:null, eu:null, global:null };
+    return;
+  }
+
+  _sppMarketPalettes.kr     = krRows.length ? _sppBuildMarketPalette(krRows) : null;
+  _sppMarketPalettes.eu     = euRows.length ? _sppBuildMarketPalette(euRows) : null;
+  _sppMarketPalettes.global = glRows.length ? _sppBuildMarketPalette(glRows) : null;
+
+  // 선택 브랜드 정보 표시
+  const sel = window._curMarketSel ? window._curMarketSel() : null;
+  const bkn = window._brandKeyNorm || (s=>(s||'').toLowerCase().replace(/[\s._\-]+/g,'').trim());
+  const hasSel = sel && sel.size > 0;
+  const selNote = hasSel
+    ? `<div style="font-family:var(--mono);font-size:8px;color:var(--accent);margin-bottom:12px;padding:5px 10px;background:rgba(160,120,64,0.08);border:1px solid rgba(160,120,64,0.2);border-radius:4px">★ 선택 브랜드 ${sel.size}개 기준으로 생성됨</div>`
+    : '';
+
+  const MARKETS = [
+    {key:'kr',     title:'KR',     sub:'Korea Domestic Market'},
+    {key:'eu',     title:'EU',     sub:'Europe Market'},
+    {key:'global', title:'GLOBAL', sub:'Global Market'},
+  ];
+  wrap.innerHTML = selNote + MARKETS.map(m=>{
+    const pal = _sppMarketPalettes[m.key];
+    if(!pal) return `<div class="spp-market-section"><div class="spp-market-hd"><span class="spp-market-title">${m.title}</span><span class="spp-market-sub">${m.sub}</span></div><div class="spp-empty">${m.title} 마켓 데이터가 없습니다.</div></div>`;
+    const subHtml   = pal.sub.length   ? pal.sub.map((co,i)=>_sppChipHtml(co,m.key,'sub')).join('')   : '<div class="spp-empty">SUB 컬러 없음</div>';
+    const keyHtml   = pal.key.length   ? pal.key.map((co,i)=>_sppChipHtml(co,m.key,'key')).join('')   : '<div class="spp-empty">KEY 컬러 없음</div>';
+    const basicHtml = pal.basic.length ? pal.basic.map((co,i)=>_sppChipHtml(co,m.key,'basic')).join('') : '<div class="spp-empty">BASIC 컬러 없음</div>';
+    return `<div class="spp-market-section">
+      <div class="spp-market-hd"><span class="spp-market-title">${m.title}</span><span class="spp-market-sub">${m.sub}</span></div>
+      <div class="spp-cat-row"><div class="spp-cat-label">SUB <span class="cnt">${pal.sub.length}</span></div><div class="spp-chip-row">${subHtml}</div></div>
+      <div class="spp-cat-row"><div class="spp-cat-label">KEY <span class="cnt">${pal.key.length}</span></div><div class="spp-chip-row">${keyHtml}</div></div>
+      <div class="spp-cat-row"><div class="spp-cat-label">BASIC <span class="cnt">${pal.basic.length}</span></div><div class="spp-chip-row">${basicHtml}</div></div>
+    </div>`;
+  }).join('');
+
+  _sppRenderIntersection();
+  _sppRenderSeasonalColors();
+  _sppBuildLifestylePalette();
+  _sppRenderLifestyleSection('active');
+  _sppRenderLifestyleSection('athleisure');
+  _sppRenderLifestyleSection('classic');
+}
+
+// ── Intersection ──
+function _sppGetAllMarketChips(){
+  const out=[];
+  for(const mk of ['kr','eu','global']){ const pal=_sppMarketPalettes[mk]; if(!pal) continue; [...pal.key,...pal.sub,...pal.basic].forEach(co=>{ if(co.hex) out.push({...co,_market:mk}); }); }
+  return out;
+}
+function _sppFindCrossMarketGroups(chips){
+  const groups=[];
+  chips.forEach(c=>{
+    if(_sppIsNearWhiteOrAchromatic(c.hex)) return;
+    let g=groups.find(grp=>grp.items.some(it=>_sppRgbDist(it.hex,c.hex)<SPP_INTERSECTION_DIST));
+    if(g){ g.items.push(c); g.markets.add(c._market); }
+    else groups.push({items:[c],markets:new Set([c._market])});
+  });
+  return groups.filter(g=>g.markets.size>=2);
+}
+function _sppIntersectionChipHtml(co){
+  const code = co.pantone||(co.tcxCode?co.tcxCode+' TCX':'')||_sppPantoneApprox(co.hex)||'';
+  const safeName=(co.name||co.hex).replace(/"/g,'&quot;');
+  const mk=co._market;
+  const regIdx=_sppRegisterChip({...co,_marketKey:mk,_catKey:'intersection'});
+  return `<div class="spp-intersection-chip" title="${safeName}" onclick="openSppSwatchPopover(${regIdx})">
+    <div class="spp-intersection-chip-market" style="color:${SPP_MARKET_COLOR[mk]}">${SPP_MARKET_LABEL[mk]}</div>
+    <div class="spp-intersection-chip-sw" style="background:${co.hex}"></div>
+    <div class="spp-intersection-chip-code">${code}</div>
+  </div>`;
+}
+function _sppRenderIntersection(){
+  const wrap=document.getElementById('spp-intersection-groups'); if(!wrap) return;
+  if(!_sppMarketPalettes.kr&&!_sppMarketPalettes.eu&&!_sppMarketPalettes.global){ wrap.innerHTML='<div class="spp-empty">02 Market Analysis 데이터를 로드하면 KR/EU/GLOBAL 공통 컬러가 표시됩니다.</div>'; return; }
+  const allChips=_sppGetAllMarketChips(), groups=_sppFindCrossMarketGroups(allChips);
+  const catGroups=SPP_INTERSECTION_CATS.map(cat=>{
+    const items=groups.flatMap(g=>g.items).filter(c=>_sppIntersectionCatMatch(c.hex,cat));
+    return {...cat,items,isPinned:SPP_INTERSECTION_PINNED.includes(cat.label)};
+  }).filter(g=>g.isPinned||g.items.length>0);
+  if(!catGroups.length){ wrap.innerHTML='<div class="spp-empty">KR/EU/GLOBAL 간 공통 컬러가 없습니다.</div>'; return; }
+  wrap.innerHTML=`<div class="spp-intersection-groups-row">${catGroups.map(g=>{
+    const hasData=g.items.length>0;
+    const chipsHtml=hasData?`<div class="spp-intersection-chips">${g.items.map(_sppIntersectionChipHtml).join('')}</div>`:'<div class="spp-intersection-empty">No data this session</div>';
+    return `<div class="spp-intersection-group ${hasData?'has-data':''}"><div class="spp-intersection-group-hd"><div class="spp-intersection-group-dot" style="background:${g.color}"></div><span class="spp-intersection-group-label">${g.label.toUpperCase()}</span>${g.isPinned?'<span class="spp-intersection-group-pinned">★ fixed</span>':''}</div>${chipsHtml}</div>`;
+  }).join('')}</div>`;
+}
+
+// ── Seasonal Colors ──
+function _sppGetSeasonScores(hex){
+  const [h,s,l]=_sppRgbToHsl(hex);
+  const fall=((l>=0.25&&l<=0.65?0.4:0)+(s>=0.08&&s<=0.55?0.3:0)+((h>=20&&h<=120)?0.3:0));
+  const preWinter=((l>=0.10&&l<=0.40?0.5:l>0.40&&l<=0.50?0.2:0)+(s>=0.15&&s<=0.80?0.3:0)+(s>=0.30&&l<=0.35?0.2:0));
+  const winter=((l<=0.18?0.5:l>=0.82?0.5:0)+(s<0.15?0.3:0)+((h>=180&&h<=260&&s<0.30)?0.2:0));
+  return {fall,preWinter,winter};
+}
+function _sppClassifySeasonalColors(){
+  const pal=_sppMarketPalettes.global||_sppMarketPalettes.kr||_sppMarketPalettes.eu;
+  if(!pal) return {fall:[],preWinter:[],winter:[]};
+  const allColors=[...pal.key,...pal.sub,...pal.basic];
+  const seen=new Set(), unique=[];
+  for(const co of allColors){ if(!co.hex||seen.has(co.hex.toUpperCase())) continue; seen.add(co.hex.toUpperCase()); unique.push(co); }
+  const scored=unique.map(co=>({co,scores:_sppGetSeasonScores(co.hex)}));
+  const seasons={fall:[],preWinter:[],winter:[]};
+  const KEYS=['fall','preWinter','winter'];
+  const MIN={fall:4,preWinter:4,winter:5}, MAX=8;
+  [...scored].sort((a,b)=>Math.max(...Object.values(b.scores))-Math.max(...Object.values(a.scores))).forEach(({co,scores})=>{
+    const best=KEYS.reduce((b,sk)=>scores[sk]>scores[b]?sk:b,KEYS[0]);
+    if(seasons[best].length<MAX) seasons[best].push(co);
+  });
+  for(const sk of KEYS){
+    const min=MIN[sk]||4;
+    if(seasons[sk].length>=min) continue;
+    const candidates=[...scored].sort((a,b)=>b.scores[sk]-a.scores[sk]).filter(({co})=>!seasons[sk].some(x=>x.hex.toUpperCase()===co.hex.toUpperCase()));
+    for(const {co} of candidates){ if(seasons[sk].length>=min) break; seasons[sk].push(co); }
+  }
+  return seasons;
+}
+function _sppRenderSeasonalColors(){
+  const grid=document.getElementById('spp-seasonal-grid'); if(!grid) return;
+  if(!_sppMarketPalettes.global&&!_sppMarketPalettes.kr&&!_sppMarketPalettes.eu){ grid.innerHTML='<div class="spp-empty" style="grid-column:1/-1">02 Market Analysis 데이터를 로드하면 시즌별 컬러가 자동 분류됩니다.</div>'; return; }
+  const seasons=_sppClassifySeasonalColors();
+  grid.innerHTML=['fall','preWinter','winter'].map(sk=>{
+    const meta=SPP_SEASON_META[sk], colors=seasons[sk]||[];
+    const swatches=colors.length?colors.map(co=>{
+      const code=co.pantone||(co.tcxCode?co.tcxCode+' TCX':'')||_sppPantoneApprox(co.hex)||'';
+      const regIdx=_sppRegisterChip({...co,_marketKey:'seasonal',_catKey:sk});
+      return `<div class="spp-seasonal-chip" onclick="openSppSwatchPopover(${regIdx})"><div class="spp-seasonal-sw" style="background:${co.hex}"></div><div class="spp-seasonal-chip-name">${co.name||co.hex}</div><div class="spp-seasonal-chip-code">${code}</div></div>`;
+    }).join(''):'<div class="spp-seasonal-empty">컬러 없음</div>';
+    return `<div class="spp-seasonal-col"><div class="spp-seasonal-col-hd"><div class="spp-seasonal-col-badge ${meta.badgeClass}">${meta.label}</div><div class="spp-seasonal-col-name">${meta.name}</div><div class="spp-seasonal-col-desc">${meta.desc}</div></div><div class="spp-seasonal-col-body"><div class="spp-seasonal-swatches">${swatches}</div><div class="spp-seasonal-count">${colors.length}색 배정</div></div></div>`;
+  }).join('');
+}
+
+// ── Category Curation (Lifestyle) ──
+function _sppPickLifestyle(pool, ls, n){
+  if(!pool||!pool.length) return [];
+  const scored=pool.map(co=>{
+    const [h,s,l]=_sppRgbToHsl(co.hex);
+    const cn=(co.name||'').toLowerCase();
+    let score=co.freq||1;
+    if(ls==='active'){
+      if(s>0.65) score+=0.35; else if(s>0.45) score+=0.15; else score-=0.25;
+      if(['red','scarlet','cobalt','electric','orange','racing','solar','tangerine','royal','vivid','energy','court'].some(k=>cn.includes(k))) score+=0.28;
+    } else if(ls==='athleisure'){
+      if(s>=0.20&&s<=0.55) score+=0.32; else if(s>0.55&&s<=0.70) score+=0.10; else if(s<0.15) score-=0.20;
+      if(['sage','lilac','powder','mint','butter','blush','pistachio','mauve','lavender','periwinkle','dusty','soft','mist','pastel','celadon','petal','sky'].some(k=>cn.includes(k))) score+=0.32;
+    } else {
+      if(s>=0.30&&s<=0.75) score+=0.25; else if(s<0.15) score-=0.15;
+      if(['burgundy','wine','bordeaux','forest','hunter','bottle','cobalt','indigo','heritage','deep','classic navy'].some(k=>cn.includes(k))) score+=0.40;
+      if(['camel','cognac','mustard','tennis','court','vintage','retro','italian'].some(k=>cn.includes(k))) score+=0.22;
+    }
+    return {...co,lsScore:score};
+  });
+  return scored.sort((a,b)=>b.lsScore-a.lsScore).slice(0,n);
+}
+function _sppBuildLifestylePalette(){
+  const pal=_sppMarketPalettes.global||_sppMarketPalettes.kr||_sppMarketPalettes.eu;
+  if(!pal||!pal.key.length){ _sppLifestylePalette={active:{point:[],sub:[]},athleisure:{point:[],sub:[]},classic:{point:[],sub:[]}}; return; }
+  const pointPool=[...pal.key], subPool=[...pal.sub], basicPool=[...pal.basic];
+  const TOTAL=8, SUB_N=3;
+  const athPointN=Math.round(SPP_LS_RATIO.athleisure.point*TOTAL), clsPointN=Math.round(SPP_LS_RATIO.classic.point*TOTAL), actPointN=Math.round(SPP_LS_RATIO.active.point*TOTAL);
+  const athPoint=_sppPickLifestyle(pointPool,'athleisure',athPointN);
+  const athHexSet=new Set(athPoint.map(c=>c.hex.toUpperCase()));
+  const clsPoint=_sppPickLifestyle(pointPool.filter(c=>!athHexSet.has(c.hex.toUpperCase())),'classic',clsPointN);
+  const clsHexSet=new Set([...athHexSet,...clsPoint.map(c=>c.hex.toUpperCase())]);
+  const actPoint=_sppPickLifestyle(pointPool.filter(c=>!clsHexSet.has(c.hex.toUpperCase())),'active',actPointN);
+  const subUsed=new Set();
+  const athSubArr=[], clsSubArr=[], actSubArr=[];
+  const score1=(co)=>_sppPickLifestyle([co],'athleisure',1)[0]?.lsScore||0;
+  const score2=(co)=>_sppPickLifestyle([co],'classic',1)[0]?.lsScore||0;
+  const score3=(co)=>_sppPickLifestyle([co],'active',1)[0]?.lsScore||0;
+  [...subPool].sort((a,b)=>score1(b)-score1(a)).forEach(co=>{ if(athSubArr.length<SUB_N&&!subUsed.has(co.hex.toUpperCase())){ athSubArr.push(co); subUsed.add(co.hex.toUpperCase()); } });
+  [...subPool].sort((a,b)=>score2(b)-score2(a)).forEach(co=>{ if(clsSubArr.length<SUB_N&&!subUsed.has(co.hex.toUpperCase())){ clsSubArr.push(co); subUsed.add(co.hex.toUpperCase()); } });
+  [...subPool].sort((a,b)=>score3(b)-score3(a)).forEach(co=>{ if(actSubArr.length<SUB_N&&!subUsed.has(co.hex.toUpperCase())){ actSubArr.push(co); subUsed.add(co.hex.toUpperCase()); } });
+  if(actSubArr.length<SUB_N){ const actUsed=new Set(actSubArr.map(c=>c.hex.toUpperCase())); const fallback=_sppPickLifestyle([...subPool,...pointPool,...basicPool].filter(c=>!actUsed.has(c.hex.toUpperCase())),'active',SUB_N-actSubArr.length); for(const co of fallback){ if(actSubArr.length>=SUB_N) break; actSubArr.push(co); actUsed.add(co.hex.toUpperCase()); } }
+  _sppLifestylePalette = { active:{point:actPoint,sub:actSubArr,basic:basicPool}, athleisure:{point:athPoint,sub:athSubArr,basic:basicPool}, classic:{point:clsPoint,sub:clsSubArr,basic:basicPool} };
+}
+function _sppRenderLifestyleSection(ls){
+  const map={active:{ptId:'spp-active-point',subId:'spp-active-sub',metaId:'spp-ls-active-meta'},athleisure:{ptId:'spp-ath-point',subId:'spp-ath-sub',metaId:'spp-ls-ath-meta'},classic:{ptId:'spp-cls-point',subId:'spp-cls-sub',metaId:'spp-ls-cls-meta'}};
+  const ids=map[ls], p=_sppLifestylePalette[ls];
+  const metaEl=document.getElementById(ids.metaId), ptEl=document.getElementById(ids.ptId), subEl=document.getElementById(ids.subId);
+  if(!ptEl||!subEl) return;
+  if(metaEl) metaEl.textContent=`Point ${p.point.length} · Sub ${p.sub.length}`;
+  const makeChip=(co,catKey)=>{ const code=co.pantone||(co.tcxCode?co.tcxCode+' TCX':'')||_sppPantoneApprox(co.hex)||''; const regIdx=_sppRegisterChip({...co,_marketKey:ls,_catKey:catKey}); return `<div class="spp-ls-chip" onclick="openSppSwatchPopover(${regIdx})"><div class="spp-ls-chip-sw" style="background:${co.hex}"></div><div class="spp-ls-chip-name">${co.name||co.hex}</div><div class="spp-ls-chip-code">${code}</div></div>`; };
+  ptEl.innerHTML=p.point.length?p.point.map(co=>makeChip(co,'point')).join(''):'<div class="spp-seasonal-empty">컬러 없음</div>';
+  subEl.innerHTML=p.sub.length?p.sub.map(co=>makeChip(co,'sub')).join(''):'<div class="spp-seasonal-empty">컬러 없음</div>';
+  if(ls==='active') _sppRenderBasicCommon();
+}
+function _sppRenderBasicCommon(){
+  const grid=document.getElementById('spp-ls-basic-common-grid'); if(!grid) return;
+  const pal=_sppMarketPalettes.global||_sppMarketPalettes.kr||_sppMarketPalettes.eu;
+  if(!pal||!pal.basic.length){ grid.innerHTML='<div class="spp-empty" style="grid-column:1/-1">02 Market Analysis 데이터를 로드하면 Basic 컬러가 표시됩니다.</div>'; return; }
+  grid.innerHTML=pal.basic.map(co=>{ const code=co.pantone||(co.tcxCode?co.tcxCode+' TCX':'')||_sppPantoneApprox(co.hex)||''; const regIdx=_sppRegisterChip({...co,_marketKey:'basic',_catKey:'common'}); return `<div class="spp-ls-basic-common-row" onclick="openSppSwatchPopover(${regIdx})"><div class="spp-ls-basic-common-sw" style="background:${co.hex}"></div><div style="min-width:0"><div class="spp-ls-basic-common-label">${co.name||co.hex}</div><div style="font-family:var(--mono);font-size:7px;color:var(--text4)">${code}</div></div></div>`; }).join('');
+}
+
+// ── 팝업 ──
+let _sppPopTarget=null;
+function openSppSwatchPopover(regIdx){
+  const co=window._sppChipRegistry[regIdx]; if(!co) return;
+  const hex=(co.hex||'').toUpperCase();
+  _sppPopTarget={marketKey:co._marketKey,catKey:co._catKey,idx:regIdx};
+  const ov=document.getElementById('spp-swatch-overlay'), pop=document.getElementById('spp-swatch-popover');
+  if(!ov||!pop) return;
+  const swEl=document.getElementById('spp-pop-sw'); if(swEl){swEl.style.background=hex;}
+  const nameEl=document.getElementById('spp-pop-name'); if(nameEl) nameEl.textContent=co.name||hex;
+  const hexEl=document.getElementById('spp-pop-hex');  if(hexEl)  hexEl.textContent=hex;
+  const codeEl=document.getElementById('spp-pop-code'); if(codeEl) codeEl.textContent=co.pantone||(co.tcxCode?co.tcxCode+' TCX':'')||_sppPantoneApprox(hex)||'';
+  const labelEl=document.getElementById('spp-pop-label'); if(labelEl) labelEl.textContent=(co._marketKey||'').toUpperCase()+' · '+(co._catKey||'').toUpperCase();
+  // evidence
+  const evEl=document.getElementById('spp-pop-evidence');
+  if(evEl){
+    const brands=(co.brands&&co.brands.length)?co.brands.join(', '):'—';
+    const trendHtml=(co._trendMatches&&co._trendMatches.length)?co._trendMatches.slice(0,3).map(t=>`<div class="spp-trend-match-item"><div class="spp-trend-match-sw" style="background:${t.hex}"></div><span>${t.name||t.hex} (Δ${Math.round(t._dist)})</span></div>`).join(''):'';
+    evEl.innerHTML=`<div class="spp-evidence-title">Evidence</div>
+      <div class="spp-evidence-row"><span class="spp-evidence-label">Freq</span><span class="spp-evidence-val">${co.freq||1}</span></div>
+      <div class="spp-evidence-row"><span class="spp-evidence-label">Trend Match</span><span class="spp-evidence-val">${co.trendMatch?'✓':'—'}</span></div>
+      <div class="spp-evidence-brands">Brands: ${brands}</div>
+      ${trendHtml?'<div class="spp-evidence-title" style="margin-top:8px">Trend Matches</div>'+trendHtml:''}`;
+  }
+  // similar pantone
+  _sppRenderPopSimilar(hex);
+  ov.style.display='block'; pop.style.display='block';
+}
+function closeSppSwatchPopover(){
+  const ov=document.getElementById('spp-swatch-overlay'), pop=document.getElementById('spp-swatch-popover');
+  if(ov) ov.style.display='none';
+  if(pop) pop.style.display='none';
+}
+function _sppRenderPopSimilar(hex){
+  const container=document.getElementById('spp-pop-similar'); if(!container) return;
+  if(typeof PANTONE_TCX_DB==='undefined'){ container.innerHTML=''; return; }
+  const targetLab=rgbToLab(hex);
+  const entries=Object.entries(PANTONE_TCX_DB).map(([code,val])=>{
+    const h=Array.isArray(val)?val[0]:val, name=Array.isArray(val)?(val[1]||''):'';
+    if(!h) return null;
+    const hexNorm=h.startsWith('#')?h:'#'+h;
+    if(!/^#[0-9A-Fa-f]{6}$/.test(hexNorm)) return null;
+    return {code,hex:hexNorm.toUpperCase(),name,dist:rgbDistLab(targetLab,rgbToLab(hexNorm))};
+  }).filter(Boolean).sort((a,b)=>a.dist-b.dist).slice(0,12);
+  container.innerHTML=entries.map(e=>`<div class="spp-pick-chip" style="background:${e.hex}" title="${e.code} TCX — ${e.name||e.code}"></div>`).join('');
+}
+
+// ── applyMarketBrandSelection 후 SERGIO면 재렌더 ──
+(function(){
+  const _origApply = window.applyMarketBrandSelection;
+  window.applyMarketBrandSelection = function(){
+    if(_origApply) _origApply.apply(this, arguments);
+    // SERGIO 브랜드면 SERGIO palette도 재렌더
+    if(typeof _activeBrand !== 'undefined' && _activeBrand === 'SERGIO'){
+      _spp_renderPaletteProposal();
+    }
+  };
+})();
+
+// ── 탭 전환 시 SERGIO 활성화 동기화 ──
+(function(){
+  const _origSwitchTab = window.switchTab || function(){};
+  if(typeof switchTab === 'function'){
+    const __orig = switchTab;
+    // switchTab은 전역 함수라 직접 교체
+    window._sppOrigSwitchTab = __orig;
+  }
+})();
+
+// tab-palette가 보일 때마다 sergio-active 클래스 동기화
+document.addEventListener('DOMContentLoaded', function(){
+  _spp_syncActive();
+});
+// selectBrand 내부에 _spp_syncActive 이미 직접 추가됨 (래핑 불필요)
 </script>
-</body>
-</html>
