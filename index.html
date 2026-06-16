@@ -4913,6 +4913,7 @@ async function loadCompFromCsvText(csv, filterSeason) {
   }
   const idxBrand   = header.findIndex(h => h === 'brand');
   const idxGroup   = header.findIndex(h => ['brand_group','group','category'].includes(h));
+  const idxCourt   = header.findIndex(h => h === 'court');
   // hex_codes 컬럼 — "|"로 구분된 멀티컬러 지원
   const idxHex = (() => {
     let i = header.findIndex(h => h === 'hex_codes'); if(i>=0) return i;
@@ -4946,6 +4947,7 @@ async function loadCompFromCsvText(csv, filterSeason) {
     const country  = (idxCountry >= 0 ? p[idxCountry] : '').trim().toUpperCase();
     const brand    = idxBrand   >= 0 ? (p[idxBrand]   || '').trim() : '';
     const group    = idxGroup   >= 0 ? (p[idxGroup]   || '').trim() : '';
+    const court    = idxCourt   >= 0 ? (p[idxCourt]   || '').trim().toUpperCase() : '';
     const rawHex   = idxHex     >= 0 ? (p[idxHex]     || '').trim() : '';
     // "|" 구분 멀티컬러 파싱
     const hexes    = (rawHex.match(/#[0-9a-fA-F]{6}/g) || []).map(h => h.toUpperCase());
@@ -4954,9 +4956,9 @@ async function loadCompFromCsvText(csv, filterSeason) {
     const season = idxSeason >= 0 ? (p[idxSeason] || '').trim() : '';
 
     if (country === 'KR') {
-      hexes.forEach(hx => krRows.push({hex:hx, name:brand, brand, group, freq:1, source:'sheets-kr', season}));
+      hexes.forEach(hx => krRows.push({hex:hx, name:brand, brand, group, court, freq:1, source:'sheets-kr', season}));
     } else if (country === 'EU') {
-      hexes.forEach(hx => euRows.push({hex:hx, name:brand, brand, group, freq:1, source:'sheets-eu', season}));
+      hexes.forEach(hx => euRows.push({hex:hx, name:brand, brand, group, court, freq:1, source:'sheets-eu', season}));
     } else if (country === 'CN') {
       hexes.forEach(hx => {
         hexCounter[hx] = (hexCounter[hx]||0)+1;
@@ -4966,7 +4968,7 @@ async function loadCompFromCsvText(csv, filterSeason) {
       });
     } else {
       // GL 또는 미분류
-      hexes.forEach(hx => glRows.push({hex:hx, name:brand, brand, group:group||'Other', freq:1, source:'sheets-gl', season}));
+      hexes.forEach(hx => glRows.push({hex:hx, name:brand, brand, group:group||'Other', court, freq:1, source:'sheets-gl', season}));
     }
   });
 
@@ -7338,7 +7340,7 @@ function _fillCatColors() {
       if (!c.hex || !c.brand) return;
       const h = (c.hex || '').toUpperCase();
       if (!/^#[0-9A-F]{6}$/.test(h)) return;
-      const ls = typeof getLifestyle === 'function' ? getLifestyle(c.brand, c.group || '', c.source) : (c.group || '');
+      const ls = typeof getLifestyle === 'function' ? getLifestyle(c.brand, c.group || '', c.source, c.court) : (c.group || '');
       if (ls !== targetLS) return;
       const key = brandKey(c.brand);
       if (!key) return;
@@ -13758,6 +13760,7 @@ function handleUnifiedCompFile(input){
     })();
     const idxHex    = header.findIndex(h=>h.includes('hex'));
     const idxSeason = colIdx('season');
+    const idxCourt  = colExact('court');
 
     if(idxHex < 0){ alert('hex 컬럼을 찾을 수 없습니다. 컬럼명에 "hex"가 포함되어야 합니다.'); return; }
 
@@ -13774,6 +13777,7 @@ function handleUnifiedCompFile(input){
       const country = (idxCountry>=0 ? p[idxCountry] : '').trim().toUpperCase();
       const brand   = idxBrand>=0 ? (p[idxBrand]||'').trim() : '';
       const group   = idxGroup>=0 ? (p[idxGroup]||'A').trim() : 'A';
+      const court   = idxCourt>=0 ? (p[idxCourt]||'').trim().toUpperCase() : '';
       const season  = idxSeason>=0 ? (p[idxSeason]||'').trim() : '';
       const rawHex  = idxHex>=0 ? (p[idxHex]||'').trim() : '';
 
@@ -13785,9 +13789,9 @@ function handleUnifiedCompFile(input){
       if(hexes.length === 0) return;
 
       if(country === 'KR'){
-        hexes.forEach(hx => krRows.push({hex:hx, name:brand, brand, group, freq:1, source:'csv-kr', season}));
+        hexes.forEach(hx => krRows.push({hex:hx, name:brand, brand, group, court, freq:1, source:'csv-kr', season}));
       } else if(country === 'EU'){
-        hexes.forEach(hx => euRows.push({hex:hx, name:brand, brand, group, freq:1, source:'sheets-eu', season}));
+        hexes.forEach(hx => euRows.push({hex:hx, name:brand, brand, group, court, freq:1, source:'sheets-eu', season}));
       } else if(country === 'CN'){
         hexes.forEach(hx=>{
           hexCounter[hx]=(hexCounter[hx]||0)+1;
@@ -13798,7 +13802,7 @@ function handleUnifiedCompFile(input){
       } else {
         // GL 또는 미분류
         const g=(group||'').trim()||'Other';
-        hexes.forEach(hx => glRows.push({hex:hx, name:brand, brand, group:g, freq:1, source:'csv-gl', season}));
+        hexes.forEach(hx => glRows.push({hex:hx, name:brand, brand, group:g, court, freq:1, source:'csv-gl', season}));
       }
     });
 
@@ -14153,9 +14157,10 @@ function openCNColorDetail(hex, pantone, brands, freq){
 // ── Lifestyle 분류 맵
 const COMP_LIFESTYLE_MAP = {
   'Luxury':        ['Louis Vuitton','LV','Celine','Dior','Prada','Miu Miu','Miumiu','Valentino',
+                    'the row','The Row','brunello cucinelli','Brunello Cucinelli','Loro Piana','loro piana',
                     '루이비통','셀린느','디올','프라다','미우미우','발렌티노'],
-  'Athleisure':      ['ALO YOGA','Alo Yoga','Alo','lululemon','Lululemon','On Running','On','Aritzia',
-                    '온러닝','알로','룰루레몬','아리티지아'],
+  'Athleisure':      ['ALO YOGA','Alo Yoga','Alo','lululemon','Lululemon','On Running','On','Aritzia','Sporty & Rich','Sporty And Rich',
+                    '온러닝','알로','룰루레몬','아리티지아','스포티앤리치'],
   'Outdoor/Sports':['Moncler','Stone Island','Salomon','New Balance','Sansan Gear','The North Face','North Face','TNF',
                     '몽클레어','스톤아일랜드','살로몬','뉴발란스','산산기어','노스페이스'],
   'KR Brands':   ['Somewherebutter','Somewhere Butter','Ttudement','Raive','Dunst','The Barnet','Levar','Ronron','Partimento',
@@ -14181,9 +14186,11 @@ function brandMatches(brand, dictEntry){
   return re.test(b);
 }
 
-function getLifestyle(brand, group, source) {
+function getLifestyle(brand, group, source, court) {
   // 0) source 기반 강제 오버라이드 — KR 데이터는 무조건 KR Brands
   if(source === 'sheets-kr' || source === 'csv-kr') return 'KR Brands';
+  // 0.5) CSV court 컬럼(D열) = 'Y' → Court Active 최우선
+  if((court||'').toString().trim().toUpperCase() === 'Y') return 'Court Active';
   // 1) COMP_LIFESTYLE_MAP 브랜드명 정확 매칭 우선
   const brandLower = (brand||"").toLowerCase().trim();
   for (const [ls, brands] of Object.entries(COMP_LIFESTYLE_MAP)) {
@@ -14812,7 +14819,7 @@ function renderCompBrandPage() {
     if (!key) return;
     if (!brandMap[key]) {
       // EU 탭(SERGIO)일 때는 lifestyle 분류 없이 모두 EU 그룹으로 통일
-      const _ls = (_applySourceFilter && activeCountry === 'eu') ? 'KR Brands' : getLifestyle(c.brand, c.group, c.source);
+      const _ls = (_applySourceFilter && activeCountry === 'eu') ? 'KR Brands' : getLifestyle(c.brand, c.group, c.source, c.court);
       brandMap[key] = { brand: c.brand, group: c.group||'Other', lifestyle: _ls, colors: [] };
     } else {
       brandMap[key].brand = prettierBrand(brandMap[key].brand, c.brand); // 더 보기 좋은 표기로 갱신
@@ -14825,13 +14832,13 @@ function renderCompBrandPage() {
   const allBrands = Object.values(brandMap);
   // ── 전역 Save — Category Curation이 이 데이터를 직접 참조 ──
   compBrandMap = brandMap;
-  const lsOrder = ['Luxury','Athleisure','Outdoor/Sports','KR Brands','Other'];
+  const lsOrder = ['Court Active','Luxury','Athleisure','Outdoor/Sports','KR Brands','Other'];
   const allLS = [...new Set(allBrands.map(b=>b.lifestyle))];
   const sortedLS = [...new Set([...lsOrder,...allLS])].filter(ls=>allLS.includes(ls));
   const brandNames = allBrands.map(b=>b.brand).sort();
 
   const lsAccent = {
-    'Luxury':'#E0A0C0','Athleisure':'#9966FF',
+    'Court Active':'#D08838','Luxury':'#E0A0C0','Athleisure':'#9966FF',
     'Outdoor/Sports':'#00C8A0','KR Brands':'#E8C060','Other':'#6A6760',
   };
 
