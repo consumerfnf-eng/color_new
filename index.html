@@ -4897,13 +4897,37 @@ async function loadCompFromCsvText(csv, filterSeason) {
 
   const header = parseLine(lines[0]).map(h => h.replace(/^\uFEFF/,'').toLowerCase().trim());
   console.log('Market Sheets 헤더:', header);
-
   const idxSeason  = header.findIndex(h => ['season','시즌'].includes(h));
-  const idxCountry = header.findIndex(h => h === 'country');
+  const idxCountry = (() => {
+    let i = header.findIndex(h => h === 'country'); if(i>=0) return i;
+    i = header.findIndex(h => h === 'country_code'); if(i>=0) return i;
+    i = header.findIndex(h => h === 'market'); if(i>=0) return i;
+    i = header.findIndex(h => h === 'region'); if(i>=0) return i;
+    return header.findIndex(h => h.includes('country'));
+  })();
+  console.log('country 컬럼 인덱스:', idxCountry, '/ 컬럼명:', idxCountry>=0?header[idxCountry]:'없음');
+  // 첫 5행의 country 값 샘플 출력
+  if(idxCountry>=0){
+    const sample=[...new Set(lines.slice(1,20).map(l=>parseLine(l)[idxCountry]||''))];
+    console.log('country 값 샘플:', sample);
+  }
   const idxBrand   = header.findIndex(h => h === 'brand');
   const idxGroup   = header.findIndex(h => ['brand_group','group','category'].includes(h));
   // hex_codes 컬럼 — "|"로 구분된 멀티컬러 지원
-  const idxHex     = header.findIndex(h => ['hex_codes','hex_code','hex'].includes(h));
+  const idxHex = (() => {
+    let i = header.findIndex(h => h === 'hex_codes'); if(i>=0) return i;
+    i = header.findIndex(h => h === 'hex_code'); if(i>=0) return i;
+    i = header.findIndex(h => h === 'hex'); if(i>=0) return i;
+    i = header.findIndex(h => h === 'color_hex'); if(i>=0) return i;
+    i = header.findIndex(h => h === 'color'); if(i>=0) return i;
+    return header.findIndex(h => h.includes('hex'));
+  })();
+  console.log('hex 컬럼 인덱스:', idxHex, '/ 컬럼명:', idxHex>=0?header[idxHex]:'없음 ← CSV에 hex 컬럼 필요');
+  // hex 샘플값 확인
+  if(idxHex>=0){
+    const hexSample = lines.slice(1,6).map(l=>{ const p=parseLine(l); return p[idxHex]||'(비어있음)'; });
+    console.log('hex 값 샘플:', hexSample);
+  }
 
   if (idxHex < 0) { console.warn('Market CSV: hex 컬럼 없음'); return false; }
 
