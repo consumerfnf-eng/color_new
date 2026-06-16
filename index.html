@@ -14811,7 +14811,9 @@ function renderCompBrandPage() {
     const key = brandKey(c.brand);
     if (!key) return;
     if (!brandMap[key]) {
-      brandMap[key] = { brand: c.brand, group: c.group||'Other', lifestyle: getLifestyle(c.brand, c.group, c.source), colors: [] };
+      // EU 탭(SERGIO)일 때는 lifestyle 분류 없이 모두 EU 그룹으로 통일
+      const _ls = (_applySourceFilter && activeCountry === 'eu') ? 'KR Brands' : getLifestyle(c.brand, c.group, c.source);
+      brandMap[key] = { brand: c.brand, group: c.group||'Other', lifestyle: _ls, colors: [] };
     } else {
       brandMap[key].brand = prettierBrand(brandMap[key].brand, c.brand); // 더 보기 좋은 표기로 갱신
     }
@@ -16072,12 +16074,14 @@ window._marketBrandLabel  = window._marketBrandLabel  || {};
 // localStorage에 저장된 값 없을 때 자동 적용되는 기본 선택 브랜드
 window._defaultBrandSel = {
   SERGIO: [
-    'Adenola','Adidas','ALO YOGA','Aritzia',
+    'Adenola','Adidas','Adidas (court) (EU)','ALO YOGA','Aritzia',
     'brunello cucinelli','celine','dior','Dior',
-    'FILA','loro piana','Loro Piana','Lululemon',
-    'miu miu','miumiu','New Balance','prada',
+    'FILA','Lacoste (EU)','Lacoste (KR)',
+    'loro piana','Loro Piana','Lululemon',
+    'miu miu','miumiu','New Balance','Nike (court)','prada',
     'Ralph Lauren (EU)','Ralph Lauren (KR)',
-    'Sporty & Rich','the row'
+    'Sporty & Rich','the row',
+    'Wilson (EU)','Wilson (KR)'
   ],
   MLB: [
     '더바보','던스트','레이브','론론','르바','썸웨어버터','푸드먼트','파르티멘토 루만',
