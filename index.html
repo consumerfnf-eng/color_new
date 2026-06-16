@@ -14724,8 +14724,12 @@ function renderCompBrandPage() {
     return;
   }
 
-  // ── China 모드: China CSV 브랜드 카드 ──────────────────────
+  // ── China 모드: China CSV 브랜드 카드 (SERGIO일 때는 진입 불가) ──────────────────────
   if(activeCountry === 'china'){
+    // SERGIO 브랜드면 china 모드 차단 → global로 리셋
+    if(typeof _activeBrand !== 'undefined' && _activeBrand === 'SERGIO'){
+      activeCountry = 'global';
+    } else {
     const activeBrand = wrap.dataset.filterBrand || '';
     wrap.innerHTML = '';
     const hdr = document.createElement('div');
@@ -14745,6 +14749,7 @@ function renderCompBrandPage() {
     wrap.appendChild(hdr);
     renderChinaBrandCards(wrap, activeBrand);
     return;
+    }
   }
 
   // 브랜드별 Colors 묶기
@@ -14791,14 +14796,17 @@ function renderCompBrandPage() {
   const brandOptions = brandNames.map(b=>`<option value="${b}" ${activeBrand===b?'selected':''}>${b}</option>`).join('');
   const lsOptions    = sortedLS.map(ls=>`<option value="${ls}" ${activeLS===ls?'selected':''}>${ls}</option>`).join('');
 
-  // Country 셀렉터
+  // Country 셀렉터 (SERGIO: China 제거 → EU 추가)
+  const _isSERGIO = (typeof _activeBrand !== 'undefined' && _activeBrand === 'SERGIO');
   const countrySelectHtml = `
     <select onchange="setCountry(this.value)"
       style="background:var(--bg3);border:1px solid var(--border2);border-radius:6px;color:var(--text2);
              font-family:var(--mono);font-size:11px;padding:6px 10px;outline:none;cursor:pointer">
       <option value="all"    ${activeCountry==='all'   ?'selected':''}>🌍 All</option>
       <option value="global" ${activeCountry==='global'?'selected':''}>🌐 Global</option>
-      <option value="china"  ${activeCountry==='china' ?'selected':''}>🇨🇳 China · China</option>
+      ${_isSERGIO
+        ? `<option value="eu" ${activeCountry==='eu'?'selected':''}>🇪🇺 EU · Europe</option>`
+        : `<option value="china" ${activeCountry==='china'?'selected':''}>🇨🇳 China · China</option>`}
       <option value="korea"  ${activeCountry==='korea' ?'selected':''}>🇰🇷 Korea · Korea</option>
     </select>`;
 
@@ -14878,6 +14886,12 @@ function renderCompBrandPage() {
     // country 필터: all이면 전체 표시
     if (activeCountry === 'korea'  && b.lifestyle !== 'KR Brands') return false;
     if (activeCountry === 'global' && b.lifestyle === 'KR Brands') return false;
+    // EU 필터: sheets-eu source 브랜드만
+    if (activeCountry === 'eu') {
+      const euBrands = new Set((typeof compData !== 'undefined' ? compData : [])
+        .filter(c=>c.source==='sheets-eu').map(c=>_bkn(c.brand)));
+      if(!euBrands.has(_bkn(b.brand))) return false;
+    }
     // Country 탭 필터
     if (activeCountry === 'global') {
       // Global: KR Brands는 기본 제외 (단, Lifestyle 셀렉터로 명시 선택 시 포함)
@@ -16917,6 +16931,8 @@ function _sppGetFilteredRows(source){
   const sel = (window._curMarketSel ? window._curMarketSel() : null);
   const bkn = (window._brandKeyNorm ? window._brandKeyNorm : (s=>(s||'').toLowerCase().replace(/[\s._\-]+/g,'').trim()));
   const hasSel = sel && sel.size > 0;
+  // ★ SERGIO: 브랜드를 하나도 체크하지 않으면 빈 배열 반환 (전체 노출 방지)
+  if(!hasSel) return [];
   let rows;
   if(source === 'kr'){
     rows = (typeof compData !== 'undefined' ? compData : []).filter(c=>c.source==='sheets-kr');
@@ -16927,9 +16943,7 @@ function _sppGetFilteredRows(source){
   } else {
     rows = [];
   }
-  if(hasSel){
-    rows = rows.filter(c=>sel.has(bkn(c.brand)));
-  }
+  rows = rows.filter(c=>sel.has(bkn(c.brand)));
   return rows;
 }
 
@@ -17013,7 +17027,11 @@ function _spp_renderPaletteProposal(){
   const glRows  = _sppGetFilteredRows('global');
 
   if(!krRows.length && !euRows.length && !glRows.length){
-    wrap.innerHTML = '<div class="spp-empty">02 Market Analysis에서 데이터를 로드하면 KR / EU / GLOBAL 컬러 팔레트가 생성됩니다.<br><span style="font-size:9px;color:var(--text4);margin-top:4px;display:block">CSV 브랜드를 선택한 경우 체크된 브랜드 데이터만 반영됩니다.</span></div>';
+    const sel = window._curMarketSel ? window._curMarketSel() : null;
+    const noSel = !sel || sel.size === 0;
+    wrap.innerHTML = noSel
+      ? '<div class="spp-empty">CSV 브랜드를 먼저 체크하세요.<br><span style="font-size:9px;color:var(--text4);margin-top:4px;display:block">상단 체크박스에서 분석할 브랜드를 선택 후 "✓ 체크한 브랜드로 Trend Palette 생성" 버튼을 누르세요.</span></div>'
+      : '<div class="spp-empty">선택한 브랜드의 데이터가 없습니다.<br><span style="font-size:9px;color:var(--text4);margin-top:4px;display:block">CSV에 KR / EU / GL country 데이터를 확인하세요.</span></div>';
     _sppMarketPalettes = { kr:null, eu:null, global:null };
     return;
   }
