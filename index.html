@@ -303,6 +303,13 @@ html,body{background:#FFFFFF;color:var(--text);font-family:var(--sans);height:10
 .spp-market-hd{display:flex;align-items:baseline;gap:10px;margin-bottom:14px}
 .spp-market-title{font-family:var(--sans);font-size:16px;font-weight:700;color:var(--text)}
 .spp-market-sub{font-family:var(--mono);font-size:9px;color:var(--text3);letter-spacing:0.06em;text-transform:uppercase}
+.spp-trend-market-box{background:rgba(160,144,240,0.05);border:1px solid rgba(160,144,240,0.2);border-radius:12px;padding:18px 20px}
+.spp-trend-market-hd{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;margin-bottom:4px}
+.spp-trend-market-flame{font-size:13px;font-weight:700;color:#A090F0}
+.spp-trend-market-title{font-family:var(--sans);font-size:15px;font-weight:700;color:var(--text)}
+.spp-trend-market-sub{font-family:var(--mono);font-size:9px;color:var(--text3);letter-spacing:0.05em;text-transform:uppercase}
+.spp-trend-market-cnt{font-family:var(--mono);font-size:9px;color:var(--text3);margin-left:auto}
+.spp-trend-market-desc{font-family:var(--mono);font-size:9px;color:var(--text3);margin-bottom:14px}
 .spp-cat-row{margin-bottom:14px}
 .spp-cat-label{font-family:var(--mono);font-size:9px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--text3);margin-bottom:7px;display:flex;align-items:center;gap:6px}
 .spp-cat-label .cnt{font-weight:400;color:var(--text4)}
@@ -17208,22 +17215,24 @@ function _spp_renderPaletteProposal(){
   ];
   wrap.innerHTML = selNote + MARKETS.map(m=>{
     const pal = _sppMarketPalettes[m.key];
-    if(!pal) return `<div class="spp-market-section"><div class="spp-market-hd"><span class="spp-market-title">${m.title}</span><span class="spp-market-sub">${m.sub}</span></div><div class="spp-empty">${m.title} 마켓 데이터가 없습니다.</div></div>`;
+    if(!pal) return `<div class="spp-market-section"><div class="spp-trend-market-box"><div class="spp-trend-market-hd"><span class="spp-trend-market-flame">🔥 Trend-Based</span><span class="spp-trend-market-title">${m.title}</span><span class="spp-trend-market-sub">${m.sub}</span></div><div class="spp-empty">${m.title} 마켓 데이터가 없습니다.</div></div></div>`;
     const subHtml   = pal.sub.length   ? pal.sub.map((co,i)=>_sppChipHtml(co,m.key,'sub')).join('')   : '<div class="spp-empty">SUB 컬러 없음</div>';
     const keyHtml   = pal.key.length   ? pal.key.map((co,i)=>_sppChipHtml(co,m.key,'key')).join('')   : '<div class="spp-empty">KEY 컬러 없음</div>';
     const basicHtml = pal.basic.length ? pal.basic.map((co,i)=>_sppChipHtml(co,m.key,'basic')).join('') : '<div class="spp-empty">BASIC 컬러 없음</div>';
+    const totalCnt = pal.sub.length+pal.key.length+pal.basic.length;
     return `<div class="spp-market-section">
-      <div class="spp-market-hd"><span class="spp-market-title">${m.title}</span><span class="spp-market-sub">${m.sub}</span></div>
-      <div style="background:rgba(160,144,240,0.05);border:1px solid rgba(160,144,240,0.2);border-radius:8px;padding:10px 14px;margin-bottom:14px">
-        <div style="display:flex;align-items:center;gap:6px;margin-bottom:2px">
-          <span style="font-size:11px;font-weight:700;color:#A090F0">🔥 Trend-Based</span>
-          <span style="font-family:var(--mono);font-size:9px;color:var(--text3)">${pal.sub.length+pal.key.length+pal.basic.length}개</span>
+      <div class="spp-trend-market-box">
+        <div class="spp-trend-market-hd">
+          <span class="spp-trend-market-flame">🔥 Trend-Based</span>
+          <span class="spp-trend-market-title">${m.title}</span>
+          <span class="spp-trend-market-sub">${m.sub}</span>
+          <span class="spp-trend-market-cnt">${totalCnt}개</span>
         </div>
-        <div style="font-family:var(--mono);font-size:9px;color:var(--text3)">Trend PDF + Competitor brand frequency</div>
+        <div class="spp-trend-market-desc">Trend PDF + Competitor brand frequency</div>
+        <div class="spp-cat-row"><div class="spp-cat-label">SUB <span class="cnt">${pal.sub.length}</span></div><div class="spp-chip-row">${subHtml}</div></div>
+        <div class="spp-cat-row"><div class="spp-cat-label">KEY <span class="cnt">${pal.key.length}</span></div><div class="spp-chip-row">${keyHtml}</div></div>
+        <div class="spp-cat-row"><div class="spp-cat-label">BASIC <span class="cnt">${pal.basic.length}</span></div><div class="spp-chip-row">${basicHtml}</div></div>
       </div>
-      <div class="spp-cat-row"><div class="spp-cat-label">SUB <span class="cnt">${pal.sub.length}</span></div><div class="spp-chip-row">${subHtml}</div></div>
-      <div class="spp-cat-row"><div class="spp-cat-label">KEY <span class="cnt">${pal.key.length}</span></div><div class="spp-chip-row">${keyHtml}</div></div>
-      <div class="spp-cat-row"><div class="spp-cat-label">BASIC <span class="cnt">${pal.basic.length}</span></div><div class="spp-chip-row">${basicHtml}</div></div>
     </div>`;
   }).join('');
 
@@ -17479,8 +17488,12 @@ function sppOpenLsPickerModal(ls){
 }
 
 function sppAddToLsFromPicker(ls, cat, hex){
-  const pal = _sppMarketPalettes.global || _sppMarketPalettes.kr || _sppMarketPalettes.eu || {key:[],sub:[],basic:[]};
-  const allCols = [...(pal.key||[]),...(pal.sub||[]),...(pal.basic||[])];
+  // GLOBAL/KR/EU 모든 마켓 풀을 합쳐서 검색 (한 마켓에만 있어도 잡히도록)
+  const allCols = [];
+  ['global','kr','eu'].forEach(mk => {
+    const pal = _sppMarketPalettes[mk];
+    if(pal) allCols.push(...(pal.key||[]), ...(pal.sub||[]), ...(pal.basic||[]));
+  });
   const co = allCols.find(x=>(x.hex||'').toUpperCase()===hex.toUpperCase());
   if(!co) return;
   if(!_sppLifestylePalette[ls][cat]) _sppLifestylePalette[ls][cat]=[];
