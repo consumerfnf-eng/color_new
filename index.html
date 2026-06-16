@@ -313,6 +313,9 @@ html,body{background:#FFFFFF;color:var(--text);font-family:var(--sans);height:10
 .spp-trend-badge{position:absolute;top:-5px;right:-5px;width:14px;height:14px;border-radius:50%;background:var(--gold);color:#fff;font-family:var(--mono);font-size:8px;font-weight:700;display:flex;align-items:center;justify-content:center;border:1px solid #fff;line-height:1}
 .spp-chip-name{font-family:var(--mono);font-size:7px;color:var(--text3);text-align:center;max-width:52px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .spp-chip-code{font-family:var(--mono);font-size:6.5px;color:var(--text4);text-align:center}
+.spp-mini-similar{display:flex;gap:2px;margin-top:3px;justify-content:center}
+.spp-mini-similar-sw{width:9px;height:9px;border-radius:2px;cursor:pointer;border:1px solid rgba(0,0,0,0.08);transition:transform .1s}
+.spp-mini-similar-sw:hover{transform:scale(1.4)}
 .spp-empty{font-family:var(--mono);font-size:10px;color:var(--text4);padding:14px;text-align:center;border:1px dashed var(--border);border-radius:6px}
 
 .spp-intersection-section{border-top:1px solid var(--border);padding-top:20px;margin-top:20px}
@@ -368,6 +371,14 @@ html,body{background:#FFFFFF;color:var(--text);font-family:var(--sans);height:10
 .spp-ls-ath-badge{background:rgba(138,96,32,0.12);color:var(--gold);border:1px solid rgba(138,96,32,0.3)}
 .spp-ls-cls-badge{background:rgba(90,58,138,0.12);color:var(--purple);border:1px solid rgba(90,58,138,0.3)}
 .spp-ls-col-meta{font-family:var(--mono);font-size:8px;color:var(--text3)}
+.spp-ls-edit-btn{font-family:var(--mono);font-size:8px;font-weight:700;letter-spacing:0.04em;background:var(--bg2);border:1px solid var(--border2);border-radius:4px;color:var(--text2);padding:3px 8px;cursor:pointer;transition:all .15s}
+.spp-ls-edit-btn:hover{border-color:var(--gold)}
+.spp-ls-edit-btn.active{background:var(--gold);color:#fff;border-color:var(--gold)}
+.spp-ls-restore-btn{font-size:11px;background:none;border:1px solid var(--border2);border-radius:4px;color:var(--text3);padding:2px 6px;cursor:pointer;transition:all .15s;line-height:1.3}
+.spp-ls-restore-btn:hover{border-color:var(--accent);color:var(--accent)}
+.spp-ls-rm-btn{position:absolute;top:-5px;right:-5px;width:15px;height:15px;border-radius:50%;background:var(--red);color:#fff;border:1px solid #fff;font-size:10px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0}
+.spp-ls-add-box{margin-top:10px;font-family:var(--mono);font-size:9px;color:var(--text3);text-align:center;padding:8px;border:1px dashed var(--border2);border-radius:6px;cursor:pointer;transition:all .15s}
+.spp-ls-add-box:hover{border-color:var(--gold);color:var(--gold)}
 .spp-ls-col-body{padding:12px 14px}
 .spp-ls-cat-label{font-family:var(--mono);font-size:8px;letter-spacing:0.1em;text-transform:uppercase;color:var(--text3);padding-bottom:5px;border-bottom:1px solid var(--border);margin-bottom:8px}
 .spp-ls-chip-row{display:flex;flex-wrap:wrap;gap:10px;padding:4px 0;margin-bottom:6px}
@@ -1284,7 +1295,11 @@ function enterBrandFromHome(brand) {
                   <span class="spp-ls-badge spp-ls-active-badge">COURT ACTIVE</span>
                   <span style="font-size:11px;color:var(--text3)">퍼포먼스 · 테니스 · 기능성</span>
                 </div>
-                <span class="spp-ls-col-meta" id="spp-ls-active-meta"></span>
+                <div style="display:flex;align-items:center;gap:6px">
+                  <span class="spp-ls-col-meta" id="spp-ls-active-meta"></span>
+                  <button class="spp-ls-restore-btn" onclick="sppRestoreLs('active')" title="원본으로 복구">↺</button>
+                  <button class="spp-ls-edit-btn" id="spp-ls-edit-active" onclick="sppToggleLsEdit('active')">Edit</button>
+                </div>
               </div>
               <div class="spp-ls-col-body">
                 <div class="spp-ls-cat-label">Point</div>
@@ -1300,7 +1315,11 @@ function enterBrandFromHome(brand) {
                   <span class="spp-ls-badge spp-ls-ath-badge">ATHLEISURE</span>
                   <span style="font-size:11px;color:var(--text3)">캐주얼 · 라이프스타일</span>
                 </div>
-                <span class="spp-ls-col-meta" id="spp-ls-ath-meta"></span>
+                <div style="display:flex;align-items:center;gap:6px">
+                  <span class="spp-ls-col-meta" id="spp-ls-ath-meta"></span>
+                  <button class="spp-ls-restore-btn" onclick="sppRestoreLs('athleisure')" title="원본으로 복구">↺</button>
+                  <button class="spp-ls-edit-btn" id="spp-ls-edit-ath" onclick="sppToggleLsEdit('athleisure')">Edit</button>
+                </div>
               </div>
               <div class="spp-ls-col-body">
                 <div class="spp-ls-cat-label">Point</div>
@@ -1316,7 +1335,11 @@ function enterBrandFromHome(brand) {
                   <span class="spp-ls-badge spp-ls-cls-badge">CLASSIC</span>
                   <span style="font-size:11px;color:var(--text3)">헤리티지 · 프리미엄 · 클래식</span>
                 </div>
-                <span class="spp-ls-col-meta" id="spp-ls-cls-meta"></span>
+                <div style="display:flex;align-items:center;gap:6px">
+                  <span class="spp-ls-col-meta" id="spp-ls-cls-meta"></span>
+                  <button class="spp-ls-restore-btn" onclick="sppRestoreLs('classic')" title="원본으로 복구">↺</button>
+                  <button class="spp-ls-edit-btn" id="spp-ls-edit-cls" onclick="sppToggleLsEdit('classic')">Edit</button>
+                </div>
               </div>
               <div class="spp-ls-col-body">
                 <div class="spp-ls-cat-label">Point</div>
@@ -16973,6 +16996,9 @@ const SPP_LS_RATIO = {
 
 let _sppMarketPalettes = { kr:null, eu:null, global:null };
 let _sppLifestylePalette = { active:{point:[],sub:[]}, athleisure:{point:[],sub:[]}, classic:{point:[],sub:[]} };
+// 원본 백업(복구용) — _sppBuildLifestylePalette 실행 직후 1회 저장
+let _sppLifestylePaletteOriginal = null;
+const _sppLsEditMode = {active:false, athleisure:false, classic:false};
 window._sppChipRegistry = [];
 
 // ── 유틸: HSL 변환 (index.html 내 rgbToHsl 재사용) ──
@@ -17109,11 +17135,29 @@ function _sppBuildMarketPalette(rows){
 // ── 칩 레지스트리 ──
 function _sppRegisterChip(co){ window._sppChipRegistry.push(co); return window._sppChipRegistry.length-1; }
 
+// ── 4개 유사 Pantone TCX 컬러 찾기 (인라인 표시용) ──
+function _sppFindSimilarN(hex, n){
+  n = n || 4;
+  if(typeof PANTONE_TCX_DB === 'undefined') return [];
+  const targetLab = rgbToLab(hex);
+  const entries = (typeof _buildPantoneLabEntries === 'function') ? _buildPantoneLabEntries() : [];
+  return entries
+    .map(e => ({...e, dist: rgbDistLab(targetLab, e.lab)}))
+    .sort((a,b) => a.dist - b.dist)
+    .filter(e => e.dist > 0.5) // 자기 자신(거의 동일) 제외
+    .slice(0, n);
+}
+
 function _sppChipHtml(co, marketKey, catKey){
   const code = co.pantone || (co.tcxCode?co.tcxCode+' TCX':'') || _sppPantoneApprox(co.hex) || '';
   const safeName = (co.name||co.hex).replace(/"/g,'&quot;');
   const trendBadge = co.trendMatch ? '<div class="spp-trend-badge" title="트렌드 매칭">T</div>' : '';
   const regIdx = _sppRegisterChip({...co,_marketKey:marketKey,_catKey:catKey});
+  // 4개 유사 컬러 인라인 표시
+  const similar = _sppFindSimilarN(co.hex, 4);
+  const similarHtml = similar.length ? `<div class="spp-mini-similar">${similar.map(s=>
+    `<div class="spp-mini-similar-sw" style="background:${s.hex}" title="${s.code} TCX — ${s.name||s.code}" onclick="event.stopPropagation();openSppSwatchPopover(${regIdx})"></div>`
+  ).join('')}</div>` : '';
   return `<div class="spp-chip" onclick="openSppSwatchPopover(${regIdx})" title="${safeName}">
     <div style="position:relative">
       <div class="spp-chip-sw" style="background:${co.hex}"></div>
@@ -17121,6 +17165,7 @@ function _sppChipHtml(co, marketKey, catKey){
     </div>
     <div class="spp-chip-name">${co.name||co.hex}</div>
     <div class="spp-chip-code">${code}</div>
+    ${similarHtml}
   </div>`;
 }
 
@@ -17314,6 +17359,8 @@ function _sppBuildLifestylePalette(){
   [...subPool].sort((a,b)=>score3(b)-score3(a)).forEach(co=>{ if(actSubArr.length<SUB_N&&!subUsed.has(co.hex.toUpperCase())){ actSubArr.push(co); subUsed.add(co.hex.toUpperCase()); } });
   if(actSubArr.length<SUB_N){ const actUsed=new Set(actSubArr.map(c=>c.hex.toUpperCase())); const fallback=_sppPickLifestyle([...subPool,...pointPool,...basicPool].filter(c=>!actUsed.has(c.hex.toUpperCase())),'active',SUB_N-actSubArr.length); for(const co of fallback){ if(actSubArr.length>=SUB_N) break; actSubArr.push(co); actUsed.add(co.hex.toUpperCase()); } }
   _sppLifestylePalette = { active:{point:actPoint,sub:actSubArr,basic:basicPool}, athleisure:{point:athPoint,sub:athSubArr,basic:basicPool}, classic:{point:clsPoint,sub:clsSubArr,basic:basicPool} };
+  // 원본 백업 — 새로 빌드될 때마다 갱신 (복구 기준점)
+  _sppLifestylePaletteOriginal = JSON.parse(JSON.stringify(_sppLifestylePalette));
 }
 function _sppRenderLifestyleSection(ls){
   const map={active:{ptId:'spp-active-point',subId:'spp-active-sub',metaId:'spp-ls-active-meta'},athleisure:{ptId:'spp-ath-point',subId:'spp-ath-sub',metaId:'spp-ls-ath-meta'},classic:{ptId:'spp-cls-point',subId:'spp-cls-sub',metaId:'spp-ls-cls-meta'}};
@@ -17321,10 +17368,114 @@ function _sppRenderLifestyleSection(ls){
   const metaEl=document.getElementById(ids.metaId), ptEl=document.getElementById(ids.ptId), subEl=document.getElementById(ids.subId);
   if(!ptEl||!subEl) return;
   if(metaEl) metaEl.textContent=`Point ${p.point.length} · Sub ${p.sub.length}`;
-  const makeChip=(co,catKey)=>{ const code=co.pantone||(co.tcxCode?co.tcxCode+' TCX':'')||_sppPantoneApprox(co.hex)||''; const regIdx=_sppRegisterChip({...co,_marketKey:ls,_catKey:catKey}); return `<div class="spp-ls-chip" onclick="openSppSwatchPopover(${regIdx})"><div class="spp-ls-chip-sw" style="background:${co.hex}"></div><div class="spp-ls-chip-name">${co.name||co.hex}</div><div class="spp-ls-chip-code">${code}</div></div>`; };
-  ptEl.innerHTML=p.point.length?p.point.map(co=>makeChip(co,'point')).join(''):'<div class="spp-seasonal-empty">컬러 없음</div>';
-  subEl.innerHTML=p.sub.length?p.sub.map(co=>makeChip(co,'sub')).join(''):'<div class="spp-seasonal-empty">컬러 없음</div>';
+  const edit = _sppLsEditMode[ls];
+  const makeChip=(co,catKey,idx)=>{
+    const code=co.pantone||(co.tcxCode?co.tcxCode+' TCX':'')||_sppPantoneApprox(co.hex)||'';
+    const regIdx=_sppRegisterChip({...co,_marketKey:ls,_catKey:catKey});
+    const rm = edit ? `<button class="spp-ls-rm-btn" onclick="event.stopPropagation();sppRemoveFromLs('${ls}','${catKey}',${idx})">×</button>` : '';
+    return `<div class="spp-ls-chip" style="position:relative" onclick="${edit?'':'openSppSwatchPopover('+regIdx+')'}"><div class="spp-ls-chip-sw" style="background:${co.hex}"></div><div class="spp-ls-chip-name">${co.name||co.hex}</div><div class="spp-ls-chip-code">${code}</div>${rm}</div>`;
+  };
+  ptEl.innerHTML=p.point.length?p.point.map((co,i)=>makeChip(co,'point',i)).join(''):'<div class="spp-seasonal-empty">컬러 없음</div>';
+  subEl.innerHTML=p.sub.length?p.sub.map((co,i)=>makeChip(co,'sub',i)).join(''):'<div class="spp-seasonal-empty">컬러 없음</div>';
+
+  // edit 모드일 때 + Add 버튼 표시
+  const existingAdd = document.getElementById('spp-ls-addbtn-'+ls);
+  if(existingAdd) existingAdd.remove();
+  if(edit){
+    const addBtn = document.createElement('div');
+    addBtn.id = 'spp-ls-addbtn-'+ls;
+    addBtn.className = 'spp-ls-add-box';
+    addBtn.innerHTML = '＋ Colors Add';
+    addBtn.onclick = ()=>sppOpenLsPickerModal(ls);
+    const body = subEl.closest('.spp-ls-col-body');
+    if(body) body.appendChild(addBtn);
+  }
   if(ls==='active') _sppRenderBasicCommon();
+}
+
+// ── Edit 모드 토글 ──
+function sppToggleLsEdit(ls){
+  const idMap = {active:'spp-ls-edit-active', athleisure:'spp-ls-edit-ath', classic:'spp-ls-edit-cls'};
+  const btn = document.getElementById(idMap[ls]);
+  _sppLsEditMode[ls] = !_sppLsEditMode[ls];
+  if(btn){
+    btn.textContent = _sppLsEditMode[ls] ? 'Done' : 'Edit';
+    _sppLsEditMode[ls] ? btn.classList.add('active') : btn.classList.remove('active');
+  }
+  _sppRenderLifestyleSection(ls);
+}
+
+// ── 삭제 ──
+function sppRemoveFromLs(ls, cat, idx){
+  if(!_sppLifestylePalette[ls] || !_sppLifestylePalette[ls][cat]) return;
+  _sppLifestylePalette[ls][cat].splice(idx, 1);
+  _sppRenderLifestyleSection(ls);
+}
+
+// ── 추가 모달 ──
+function sppOpenLsPickerModal(ls){
+  const pal = _sppMarketPalettes.global || _sppMarketPalettes.kr || _sppMarketPalettes.eu || {key:[],sub:[],basic:[]};
+  const point = pal.key||[], sub = pal.sub||[], basic = pal.basic||[];
+
+  const card = (co, cat) => {
+    const code = co.pantone||(co.tcxCode?co.tcxCode+' TCX':'')||_sppPantoneApprox(co.hex)||'';
+    const lp = _sppLifestylePalette[ls]||{};
+    const alreadyIn = ['point','sub'].some(c => (lp[c]||[]).some(x=>(x.hex||'').toUpperCase()===(co.hex||'').toUpperCase()));
+    const safeName = (co.name||co.hex).replace(/'/g,"&#39;").replace(/"/g,'&quot;');
+    const clickAttr = alreadyIn ? '' : `onclick="sppAddToLsFromPicker('${ls}','${cat}','${co.hex}')"`;
+    return `<div style="display:flex;flex-direction:column;align-items:center;gap:3px;cursor:${alreadyIn?'default':'pointer'};opacity:${alreadyIn?0.35:1}"
+      ${clickAttr} title="${safeName}">
+      <div style="width:36px;height:36px;border-radius:4px;background:${co.hex};border:1px solid var(--border2)"></div>
+      <div style="font-family:var(--mono);font-size:7px;color:var(--text3);text-align:center;max-width:44px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${co.name||co.hex}</div>
+      <div style="font-family:var(--mono);font-size:7px;color:var(--text4)">${code}</div>
+    </div>`;
+  };
+  const section = (label, colors, cat, accent) => colors.length ? `
+    <div style="margin-bottom:16px">
+      <div style="font-family:var(--mono);font-size:8px;letter-spacing:.12em;color:${accent};text-transform:uppercase;margin-bottom:8px;border-bottom:1px solid var(--border);padding-bottom:4px">${label} — ${colors.length}색</div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px">${colors.map(co=>card(co,cat)).join('')}</div>
+    </div>` : '';
+
+  const lsLabel = ls==='active'?'Court Active':ls==='athleisure'?'Athleisure':'Classic';
+  document.getElementById('spp-ls-pick-modal')?.remove();
+  const modal = document.createElement('div');
+  modal.id = 'spp-ls-pick-modal';
+  modal.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:600;display:flex;align-items:center;justify-content:center';
+  modal.innerHTML=`
+    <div style="background:#fff;border:1px solid var(--border2);border-radius:8px;padding:22px 24px;width:560px;max-width:92vw;max-height:80vh;overflow-y:auto">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+        <div style="font-size:15px;font-weight:700;color:var(--text)">${lsLabel} <span style="color:var(--text3);font-size:12px;font-weight:400">— Colors Add</span></div>
+        <button onclick="document.getElementById('spp-ls-pick-modal').remove()" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--text3);line-height:1">×</button>
+      </div>
+      <div style="font-family:var(--mono);font-size:9px;color:var(--text4);margin-bottom:16px">Click color to add · Already added colors appear faded</div>
+      ${section('Key (Point) Colors', point, 'point', 'var(--gold)')}
+      ${section('Sub Colors', sub, 'sub', 'var(--blue)')}
+    </div>`;
+  document.body.appendChild(modal);
+  modal.addEventListener('click', e=>{ if(e.target===modal) modal.remove(); });
+}
+
+function sppAddToLsFromPicker(ls, cat, hex){
+  const pal = _sppMarketPalettes.global || _sppMarketPalettes.kr || _sppMarketPalettes.eu || {key:[],sub:[],basic:[]};
+  const allCols = [...(pal.key||[]),...(pal.sub||[]),...(pal.basic||[])];
+  const co = allCols.find(x=>(x.hex||'').toUpperCase()===hex.toUpperCase());
+  if(!co) return;
+  if(!_sppLifestylePalette[ls][cat]) _sppLifestylePalette[ls][cat]=[];
+  const normHex = hex.toUpperCase();
+  const lp = _sppLifestylePalette[ls];
+  const alreadyIn = ['point','sub'].some(c => (lp[c]||[]).some(x=>(x.hex||'').toUpperCase()===normHex));
+  if(alreadyIn) return;
+  _sppLifestylePalette[ls][cat].push({...co});
+  document.getElementById('spp-ls-pick-modal')?.remove();
+  _sppRenderLifestyleSection(ls);
+  sppOpenLsPickerModal(ls);
+}
+
+// ── 복구 (원본으로 되돌리기) ──
+function sppRestoreLs(ls){
+  if(!_sppLifestylePaletteOriginal || !_sppLifestylePaletteOriginal[ls]) return;
+  _sppLifestylePalette[ls] = JSON.parse(JSON.stringify(_sppLifestylePaletteOriginal[ls]));
+  _sppRenderLifestyleSection(ls);
 }
 function _sppRenderBasicCommon(){
   const grid=document.getElementById('spp-ls-basic-common-grid'); if(!grid) return;
