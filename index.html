@@ -16130,7 +16130,7 @@ window._defaultBrandSel = {
     'ALO YOGA','Aritzia','celine','dior','Dior',
     'louis vuitton','Lululemon','miu miu','miumiu',
     'moncler','New Balance','On','On Running','prada',
-    'Salomon','stone island','The North Face','valentino'
+    'Salomon','Sansan Gear','stone island','The North Face','valentino'
   ],
 };
 
@@ -17129,9 +17129,17 @@ function _sppAggregateRows(rows){
 function _sppBuildMarketPalette(rows){
   const entries = _sppAggregateRows(rows);
   const raw = {key:[],sub:[],basic:[]};
+  // BASIC 판정: White/Black/Grey/Ivory/Beige 같은 진짜 무채색·뉴트럴만 인정
+  //   - 채도가 매우 낮아야 함(s<0.14) — 단, 베이지/아이보리처럼 살짝 웜톤인 경우 명도가 높으면 채도 살짝 허용(s<0.20 && l>0.75)
+  //   - 극단 명도(매우 어둡거나 밝음)라도 채도가 있으면(녹색·레드 계열) BASIC 아님
+  const isTrueNeutral = (s, l) => {
+    if(s < 0.14) return true; // 진짜 무채색(그레이/블랙/화이트)
+    if(l > 0.75 && s < 0.20) return true; // 베이지/아이보리(고명도 저채도)
+    return false;
+  };
   entries.forEach(co=>{
     const [,sat,light] = _sppRgbToHsl(co.hex);
-    if(light<0.18||light>0.92){ raw.basic.push({...co,marketCat:'basic'}); return; }
+    if(isTrueNeutral(sat, light)){ raw.basic.push({...co,marketCat:'basic'}); return; }
     if(sat>=SPP_SAT_POINT&&light>=0.20&&light<=0.80){ raw.key.push({...co,marketCat:'key'}); return; }
     if(sat>=SPP_SAT_SUB){ raw.sub.push({...co,marketCat:'sub'}); return; }
     raw.basic.push({...co,marketCat:'basic'});
@@ -17140,10 +17148,10 @@ function _sppBuildMarketPalette(rows){
   let basic = _sppPickDiverse(classified.basic.sort((a,b)=>b.score-a.score),8,45);
   if(basic.length<8){
     const used=new Set(basic.map(c=>c.hex));
-    // BASIC다운 기준: 무채색(채도 매우 낮음) 또는 극단 명도(매우 밝거나 어두움)만 후보로 — 선명한 그린/레드 등 유채색 끌려오는 것 방지
+    // fallback도 동일한 진짜 무채색 기준만 허용 (유채색 절대 끌려오지 않게)
     const extra=[...classified.sub,...classified.key]
       .filter(c=>!used.has(c.hex))
-      .filter(c=>{ const [,s,l]=_sppRgbToHsl(c.hex); return s<0.22 || l>0.82 || l<0.20; })
+      .filter(c=>{ const [,s,l]=_sppRgbToHsl(c.hex); return isTrueNeutral(s,l); })
       .sort((a,b)=>{const[,sa]=_sppRgbToHsl(a.hex),[,sb]=_sppRgbToHsl(b.hex);return sa-sb;});
     for(const co of extra){if(basic.length>=8)break;basic.push(co);}
   }
