@@ -5028,6 +5028,8 @@ async function loadCompFromCsvText(csv, filterSeason) {
 
   // ── CSV 내 브랜드 리딩 → 선택 UI 표시 ──
   const _foundBrands = [...new Set([...glRows, ...krRows, ...euRows, ...cnRows].map(r => r.brand).filter(Boolean))];
+  const _euBrands = [...new Set(euRows.map(r=>r.brand).filter(Boolean))];
+  console.log('EU 브랜드 목록:', _euBrands);
   if (typeof window.renderMarketCsvBrands === 'function') window.renderMarketCsvBrands(_foundBrands, filterSeason);
 
   if (typeof renderCompBrandPage === 'function') renderCompBrandPage();
