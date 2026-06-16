@@ -16980,7 +16980,7 @@ function _spp_syncActive(){
 
 // ── 상수 ──
 const SPP_SAT_POINT        = 0.50;
-const SPP_SAT_SUB          = 0.15;
+const SPP_SAT_SUB          = 0.20;
 const SPP_TREND_POOL_TOP_N = 20;
 const SPP_TREND_MATCH_DIST = 30;
 const SPP_TREND_MATCH_BONUS= 0.12;
@@ -17170,9 +17170,19 @@ function _sppBuildMarketPalette(rows){
     raw.basic.push({...co,marketCat:'basic'});
   });
   const classified = { key:_sppDedupSimilar(raw.key,48), sub:_sppDedupSimilar(raw.sub,38), basic:_sppDedupSimilar(raw.basic,30) };
-  const MAX_PER_BRAND = 3; // 한 브랜드가 8개 슬롯 중 최대 3개까지만 — 데이터량 적은 브랜드도 보이게
+  const MAX_PER_BRAND = 3; // 한 브랜드가 8개 슬롯 중 최대 3개까지만 — 데이터량 적은 브랜드도 보이게 (단, 8개 채우기가 항상 우선)
   const brandOf = co => ((co.brands && co.brands[0]) || co.name || '').toLowerCase().trim();
   const countBrands = arr => { const m={}; arr.forEach(co=>{ const b=brandOf(co); if(b) m[b]=(m[b]||0)+1; }); return m; };
+  // 최종 안전망: 8개 미달 시 브랜드 제한 없이 점수 순으로 채워 8개를 우선 확보
+  const fillToN = (arr, pool, n, excludeHex, excludeCode) => {
+    if(arr.length >= n) return arr;
+    const used = new Set([...excludeHex, ...arr.map(c=>c.hex)]);
+    const usedCodes = new Set([...excludeCode]);
+    const extra = pool.filter(c=>!used.has(c.hex) && !usedCodes.has(_sppPantoneApprox(c.hex))).sort((a,b)=>b.score-a.score);
+    for(const co of extra){ if(arr.length>=n) break; arr.push(co); used.add(co.hex); }
+    return arr;
+  };
+
   let basic = _sppPickDiverse(classified.basic.sort((a,b)=>b.score-a.score),8,45,MAX_PER_BRAND);
   if(basic.length<8){
     const used=new Set(basic.map(c=>c.hex));
@@ -17189,6 +17199,15 @@ function _sppBuildMarketPalette(rows){
       if(b) bCount[b]=(bCount[b]||0)+1;
       basic.push(co);
     }
+    // 그래도 8개 미달이면 브랜드 제한 풀고 무채색 기준만으로 마지막 보충
+    if(basic.length<8){
+      const used2=new Set(basic.map(c=>c.hex));
+      const extra2=[...classified.basic,...classified.sub,...classified.key]
+        .filter(c=>!used2.has(c.hex))
+        .filter(c=>{ const [,s,l]=_sppRgbToHsl(c.hex); return isTrueNeutral(s,l); })
+        .sort((a,b)=>{const[,sa]=_sppRgbToHsl(a.hex),[,sb]=_sppRgbToHsl(b.hex);return sa-sb;});
+      for(const co of extra2){ if(basic.length>=8)break; basic.push(co); }
+    }
   }
   const basicHexSet=new Set(basic.map(c=>c.hex));
   // 같은 Pantone TCX 코드로 매핑되는 색은 시각적으로 동일하게 보이므로 함께 제외
@@ -17196,6 +17215,8 @@ function _sppBuildMarketPalette(rows){
   const isDupOfBasic = c => basicHexSet.has(c.hex) || basicCodeSet.has(_sppPantoneApprox(c.hex));
   let key=_sppPickDiverse(classified.key.filter(c=>!isDupOfBasic(c)).sort((a,b)=>b.score-a.score),8,50,MAX_PER_BRAND);
   if(key.length<8) key=_sppPickDiverse(classified.key.filter(c=>!isDupOfBasic(c)).sort((a,b)=>b.score-a.score),8,35,MAX_PER_BRAND);
+  // 브랜드 제한 풀고 최종 보충 (8개 채우기 최우선)
+  key = fillToN(key, classified.key.filter(c=>!isDupOfBasic(c)), 8, basicHexSet, basicCodeSet);
   const keyHexSet=new Set(key.map(c=>c.hex));
   const keyCodeSet=new Set(key.map(c=>_sppPantoneApprox(c.hex)).filter(Boolean));
   const isDupOfBasicOrKey = c => isDupOfBasic(c) || keyHexSet.has(c.hex) || keyCodeSet.has(_sppPantoneApprox(c.hex));
@@ -17213,6 +17234,8 @@ function _sppBuildMarketPalette(rows){
       sub.push(co);
     }
   }
+  // 브랜드 제한 풀고 최종 보충 (8개 채우기 최우선) — sub 자체 풀 + key/basic 풀 모두 활용
+  sub = fillToN(sub, [...classified.sub.filter(c=>!isDupOfBasicOrKey(c)), ...classified.key, ...classified.basic], 8, new Set([...basicHexSet,...keyHexSet]), new Set([...basicCodeSet,...keyCodeSet]));
   return { key, sub, basic };
 }
 
