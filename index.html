@@ -14590,7 +14590,7 @@ function initCompCatSelector(){
 }
 
 // ── Country 필터 상태 ──────────────────────────────────────
-let activeCountry = 'global'; // 'all' | 'global' | 'china' | 'korea'
+let activeCountry = 'all'; // 'all' | 'global' | 'china' | 'korea'
 
 function setCountry(val){
   activeCountry = val;
@@ -14832,7 +14832,7 @@ function renderCompBrandPage() {
   const allBrands = Object.values(brandMap);
   // ── 전역 Save — Category Curation이 이 데이터를 직접 참조 ──
   compBrandMap = brandMap;
-  const lsOrder = ['Court Active','Luxury','Athleisure','Outdoor/Sports','KR Brands','Other'];
+  const lsOrder = ['Luxury','Athleisure','Outdoor/Sports','Court Active','KR Brands','Other'];
   const allLS = [...new Set(allBrands.map(b=>b.lifestyle))];
   const sortedLS = [...new Set([...lsOrder,...allLS])].filter(ls=>allLS.includes(ls));
   const brandNames = allBrands.map(b=>b.brand).sort();
