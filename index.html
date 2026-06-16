@@ -17479,13 +17479,20 @@ function _sppPickLifestyle(pool, ls, n){
     const cn=(co.name||'').toLowerCase();
     let score=co.freq||1;
     if(ls==='active'){
-      if(s>0.65) score+=0.35; else if(s>0.45) score+=0.15; else score-=0.25;
+      // 비비드 보너스는 명도가 충분히 밝아야 적용 — 어두운 딥버건디·딥네이비는 헤리티지(Classic)로 느껴지므로 제외
+      if(s>0.65 && l>=0.40) score+=0.35;
+      else if(s>0.45 && l>=0.35) score+=0.15;
+      else score-=0.25;
+      // 어두운 명도(딥톤)는 Court Active에서 패널티 — Classic으로 자연스럽게 밀려나도록
+      if(l<0.35) score-=0.30;
       if(['red','scarlet','cobalt','electric','orange','racing','solar','tangerine','royal','vivid','energy','court'].some(k=>cn.includes(k))) score+=0.28;
     } else if(ls==='athleisure'){
       if(s>=0.20&&s<=0.55) score+=0.32; else if(s>0.55&&s<=0.70) score+=0.10; else if(s<0.15) score-=0.20;
       if(['sage','lilac','powder','mint','butter','blush','pistachio','mauve','lavender','periwinkle','dusty','soft','mist','pastel','celadon','petal','sky'].some(k=>cn.includes(k))) score+=0.32;
     } else {
       if(s>=0.30&&s<=0.75) score+=0.25; else if(s<0.15) score-=0.15;
+      // 명도가 낮은(딥톤) 컬러는 헤리티지 무드에 잘 맞으므로 Classic 보너스 강화
+      if(l<0.40 && s>=0.30) score+=0.25;
       if(['burgundy','wine','bordeaux','forest','hunter','bottle','cobalt','indigo','heritage','deep','classic navy'].some(k=>cn.includes(k))) score+=0.40;
       if(['camel','cognac','mustard','tennis','court','vintage','retro','italian'].some(k=>cn.includes(k))) score+=0.22;
     }
@@ -17512,7 +17519,7 @@ function _sppBuildLifestylePalette(){
   [...subPool].sort((a,b)=>score1(b)-score1(a)).forEach(co=>{ if(athSubArr.length<SUB_N&&!subUsed.has(co.hex.toUpperCase())){ athSubArr.push(co); subUsed.add(co.hex.toUpperCase()); } });
   [...subPool].sort((a,b)=>score2(b)-score2(a)).forEach(co=>{ if(clsSubArr.length<SUB_N&&!subUsed.has(co.hex.toUpperCase())){ clsSubArr.push(co); subUsed.add(co.hex.toUpperCase()); } });
   [...subPool].sort((a,b)=>score3(b)-score3(a)).forEach(co=>{ if(actSubArr.length<SUB_N&&!subUsed.has(co.hex.toUpperCase())){ actSubArr.push(co); subUsed.add(co.hex.toUpperCase()); } });
-  if(actSubArr.length<SUB_N){ const actUsed=new Set(actSubArr.map(c=>c.hex.toUpperCase())); const fallback=_sppPickLifestyle([...subPool,...pointPool,...basicPool].filter(c=>!actUsed.has(c.hex.toUpperCase())),'active',SUB_N-actSubArr.length); for(const co of fallback){ if(actSubArr.length>=SUB_N) break; actSubArr.push(co); actUsed.add(co.hex.toUpperCase()); } }
+  if(actSubArr.length<SUB_N){ const actUsed=new Set(actSubArr.map(c=>c.hex.toUpperCase())); const fallback=_sppPickLifestyle([...subPool,...pointPool].filter(c=>!actUsed.has(c.hex.toUpperCase())),'active',SUB_N-actSubArr.length); for(const co of fallback){ if(actSubArr.length>=SUB_N) break; actSubArr.push(co); actUsed.add(co.hex.toUpperCase()); } }
   _sppLifestylePalette = { active:{point:actPoint,sub:actSubArr,basic:basicPool}, athleisure:{point:athPoint,sub:athSubArr,basic:basicPool}, classic:{point:clsPoint,sub:clsSubArr,basic:basicPool} };
   // 원본 백업 — 새로 빌드될 때마다 갱신 (복구 기준점)
   _sppLifestylePaletteOriginal = JSON.parse(JSON.stringify(_sppLifestylePalette));
