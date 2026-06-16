@@ -12728,9 +12728,15 @@ function runCollectAllFromComp(){
   // Done 후 경쟁사 버튼도 복원 (300ms 딜레이로 runCollectAll 내부 타이밍 고려)
   setTimeout(()=>{
     if(compBtn){
-      const cnt = collectedColors.length;
+      // 체크된 브랜드 기준 색상 수 계산
+      const sel = window._curMarketSel ? window._curMarketSel() : null;
+      const bkn = window._brandKeyNorm || (s=>(s||'').toLowerCase().replace(/[\s._\-]+/g,'').trim());
+      const hasSel = sel && sel.size > 0;
+      const filteredCnt = hasSel
+        ? collectedColors.filter(c => !c.brand || sel.has(bkn(c.brand))).length
+        : collectedColors.length;
       compBtn.disabled = false;
-      compBtn.textContent = `✓ Collected (${cnt})`;
+      compBtn.textContent = `✓ Collected (${filteredCnt})`;
       compBtn.style.background = 'var(--pos)';
       compBtn.style.color = '#000';
     }
@@ -16872,9 +16878,9 @@ const SPP_INTERSECTION_PINNED = ['Red','Pink','Navy','Blue'];
 const SPP_MARKET_LABEL = { kr:'KR', eu:'EU', global:'GLOBAL' };
 const SPP_MARKET_COLOR = { kr:'#B8860B', eu:'var(--blue)', global:'var(--text2)' };
 const SPP_SEASON_META = {
-  fall:      { label:'FALL',       name:'Fall 어스톤',    desc:'웜뉴트럴 · 올리브 · 어스톤 · 미드브라운', badgeClass:'spp-badge-fall' },
-  preWinter: { label:'PRE-WINTER', name:'Pre-Winter 딥톤', desc:'딥톤 · 네이비 · 버건디 · 다크뉴트럴',    badgeClass:'spp-badge-prewinter' },
-  winter:    { label:'WINTER',     name:'Winter 아이시',   desc:'블랙 · 화이트 · 아이보리 · 아이시톤',    badgeClass:'spp-badge-winter' },
+  fall:      { label:'FALL',       name:'',               desc:'웜뉴트럴 · 올리브 · 어스톤 · 미드브라운', badgeClass:'spp-badge-fall' },
+  preWinter: { label:'PRE-WINTER', name:'',                desc:'딥톤 · 네이비 · 버건디 · 다크뉴트럴',    badgeClass:'spp-badge-prewinter' },
+  winter:    { label:'WINTER',     name:'',                desc:'블랙 · 화이트 · 아이보리 · 아이시톤',    badgeClass:'spp-badge-winter' },
 };
 const SPP_LS_RATIO = {
   active:     { point:0.30, sub:0.25 },
@@ -17178,7 +17184,7 @@ function _sppRenderSeasonalColors(){
       const regIdx=_sppRegisterChip({...co,_marketKey:'seasonal',_catKey:sk});
       return `<div class="spp-seasonal-chip" onclick="openSppSwatchPopover(${regIdx})"><div class="spp-seasonal-sw" style="background:${co.hex}"></div><div class="spp-seasonal-chip-name">${co.name||co.hex}</div><div class="spp-seasonal-chip-code">${code}</div></div>`;
     }).join(''):'<div class="spp-seasonal-empty">컬러 없음</div>';
-    return `<div class="spp-seasonal-col"><div class="spp-seasonal-col-hd"><div class="spp-seasonal-col-badge ${meta.badgeClass}">${meta.label}</div><div class="spp-seasonal-col-name">${meta.name}</div><div class="spp-seasonal-col-desc">${meta.desc}</div></div><div class="spp-seasonal-col-body"><div class="spp-seasonal-swatches">${swatches}</div><div class="spp-seasonal-count">${colors.length}색 배정</div></div></div>`;
+    return `<div class="spp-seasonal-col"><div class="spp-seasonal-col-hd"><div class="spp-seasonal-col-badge ${meta.badgeClass}">${meta.label}</div>${meta.name?'<div class="spp-seasonal-col-name">'+meta.name+'</div>':''}<div class="spp-seasonal-col-desc">${meta.desc}</div></div><div class="spp-seasonal-col-body"><div class="spp-seasonal-swatches">${swatches}</div><div class="spp-seasonal-count">${colors.length}색 배정</div></div></div>`;
   }).join('');
 }
 
