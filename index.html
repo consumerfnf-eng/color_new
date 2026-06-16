@@ -14922,17 +14922,24 @@ function renderCompBrandPage() {
 
   const lsToShow = activeLS ? [activeLS] : sortedLS.filter(ls=>filteredBrands.some(b=>b.lifestyle===ls));
 
+  // EU 탭이면 KR Brands 라벨을 EU Brands로 표시
+  const _lsDisplayLabel = function(ls){
+    if(ls === 'KR Brands' && activeCountry === 'eu') return 'EU Brands';
+    return ls;
+  };
+
   lsToShow.forEach(ls => {
     const bList = filteredBrands.filter(b=>b.lifestyle===ls);
     if (!bList.length) return;
     const ac = lsAccent[ls]||'#6A6760';
+    const lsLabel = _lsDisplayLabel(ls);
 
     html += `
       <div style="margin-bottom:32px">
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;
                     padding-bottom:10px;border-bottom:1px solid var(--border)">
           <div style="width:3px;height:18px;background:${ac};border-radius:2px;flex-shrink:0"></div>
-          <span style="font-size:12px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:${ac}">${ls}</span>
+          <span style="font-size:12px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:${ac}">${lsLabel}</span>
           <span style="font-family:var(--mono);font-size:9px;color:var(--text3)">${bList.length} Brands</span>
         </div>
         <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:12px">
@@ -15004,7 +15011,7 @@ function renderCompBrandPage() {
             </div>
             <span style="font-size:9px;font-weight:600;letter-spacing:0.07em;text-transform:uppercase;
                          padding:2px 8px;border-radius:10px;border:1px solid ${ac}44;
-                         color:${ac};background:${ac}11">${ls}</span>
+                         color:${ac};background:${ac}11">${lsLabel}</span>
           </div>
 
           <!-- 팔레트 스트립 -->
@@ -15150,7 +15157,7 @@ function renderCompBrandPage() {
     barEl.innerHTML = `
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
         <div style="width:3px;height:16px;background:${ac};border-radius:2px"></div>
-        <span style="font-family:var(--mono);font-size:10px;font-weight:700;color:${ac};letter-spacing:0.06em;text-transform:uppercase">${activeLS} COLORS</span>
+        <span style="font-family:var(--mono);font-size:10px;font-weight:700;color:${ac};letter-spacing:0.06em;text-transform:uppercase">${activeCountry==='eu'&&activeLS==='KR Brands'?'EU Brands':activeLS} COLORS</span>
         <span style="font-family:var(--mono);font-size:9px;color:var(--text3)">${bList.length} Brands · ${top.length} colors</span>
         <span style="font-family:var(--mono);font-size:8px;color:var(--text4)">Click swatch for Pantone</span>
       </div>
