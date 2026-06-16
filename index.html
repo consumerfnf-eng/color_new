@@ -17214,6 +17214,13 @@ function _spp_renderPaletteProposal(){
     const basicHtml = pal.basic.length ? pal.basic.map((co,i)=>_sppChipHtml(co,m.key,'basic')).join('') : '<div class="spp-empty">BASIC 컬러 없음</div>';
     return `<div class="spp-market-section">
       <div class="spp-market-hd"><span class="spp-market-title">${m.title}</span><span class="spp-market-sub">${m.sub}</span></div>
+      <div style="background:rgba(160,144,240,0.05);border:1px solid rgba(160,144,240,0.2);border-radius:8px;padding:10px 14px;margin-bottom:14px">
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:2px">
+          <span style="font-size:11px;font-weight:700;color:#A090F0">🔥 Trend-Based</span>
+          <span style="font-family:var(--mono);font-size:9px;color:var(--text3)">${pal.sub.length+pal.key.length+pal.basic.length}개</span>
+        </div>
+        <div style="font-family:var(--mono);font-size:9px;color:var(--text3)">Trend PDF + Competitor brand frequency</div>
+      </div>
       <div class="spp-cat-row"><div class="spp-cat-label">SUB <span class="cnt">${pal.sub.length}</span></div><div class="spp-chip-row">${subHtml}</div></div>
       <div class="spp-cat-row"><div class="spp-cat-label">KEY <span class="cnt">${pal.key.length}</span></div><div class="spp-chip-row">${keyHtml}</div></div>
       <div class="spp-cat-row"><div class="spp-cat-label">BASIC <span class="cnt">${pal.basic.length}</span></div><div class="spp-chip-row">${basicHtml}</div></div>
@@ -17414,9 +17421,6 @@ function sppRemoveFromLs(ls, cat, idx){
 
 // ── 추가 모달 ──
 function sppOpenLsPickerModal(ls){
-  const pal = _sppMarketPalettes.global || _sppMarketPalettes.kr || _sppMarketPalettes.eu || {key:[],sub:[],basic:[]};
-  const point = pal.key||[], sub = pal.sub||[], basic = pal.basic||[];
-
   const card = (co, cat) => {
     const code = co.pantone||(co.tcxCode?co.tcxCode+' TCX':'')||_sppPantoneApprox(co.hex)||'';
     const lp = _sppLifestylePalette[ls]||{};
@@ -17431,10 +17435,30 @@ function sppOpenLsPickerModal(ls){
     </div>`;
   };
   const section = (label, colors, cat, accent) => colors.length ? `
-    <div style="margin-bottom:16px">
+    <div style="margin-bottom:14px">
       <div style="font-family:var(--mono);font-size:8px;letter-spacing:.12em;color:${accent};text-transform:uppercase;margin-bottom:8px;border-bottom:1px solid var(--border);padding-bottom:4px">${label} — ${colors.length}색</div>
       <div style="display:flex;flex-wrap:wrap;gap:8px">${colors.map(co=>card(co,cat)).join('')}</div>
     </div>` : '';
+
+  // ── GLOBAL / KR / EU 마켓별 후보 섹션 (각 마켓 내 중복 hex 제거) ──
+  const dedupe = arr => { const seen=new Set(), out=[]; for(const co of arr){ const h=(co.hex||'').toUpperCase(); if(seen.has(h)) continue; seen.add(h); out.push(co); } return out; };
+  const MARKET_DEFS = [
+    {key:'global', label:'GLOBAL', accent:'var(--text2)'},
+    {key:'kr',     label:'KR',     accent:'#B8860B'},
+    {key:'eu',     label:'EU',     accent:'var(--blue)'},
+  ];
+  const marketSections = MARKET_DEFS.map(md => {
+    const pal = _sppMarketPalettes[md.key];
+    if(!pal) return '';
+    const point = dedupe(pal.key||[]), sub = dedupe(pal.sub||[]);
+    if(!point.length && !sub.length) return '';
+    return `
+      <div style="margin-bottom:18px">
+        <div style="font-size:11px;font-weight:700;color:${md.accent};margin-bottom:8px;letter-spacing:0.04em">${md.label}</div>
+        ${section('Key (Point) Colors', point, 'point', md.accent)}
+        ${section('Sub Colors', sub, 'sub', md.accent)}
+      </div>`;
+  }).join('');
 
   const lsLabel = ls==='active'?'Court Active':ls==='athleisure'?'Athleisure':'Classic';
   document.getElementById('spp-ls-pick-modal')?.remove();
@@ -17448,8 +17472,7 @@ function sppOpenLsPickerModal(ls){
         <button onclick="document.getElementById('spp-ls-pick-modal').remove()" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--text3);line-height:1">×</button>
       </div>
       <div style="font-family:var(--mono);font-size:9px;color:var(--text4);margin-bottom:16px">Click color to add · Already added colors appear faded</div>
-      ${section('Key (Point) Colors', point, 'point', 'var(--gold)')}
-      ${section('Sub Colors', sub, 'sub', 'var(--blue)')}
+      ${marketSections || '<div style="font-family:var(--mono);font-size:9px;color:var(--text4);text-align:center;padding:20px">02 Market Analysis 데이터를 먼저 로드하세요.</div>'}
     </div>`;
   document.body.appendChild(modal);
   modal.addEventListener('click', e=>{ if(e.target===modal) modal.remove(); });
