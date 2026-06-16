@@ -7312,7 +7312,7 @@ function _fillCatColors() {
       if (!c.hex || !c.brand) return;
       const h = (c.hex || '').toUpperCase();
       if (!/^#[0-9A-F]{6}$/.test(h)) return;
-      const ls = typeof getLifestyle === 'function' ? getLifestyle(c.brand, c.group || '') : (c.group || '');
+      const ls = typeof getLifestyle === 'function' ? getLifestyle(c.brand, c.group || '', c.source) : (c.group || '');
       if (ls !== targetLS) return;
       const key = brandKey(c.brand);
       if (!key) return;
@@ -14149,9 +14149,10 @@ function brandMatches(brand, dictEntry){
   return re.test(b);
 }
 
-function getLifestyle(brand, group) {
+function getLifestyle(brand, group, source) {
+  // 0) source 기반 강제 오버라이드 — KR 데이터는 무조건 KR Brands
+  if(source === 'sheets-kr' || source === 'csv-kr') return 'KR Brands';
   // 1) COMP_LIFESTYLE_MAP 브랜드명 정확 매칭 우선
-  //    짧은 브랜드명("On")이 다른 브랜드에 포함 매칭되는 오류 방지 → brandMatches(단어경계)
   const brandLower = (brand||"").toLowerCase().trim();
   for (const [ls, brands] of Object.entries(COMP_LIFESTYLE_MAP)) {
     if (brands.some(b => brandMatches(brandLower, b))) return ls;
@@ -14768,7 +14769,7 @@ function renderCompBrandPage() {
     const key = brandKey(c.brand);
     if (!key) return;
     if (!brandMap[key]) {
-      brandMap[key] = { brand: c.brand, group: c.group||'Other', lifestyle: getLifestyle(c.brand, c.group), colors: [] };
+      brandMap[key] = { brand: c.brand, group: c.group||'Other', lifestyle: getLifestyle(c.brand, c.group, c.source), colors: [] };
     } else {
       brandMap[key].brand = prettierBrand(brandMap[key].brand, c.brand); // 더 보기 좋은 표기로 갱신
     }
