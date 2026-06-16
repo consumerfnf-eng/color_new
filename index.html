@@ -17058,13 +17058,21 @@ function _sppIsNearWhiteOrAchromatic(hex){
   if(l < 0.35) return !(s >= 0.10 && l >= 0.08);
   return !(s >= 0.18 && l >= 0.12 && l <= 0.88);
 }
-function _sppPickDiverse(arr, n, minDist){
+function _sppPickDiverse(arr, n, minDist, maxPerBrand){
   minDist = minDist || 45;
   const out=[], used=[];
+  const brandCount={};
   for(const co of arr){
     if(out.length >= n) break;
     if(!co.hex) continue;
     if(used.some(u=>_sppRgbDist(u,co.hex) < minDist)) continue;
+    // 브랜드당 최대 개수 제한 (지정 시) — 한 브랜드가 풀을 독식하지 않게
+    if(maxPerBrand){
+      const b = (co.brands && co.brands[0]) || co.name || '';
+      const bn = b.toLowerCase().trim();
+      if(bn && (brandCount[bn]||0) >= maxPerBrand) continue;
+      if(bn) brandCount[bn] = (brandCount[bn]||0)+1;
+    }
     out.push(co); used.push(co.hex);
   }
   return out;
@@ -17162,7 +17170,8 @@ function _sppBuildMarketPalette(rows){
     raw.basic.push({...co,marketCat:'basic'});
   });
   const classified = { key:_sppDedupSimilar(raw.key,48), sub:_sppDedupSimilar(raw.sub,38), basic:_sppDedupSimilar(raw.basic,30) };
-  let basic = _sppPickDiverse(classified.basic.sort((a,b)=>b.score-a.score),8,45);
+  const MAX_PER_BRAND = 3; // 한 브랜드가 8개 슬롯 중 최대 3개까지만 — 데이터량 적은 브랜드도 보이게
+  let basic = _sppPickDiverse(classified.basic.sort((a,b)=>b.score-a.score),8,45,MAX_PER_BRAND);
   if(basic.length<8){
     const used=new Set(basic.map(c=>c.hex));
     // fallback도 동일한 진짜 무채색 기준만 허용 (유채색 절대 끌려오지 않게)
@@ -17173,10 +17182,10 @@ function _sppBuildMarketPalette(rows){
     for(const co of extra){if(basic.length>=8)break;basic.push(co);}
   }
   const basicHexSet=new Set(basic.map(c=>c.hex));
-  let key=_sppPickDiverse(classified.key.filter(c=>!basicHexSet.has(c.hex)).sort((a,b)=>b.score-a.score),8,50);
-  if(key.length<8) key=_sppPickDiverse(classified.key.filter(c=>!basicHexSet.has(c.hex)).sort((a,b)=>b.score-a.score),8,35);
+  let key=_sppPickDiverse(classified.key.filter(c=>!basicHexSet.has(c.hex)).sort((a,b)=>b.score-a.score),8,50,MAX_PER_BRAND);
+  if(key.length<8) key=_sppPickDiverse(classified.key.filter(c=>!basicHexSet.has(c.hex)).sort((a,b)=>b.score-a.score),8,35,MAX_PER_BRAND);
   const keyHexSet=new Set(key.map(c=>c.hex));
-  let sub=_sppPickDiverse(classified.sub.filter(c=>!basicHexSet.has(c.hex)&&!keyHexSet.has(c.hex)).sort((a,b)=>b.score-a.score),8,38);
+  let sub=_sppPickDiverse(classified.sub.filter(c=>!basicHexSet.has(c.hex)&&!keyHexSet.has(c.hex)).sort((a,b)=>b.score-a.score),8,38,MAX_PER_BRAND);
   if(sub.length<8){ const used=new Set([...basicHexSet,...keyHexSet,...sub.map(c=>c.hex)]); const extra=[...classified.key,...classified.basic].filter(c=>!used.has(c.hex)).sort((a,b)=>b.score-a.score); for(const co of extra){if(sub.length>=8)break;sub.push(co);} }
   return { key, sub, basic };
 }
