@@ -16035,14 +16035,35 @@ window._marketBrandSelMap = window._marketBrandSelMap || {};
 // 표시용 원본명 매핑 { normKey: '원본 표기' }
 window._marketBrandLabel  = window._marketBrandLabel  || {};
 
+// ── 브랜드별 기본 체크 세트 ──────────────────────────────────
+// localStorage에 저장된 값 없을 때 자동 적용되는 기본 선택 브랜드
+window._defaultBrandSel = {
+  SERGIO: [
+    'Adenola','Adidas','ALO YOGA','Aritzia',
+    'brunello cucinelli','celine','dior','Dior',
+    'FILA','loro piana','Loro Piana','Lululemon',
+    'miu miu','miumiu','New Balance','prada',
+    'Ralph Lauren (EU)','Ralph Lauren (KR)',
+    'Sporty & Rich','the row'
+  ],
+  MLB: [], // MLB는 기본값 없음 (전체 표시)
+};
+
 window._curMarketSel = function(){
   var fb = (typeof _activeBrand !== 'undefined' && _activeBrand) ? _activeBrand : 'MLB';
   if(!window._marketBrandSelMap[fb]) window._marketBrandSelMap[fb] = new Set();
-  // 첫 진입 시 localStorage 복원
+  // 첫 진입 시 localStorage 복원 → 없으면 기본 브랜드 세트 적용
   if(!window._marketBrandSelMap[fb]._loaded){
     try{
       var raw = localStorage.getItem('fnf_marketSel_'+fb);
-      if(raw){ JSON.parse(raw).forEach(function(k){ window._marketBrandSelMap[fb].add(k); }); }
+      if(raw){
+        JSON.parse(raw).forEach(function(k){ window._marketBrandSelMap[fb].add(k); });
+      } else {
+        // localStorage 값 없으면 기본 세트 적용
+        var defaults = window._defaultBrandSel[fb] || [];
+        var bkn = window._brandKeyNorm || function(s){ return (s||'').toLowerCase().replace(/[\s._\-]+/g,'').trim(); };
+        defaults.forEach(function(b){ window._marketBrandSelMap[fb].add(bkn(b)); });
+      }
     }catch(e){}
     window._marketBrandSelMap[fb]._loaded = true;
   }
@@ -16136,6 +16157,7 @@ window.renderMarketCsvBrands = function(brands, season) {
     +   '<span style="flex:1"></span>'
     +   '<button onclick="window.marketSelectAll()" style="font-family:var(--mono);font-size:9px;background:var(--bg3);border:1px solid var(--border2);border-radius:4px;color:var(--text2);padding:3px 8px;cursor:pointer">전체 체크</button>'
     +   '<button onclick="window.marketClearSel()" style="font-family:var(--mono);font-size:9px;background:var(--bg3);border:1px solid var(--border2);border-radius:4px;color:var(--text2);padding:3px 8px;cursor:pointer">전체 해제</button>'
+    +   '<button onclick="window.marketResetDefault()" style="font-family:var(--mono);font-size:9px;background:var(--bg3);border:1px solid var(--border2);border-radius:4px;color:var(--accent);padding:3px 8px;cursor:pointer">★ 기본값</button>'
     +   '<button onclick="window.applyMarketBrandSelection()" style="font-family:var(--mono);font-size:9px;font-weight:700;background:#A07840;border:none;border-radius:4px;color:#fff;padding:3px 10px;cursor:pointer">✓ 체크한 브랜드로 Trend Palette 생성</button>'
     + '</div>'
     + '<div>'
@@ -16167,6 +16189,17 @@ window.marketSelectAll = function(){
 };
 window.marketClearSel = function(){
   window._curMarketSel().clear();
+  window.renderMarketCsvBrands();
+};
+
+// 기본 브랜드 세트로 초기화
+window.marketResetDefault = function(){
+  var fb = (typeof _activeBrand !== 'undefined' && _activeBrand) ? _activeBrand : 'MLB';
+  var defaults = window._defaultBrandSel[fb] || [];
+  var bkn = window._brandKeyNorm || function(s){ return (s||'').toLowerCase().replace(/[\s._\-]+/g,'').trim(); };
+  var sel = window._curMarketSel();
+  sel.clear();
+  defaults.forEach(function(b){ sel.add(bkn(b)); });
   window.renderMarketCsvBrands();
 };
 
