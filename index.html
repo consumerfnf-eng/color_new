@@ -16130,8 +16130,8 @@ window._defaultBrandSel = {
     'Wilson (EU)','Wilson (KR)'
   ],
   MLB: [
-    '더바보','던스트','레이브','론론','르바','썸웨어버터','푸드먼트','파르티멘토 루만',
-    'ALO YOGA','Aritzia','celine','dior','Dior',
+    '더바넷','던스트','레이브','론론','르바','썸웨어버터','튜드먼트','파르티멘토 우먼',
+    'Adenola','ALO YOGA','Aritzia','celine','dior','Dior',
     'louis vuitton','Lululemon','miu miu','miumiu',
     'moncler','New Balance','On','On Running','prada',
     'Salomon','Sansan Gear','stone island','The North Face','valentino'
@@ -17114,12 +17114,25 @@ function _sppAggregateRows(rows){
     if(!r.hex || !/^#[0-9A-Fa-f]{6}$/i.test(r.hex)) return;
     const hex = r.hex.toUpperCase();
     const freq = r.count || r.freq || 1;
-    if(map.has(hex)){ const e=map.get(hex); e.freq+=freq; if(r.brand&&!e.brands.includes(r.brand)) e.brands.push(r.brand); }
-    else map.set(hex, { hex, freq, name:r.name||r.brand||hex, brands:r.brand?[r.brand]:[] });
+    const brandName = r.name || r.brand || hex;
+    if(map.has(hex)){
+      const e = map.get(hex);
+      e.freq += freq;
+      // 브랜드별 등장 빈도 집계 — 가장 많이 등장한 브랜드명을 대표 이름으로 사용
+      e._brandFreq[brandName] = (e._brandFreq[brandName]||0) + freq;
+      if(r.brand && !e.brands.includes(r.brand)) e.brands.push(r.brand);
+      // 현재까지 최다 빈도 브랜드로 name 갱신
+      let topBrand = brandName, topFreq = e._brandFreq[brandName];
+      for(const [b,f] of Object.entries(e._brandFreq)){ if(f > topFreq){ topFreq = f; topBrand = b; } }
+      e.name = topBrand;
+    } else {
+      map.set(hex, { hex, freq, name:brandName, brands:r.brand?[r.brand]:[], _brandFreq:{[brandName]:freq} });
+    }
   });
   const trendPool = _sppGetTrendPool();
   const out = [...map.values()];
   out.forEach(co=>{
+    delete co._brandFreq; // 내부용 임시 필드 제거
     if(!trendPool.length){ co.score=co.freq; co.trendMatch=false; co._trendMatches=[]; return; }
     const matches = trendPool.map(t=>({...t,_dist:_sppRgbDist(co.hex,t.hex)})).filter(t=>t._dist<SPP_TREND_MATCH_DIST).sort((a,b)=>a._dist-b._dist);
     co.trendMatch = matches.length>0;
@@ -17333,7 +17346,10 @@ function _sppGetSeasonScores(hex){
   const [h,s,l]=_sppRgbToHsl(hex);
   const fall=((l>=0.25&&l<=0.65?0.4:0)+(s>=0.08&&s<=0.55?0.3:0)+((h>=20&&h<=120)?0.3:0));
   const preWinter=((l>=0.10&&l<=0.40?0.5:l>0.40&&l<=0.50?0.2:0)+(s>=0.15&&s<=0.80?0.3:0)+(s>=0.30&&l<=0.35?0.2:0));
-  const winter=((l<=0.18?0.5:l>=0.82?0.5:0)+(s<0.15?0.3:0)+((h>=180&&h<=260&&s<0.30)?0.2:0));
+  // winter: 무채색(블랙/화이트/그레이) 외에도 딥톤 유채색(버건디/네이비/다크그린/와인)도 윈터답게 인정
+  const isAchromaticWinter = (l<=0.18 || l>=0.82) && s<0.15;
+  const isDeepChromaticWinter = (l>=0.10 && l<=0.32) && s>=0.30; // 딥 버건디/네이비/포레스트 등
+  const winter = (isAchromaticWinter?0.5:0) + (isDeepChromaticWinter?0.45:0) + (s<0.15?0.2:0) + ((h>=180&&h<=260&&s<0.30)?0.15:0);
   return {fall,preWinter,winter};
 }
 function _sppClassifySeasonalColors(){
