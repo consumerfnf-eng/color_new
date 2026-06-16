@@ -17627,7 +17627,7 @@ function sppOpenBasicPickerModal(){
   const marketSections = MARKET_DEFS.map(md => {
     const pal = _sppMarketPalettes[md.key];
     if(!pal) return '';
-    const allCols = dedupe([...(pal.key||[]),...(pal.sub||[]),...(pal.basic||[])]);
+    const allCols = dedupe(pal.basic||[]);
     if(!allCols.length) return '';
     return `
       <div style="margin-bottom:18px">
@@ -17657,7 +17657,7 @@ function sppAddToBasicFromPicker(hex){
   const allCols = [];
   ['global','kr','eu'].forEach(mk => {
     const pal = _sppMarketPalettes[mk];
-    if(pal) allCols.push(...(pal.key||[]), ...(pal.sub||[]), ...(pal.basic||[]));
+    if(pal) allCols.push(...(pal.basic||[]));
   });
   const co = allCols.find(x=>(x.hex||'').toUpperCase()===hex.toUpperCase());
   if(!co) return;
