@@ -17171,22 +17171,48 @@ function _sppBuildMarketPalette(rows){
   });
   const classified = { key:_sppDedupSimilar(raw.key,48), sub:_sppDedupSimilar(raw.sub,38), basic:_sppDedupSimilar(raw.basic,30) };
   const MAX_PER_BRAND = 3; // 한 브랜드가 8개 슬롯 중 최대 3개까지만 — 데이터량 적은 브랜드도 보이게
+  const brandOf = co => ((co.brands && co.brands[0]) || co.name || '').toLowerCase().trim();
+  const countBrands = arr => { const m={}; arr.forEach(co=>{ const b=brandOf(co); if(b) m[b]=(m[b]||0)+1; }); return m; };
   let basic = _sppPickDiverse(classified.basic.sort((a,b)=>b.score-a.score),8,45,MAX_PER_BRAND);
   if(basic.length<8){
     const used=new Set(basic.map(c=>c.hex));
-    // fallback도 동일한 진짜 무채색 기준만 허용 (유채색 절대 끌려오지 않게)
+    const bCount = countBrands(basic);
+    // fallback도 동일한 진짜 무채색 기준만 허용 (유채색 절대 끌려오지 않게) + 브랜드 제한 유지
     const extra=[...classified.sub,...classified.key]
       .filter(c=>!used.has(c.hex))
       .filter(c=>{ const [,s,l]=_sppRgbToHsl(c.hex); return isTrueNeutral(s,l); })
       .sort((a,b)=>{const[,sa]=_sppRgbToHsl(a.hex),[,sb]=_sppRgbToHsl(b.hex);return sa-sb;});
-    for(const co of extra){if(basic.length>=8)break;basic.push(co);}
+    for(const co of extra){
+      if(basic.length>=8)break;
+      const b=brandOf(co);
+      if(b && (bCount[b]||0)>=MAX_PER_BRAND) continue;
+      if(b) bCount[b]=(bCount[b]||0)+1;
+      basic.push(co);
+    }
   }
   const basicHexSet=new Set(basic.map(c=>c.hex));
-  let key=_sppPickDiverse(classified.key.filter(c=>!basicHexSet.has(c.hex)).sort((a,b)=>b.score-a.score),8,50,MAX_PER_BRAND);
-  if(key.length<8) key=_sppPickDiverse(classified.key.filter(c=>!basicHexSet.has(c.hex)).sort((a,b)=>b.score-a.score),8,35,MAX_PER_BRAND);
+  // 같은 Pantone TCX 코드로 매핑되는 색은 시각적으로 동일하게 보이므로 함께 제외
+  const basicCodeSet=new Set(basic.map(c=>_sppPantoneApprox(c.hex)).filter(Boolean));
+  const isDupOfBasic = c => basicHexSet.has(c.hex) || basicCodeSet.has(_sppPantoneApprox(c.hex));
+  let key=_sppPickDiverse(classified.key.filter(c=>!isDupOfBasic(c)).sort((a,b)=>b.score-a.score),8,50,MAX_PER_BRAND);
+  if(key.length<8) key=_sppPickDiverse(classified.key.filter(c=>!isDupOfBasic(c)).sort((a,b)=>b.score-a.score),8,35,MAX_PER_BRAND);
   const keyHexSet=new Set(key.map(c=>c.hex));
-  let sub=_sppPickDiverse(classified.sub.filter(c=>!basicHexSet.has(c.hex)&&!keyHexSet.has(c.hex)).sort((a,b)=>b.score-a.score),8,38,MAX_PER_BRAND);
-  if(sub.length<8){ const used=new Set([...basicHexSet,...keyHexSet,...sub.map(c=>c.hex)]); const extra=[...classified.key,...classified.basic].filter(c=>!used.has(c.hex)).sort((a,b)=>b.score-a.score); for(const co of extra){if(sub.length>=8)break;sub.push(co);} }
+  const keyCodeSet=new Set(key.map(c=>_sppPantoneApprox(c.hex)).filter(Boolean));
+  const isDupOfBasicOrKey = c => isDupOfBasic(c) || keyHexSet.has(c.hex) || keyCodeSet.has(_sppPantoneApprox(c.hex));
+  let sub=_sppPickDiverse(classified.sub.filter(c=>!isDupOfBasicOrKey(c)).sort((a,b)=>b.score-a.score),8,38,MAX_PER_BRAND);
+  if(sub.length<8){
+    const used=new Set([...basicHexSet,...keyHexSet,...sub.map(c=>c.hex)]);
+    const usedCodes=new Set([...basicCodeSet,...keyCodeSet,...sub.map(c=>_sppPantoneApprox(c.hex))].filter(Boolean));
+    const sCount = countBrands(sub);
+    const extra=[...classified.key,...classified.basic].filter(c=>!used.has(c.hex)&&!usedCodes.has(_sppPantoneApprox(c.hex))).sort((a,b)=>b.score-a.score);
+    for(const co of extra){
+      if(sub.length>=8)break;
+      const b=brandOf(co);
+      if(b && (sCount[b]||0)>=MAX_PER_BRAND) continue;
+      if(b) sCount[b]=(sCount[b]||0)+1;
+      sub.push(co);
+    }
+  }
   return { key, sub, basic };
 }
 
