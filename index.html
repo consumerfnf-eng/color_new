@@ -1390,6 +1390,7 @@ function enterBrandFromHome(brand) {
         <div id="spp-pop-label" style="font-size:9px;font-family:var(--mono);color:var(--text3);margin-bottom:14px"></div>
         <div id="spp-pop-evidence"></div>
         <div id="spp-pop-name" style="display:none">—</div>
+        <div id="spp-pop-material-section" style="display:none"></div>
       </div>
 
       <!-- ════ 기존 MLB 팔레트 UI (SERGIO가 아닐 때만 보임) ════ -->
@@ -17810,6 +17811,53 @@ function openSppSwatchPopover(regIdx){
     html += '</div></div>';
     evEl.innerHTML = html;
   }
+  // 소재별 추천 Colors (MLB와 동일 로직 재사용)
+  const matSection = document.getElementById('spp-pop-material-section');
+  if(matSection){
+    const mats=[
+      {key:'woven', label:'Woven', desc:'솔리드 발색 · 원본 Colors 기준'},
+      {key:'knit',  label:'Knit',  desc:'명도 +6% · 채도 -5% · 멜란지 보정'},
+      {key:'cotton',label:'Cotton',desc:'채도 -10% · 소프트 톤 보정'},
+    ];
+    const feasColor={'●':'var(--pos)','△':'var(--gold)','✕':'var(--red)'};
+    const f=typeof getFeasibility==='function'?getFeasibility(hex):{woven:'●',knit:'●',cotton:'●'};
+    matSection.innerHTML=`
+      <div style="border-top:1px solid var(--border);margin-top:14px;padding-top:14px">
+        <div style="font-size:9px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text3);margin-bottom:10px">소재별 추천 Colors</div>
+        <div style="display:flex;gap:12px">
+          ${mats.map(m=>{
+            const corrHex=typeof applyMaterialCorrection==='function'?applyMaterialCorrection(hex,m.key):hex;
+            let ptCode = '';
+            const _cHU = (corrHex||'').toUpperCase();
+            if(typeof PANTONE_TCX_DB!=='undefined'){
+              const _dbF=Object.entries(PANTONE_TCX_DB).find(([,v])=>(v&&v[0]||'').toUpperCase()===_cHU);
+              if(_dbF) ptCode=_dbF[0];
+            }
+            if(!ptCode && typeof PANTONE_TCX_MAP!=='undefined'){
+              const _mF=Object.entries(PANTONE_TCX_MAP).find(([,v])=>(v||'').toUpperCase()===_cHU);
+              if(_mF) ptCode=_mF[0];
+            }
+            if(!ptCode && typeof pantoneApprox==='function'){
+              try{ ptCode=(pantoneApprox(corrHex)||'').replace(/ TCX$/i,''); }catch(e){}
+            }
+            if(!ptCode) ptCode = corrHex;
+            const _cc = (window.hexToColoro && window.hexToColoro(corrHex)) || null;
+            const fc=f[m.key]||'●';
+            return `<div style="display:flex;flex-direction:column;align-items:center;gap:5px;flex:1">
+              <div style="position:relative;width:100%;height:56px;border-radius:8px;background:${corrHex};border:1px solid var(--border2);display:flex;align-items:flex-end;justify-content:flex-end;padding:3px">
+                <span style="font-size:9px;color:${feasColor[fc]||'var(--text3)'}">&#9679;</span>
+              </div>
+              <div style="font-size:10px;font-weight:700;color:var(--text)">${m.label}</div>
+              <div style="font-family:var(--mono);font-size:8px;font-weight:600;color:var(--accent);text-align:center">${_cc?'COLORO '+_cc.coloro:'—'}</div>
+              <div style="font-family:var(--mono);font-size:8px;color:var(--text2);text-align:center">${(ptCode||'').replace(/ TCX$/i,'')} TCX</div>
+              <div style="font-family:var(--mono);font-size:7px;color:var(--text4)">${corrHex.toUpperCase()}</div>
+              <div style="font-size:8px;color:var(--text4);text-align:center">${m.desc}</div>
+            </div>`;
+          }).join('')}
+        </div>
+      </div>`;
+    matSection.style.display='block';
+  }
   // similar pantone
   _sppRenderPopSimilar(hex);
   ov.style.display='block'; pop.style.display='block';
@@ -17818,6 +17866,8 @@ function closeSppSwatchPopover(){
   const ov=document.getElementById('spp-swatch-overlay'), pop=document.getElementById('spp-swatch-popover');
   if(ov) ov.style.display='none';
   if(pop) pop.style.display='none';
+  const ms=document.getElementById('spp-pop-material-section');
+  if(ms){ ms.style.display='none'; ms.innerHTML=''; }
 }
 function _sppRenderPopSimilar(hex){
   const container=document.getElementById('spp-pop-similar'); if(!container) return;
