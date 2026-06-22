@@ -555,7 +555,7 @@ function selectBrand(brand) {
   _activeBrand = brand;
   _activeSeason = null;
   document.querySelectorAll('.brand-season-badge').forEach(el => { el.style.display = 'none'; });
-  ['27FW','28SS','28FW'].forEach(s => {
+  ['27SS','27FW','28SS','28FW'].forEach(s => {
     const b = document.getElementById('spk-' + brand + '-' + s);
     if (b) { b.style.background='transparent'; b.style.color='var(--text2)'; b.style.borderColor='var(--border)'; }
   });
@@ -580,7 +580,7 @@ function pickSeason(brand, season) {
   if (typeof resetSeasonUI === 'function') resetSeasonUI();
 
   // 해당 브랜드 시즌 버튼 활성 스타일
-  ['27FW','28SS','28FW'].forEach(s => {
+  ['27SS','27FW','28SS','28FW'].forEach(s => {
     const b = document.getElementById('spk-' + brand + '-' + s);
     if (!b) return;
     if (s === season) {
@@ -613,6 +613,30 @@ function pickSeason(brand, season) {
   // 상태 표시
   const st = document.getElementById(brand + '-season-load-status');
   if (st) { st.textContent = 'Loading ' + season + '…'; st.style.color = 'var(--text3)'; }
+
+  // ── 27SS: 01/02 탭 비활성화, 03 팔레트만 표시 ──
+  if(brand === 'SERGIO' && season === '27SS'){
+    // 탭 버튼 비활성화
+    document.querySelectorAll('.tab').forEach(btn => {
+      const oc = btn.getAttribute('onclick') || '';
+      if(oc.includes("'trend'") || oc.includes("'competitor'")){
+        btn.style.opacity = '0.35';
+        btn.style.pointerEvents = 'none';
+      } else {
+        btn.style.opacity = '';
+        btn.style.pointerEvents = '';
+      }
+    });
+    switchTabByName('palette');
+    setTimeout(()=>{ if(typeof _spp27SS_render==='function') _spp27SS_render(); }, 100);
+    if(st){ st.textContent='✓ 27SS · Asia Palette (Fixed)'; st.style.color='#5A7A30'; }
+    return;
+  }
+  // 다른 시즌에서 돌아올 때 탭 복원
+  document.querySelectorAll('.tab').forEach(btn => {
+    btn.style.opacity = '';
+    btn.style.pointerEvents = '';
+  });
 
   // ── 브랜드+시즌 기준으로 마켓/시트 데이터 로드 ──
   // autoLoadAllSheets 는 시즌으로 competitor CSV 를 필터링 → 이후 CSV 내 브랜드를 읽어 선택 가능
@@ -756,6 +780,8 @@ function enterBrandFromHome(brand) {
         <div id="SERGIO-season-picker" class="brand-season-picker" style="display:none;padding:6px 16px 10px">
           <div style="font-family:var(--mono);font-size:8px;color:var(--text3);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:6px">Select Season</div>
           <div style="display:flex;flex-direction:column;gap:4px">
+            <button onclick="pickSeason('SERGIO','27SS')" id="spk-SERGIO-27SS" class="season-pick-btn"
+              style="font-family:var(--mono);font-size:10px;font-weight:600;padding:7px 12px;border-radius:5px;cursor:pointer;transition:all .15s;text-align:left;letter-spacing:0.04em;background:transparent;color:var(--text2);border:1px solid var(--border)">27SS</button>
             <button onclick="pickSeason('SERGIO','27FW')" id="spk-SERGIO-27FW" class="season-pick-btn"
               style="font-family:var(--mono);font-size:10px;font-weight:600;padding:7px 12px;border-radius:5px;cursor:pointer;transition:all .15s;text-align:left;letter-spacing:0.04em;background:transparent;color:var(--text2);border:1px solid var(--border)">27FW</button>
             <button onclick="pickSeason('SERGIO','28SS')" id="spk-SERGIO-28SS" class="season-pick-btn"
@@ -17661,6 +17687,214 @@ function sppRestoreLs(ls){
   _sppLifestylePalette[ls] = JSON.parse(JSON.stringify(_sppLifestylePaletteOriginal[ls]));
   _sppRenderLifestyleSection(ls);
 }
+// ── 27SS 하드코딩 팔레트 (Asia Version) ──
+const _SS27_DATA = {
+  basic: [
+    {name:'White',        tcx:'11-0602', hex:'#F2F0EB'},
+    {name:'Black',        tcx:'19-3906', hex:'#1A1A1A'},
+    {name:'Navy',         tcx:'19-3832', hex:'#403F6F'},
+    {name:'Grey',         tcx:'15-4704', hex:'#A9AFAA'},
+    {name:'Umber Deep',   tcx:'19-1110', hex:'#3C2D2E'},
+    {name:'Mauve',        tcx:'15-3909', hex:'#AAAAC4'},
+    {name:'Archive Ecru', tcx:'11-0809', hex:'#F3DFCA'},
+    {name:'Warm Stone',   tcx:'15-4502', hex:'#BEB7B0'},
+  ],
+  sub: [
+    {name:'Stone',        tcx:'18-1307', hex:'#695650'},
+    {name:'Lilac',        tcx:'17-3313', hex:'#A1759C'},
+    {name:'Mint',         tcx:'15-6437', hex:'#7BB369'},
+    {name:'Oat',          tcx:'12-1008', hex:'#EDD2C0'},
+    {name:'Sage Mint',    tcx:'12-5409', hex:'#B8E2DC'},
+    {name:'Terracotta',   tcx:'16-1325', hex:'#C47E5A'},
+    {name:'Hazel Brown',  tcx:'14-6408', hex:'#ABA798'},
+    {name:'Purple',       tcx:'18-3530', hex:'#936A98'},
+  ],
+  key: [
+    {name:'Forest',       tcx:'19-0415', hex:'#394034'},
+    {name:'Blue',         tcx:'17-4027', hex:'#1A4FBF'},
+    {name:'Brown',        tcx:'19-1314', hex:'#493B39'},
+    {name:'Pink',         tcx:'16-2107', hex:'#B0879B'},
+    {name:'Butter',       tcx:'14-0721', hex:'#C0AD7C'},
+    {name:'Indigo',       tcx:'19-3842', hex:'#443F6F'},
+    {name:'Red',          tcx:'19-1664', hex:'#BF1932'},
+    {name:'Electric Sky', tcx:'16-4030', hex:'#849BCC'},
+  ],
+  seasonal: {
+    earlySpring: {
+      label:'EARLY SPRING', badgeClass:'spp-seasonal-badge-fall',
+      colors:[
+        {name:'Mauve',      tcx:'15-3909', hex:'#C4B0C8'},
+        {name:'Sage Mint',  tcx:'12-5409', hex:'#86A1A9'},
+      ]
+    },
+    spring: {
+      label:'SPRING', badgeClass:'spp-seasonal-badge-preWinter',
+      colors:[
+        {name:'Hazel Brown',tcx:'14-6408', hex:'#C8B49A'},
+        {name:'Mint',       tcx:'15-6437', hex:'#A8D8B0'},
+        {name:'Oat',        tcx:'12-1008', hex:'#EDE3D0'},
+        {name:'Forest',     tcx:'19-0415', hex:'#2D4A2D'},
+        {name:'Butter',     tcx:'14-0721', hex:'#F5E6A3'},
+        {name:'Pink',       tcx:'16-2107', hex:'#E8A0B0'},
+      ]
+    },
+    summer: {
+      label:'SUMMER', badgeClass:'spp-seasonal-badge-winter',
+      colors:[
+        {name:'Blue',        tcx:'17-4027', hex:'#1A4FBF'},
+        {name:'Indigo',      tcx:'19-3842', hex:'#2C2D6B'},
+        {name:'Electric Sky',tcx:'16-4030', hex:'#88B4D6'},
+        {name:'Sage Mint',   tcx:'12-5409', hex:'#86A1A9'},
+      ]
+    },
+    hotSummer: {
+      label:'HOT SUMMER', badgeClass:'spp-seasonal-badge-fall',
+      colors:[
+        {name:'Red',    tcx:'19-1664', hex:'#C8112E'},
+        {name:'Blue',   tcx:'17-4027', hex:'#1A4FBF'},
+        {name:'Indigo', tcx:'19-3842', hex:'#2C2D6B'},
+        {name:'Butter', tcx:'14-0721', hex:'#F5E6A3'},
+      ]
+    },
+  },
+  curation: {
+    active: {
+      point:[
+        {name:'Pink', tcx:'16-2107', hex:'#E8A0B0'},
+        {name:'Blue', tcx:'17-4027', hex:'#1A4FBF'},
+      ],
+      sub:[
+        {name:'Mauve',    tcx:'15-3909', hex:'#C4B0C8'},
+        {name:'Sage Mint',tcx:'12-5409', hex:'#86A1A9'},
+      ]
+    },
+    athleisure: {
+      point:[
+        {name:'Electric Sky', tcx:'16-4030', hex:'#88B4D6'},
+        {name:'Butter',       tcx:'14-0721', hex:'#F5E6A3'},
+        {name:'Forest',       tcx:'19-0415', hex:'#2D4A2D'},
+      ],
+      sub:[
+        {name:'Mint',       tcx:'15-6437', hex:'#A8D8B0'},
+        {name:'Hazel Brown',tcx:'14-6408', hex:'#C8B49A'},
+        {name:'Oat',        tcx:'12-1008', hex:'#EDE3D0'},
+      ]
+    },
+    classic: {
+      point:[
+        {name:'Indigo', tcx:'19-3842', hex:'#2C2D6B'},
+        {name:'Red',    tcx:'19-1664', hex:'#C8112E'},
+      ],
+      sub:[
+        {name:'Purple',      tcx:'18-3530', hex:'#7A4A9A'},
+        {name:'Terracotta',  tcx:'16-1325', hex:'#C4937A'},
+        {name:'Hazel Brown', tcx:'14-6408', hex:'#91946E'},
+      ]
+    },
+  },
+};
+
+function _spp27SS_render(){
+  window._sppChipRegistry = [];
+
+  // ── 01. Trend-Based 마켓 박스 영역 — 27SS 확정 팔레트 표시 ──
+  const marketWrap = document.getElementById('spp-market-wrap');
+  if(marketWrap){
+    const makeChip = (co, marketKey, catKey) => {
+      const code = co.tcx + ' TCX';
+      const regIdx = _sppRegisterChip({...co, pantone:code, freq:1, brands:[], _marketKey:marketKey, _catKey:catKey});
+      const similar = _sppFindSimilarN(co.hex, 4).map(e=>
+        `<div class="spp-mini-similar-sw" style="background:${e.hex}" title="${e.code} TCX"
+          onclick="event.stopPropagation();_sppOpenPopByHex('${e.hex}')"></div>`
+      ).join('');
+      return `<div class="spp-chip" onclick="openSppSwatchPopover(${regIdx})" title="${co.name}">
+        <div><div class="spp-chip-sw" style="background:${co.hex}"></div></div>
+        <div class="spp-chip-freq">×1</div>
+        <div class="spp-chip-code">${code}</div>
+        <div style="display:flex;flex-wrap:wrap;gap:3px;margin-top:4px">${similar}</div>
+      </div>`;
+    };
+    const subHtml   = _SS27_DATA.sub.map(co=>makeChip(co,'global','sub')).join('');
+    const keyHtml   = _SS27_DATA.key.map(co=>makeChip(co,'global','key')).join('');
+    const basicHtml = _SS27_DATA.basic.map(co=>makeChip(co,'global','basic')).join('');
+    marketWrap.innerHTML = `<div class="spp-market-section">
+      <div class="spp-trend-market-box">
+        <div class="spp-trend-market-hd">
+          <span class="spp-trend-market-flame">🎨 Fixed</span>
+          <span class="spp-trend-market-title">27SS</span>
+          <span class="spp-trend-market-sub">Asia Version · Confirmed Palette</span>
+          <span class="spp-trend-market-cnt">24개</span>
+        </div>
+        <div class="spp-trend-market-desc">27SS Final Palette — Asia Version 확정</div>
+        <div class="spp-cat-row"><div class="spp-cat-label">SUB <span class="cnt">${_SS27_DATA.sub.length}</span></div><div class="spp-chip-row">${subHtml}</div></div>
+        <div class="spp-cat-row"><div class="spp-cat-label">KEY <span class="cnt">${_SS27_DATA.key.length}</span></div><div class="spp-chip-row">${keyHtml}</div></div>
+        <div class="spp-cat-row"><div class="spp-cat-label">BASIC <span class="cnt">${_SS27_DATA.basic.length}</span></div><div class="spp-chip-row">${basicHtml}</div></div>
+      </div>
+    </div>`;
+  }
+  // Intersection 숨김
+  const intSec = document.getElementById('spp-intersection-section');
+  if(intSec) intSec.style.display = 'none';
+
+  // ── 02. Seasonal Color ──
+  const seasonSub = document.querySelector('.spp-seasonal-section-sub');
+  if(seasonSub) seasonSub.textContent = '27SS · EARLY SPRING / SPRING / SUMMER / HOT SUMMER Palette Distribution';
+  const seasonGrid = document.getElementById('spp-seasonal-grid');
+  if(seasonGrid){
+    const D = _SS27_DATA.seasonal;
+    seasonGrid.style.gridTemplateColumns = 'repeat(4,1fr)';
+    seasonGrid.innerHTML = Object.values(D).map(s=>{
+      const chips = s.colors.map(co=>{
+        const regIdx = _sppRegisterChip({...co, pantone:co.tcx+' TCX', _marketKey:'seasonal', _catKey:s.label});
+        return `<div class="spp-seasonal-chip" onclick="openSppSwatchPopover(${regIdx})">
+          <div class="spp-seasonal-sw" style="background:${co.hex}"></div>
+          <div class="spp-seasonal-chip-name">${co.name}</div>
+          <div class="spp-seasonal-chip-code">${co.tcx} TCX</div>
+        </div>`;
+      }).join('');
+      return `<div class="spp-seasonal-col">
+        <div class="spp-seasonal-col-hd">
+          <div class="spp-seasonal-col-badge ${s.badgeClass}">${s.label}</div>
+        </div>
+        <div class="spp-seasonal-col-body">
+          <div class="spp-seasonal-swatches">${chips}</div>
+          <div class="spp-seasonal-count">${s.colors.length}색 배정</div>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  // ── 03. Category Curation ──
+  const lsMap = {active:{ptId:'spp-active-point',subId:'spp-active-sub',metaId:'spp-ls-active-meta'},athleisure:{ptId:'spp-ath-point',subId:'spp-ath-sub',metaId:'spp-ls-ath-meta'},classic:{ptId:'spp-cls-point',subId:'spp-cls-sub',metaId:'spp-ls-cls-meta'}};
+  const makeLsChip = (co, ls, catKey) => {
+    const regIdx = _sppRegisterChip({...co, pantone:co.tcx+' TCX', freq:1, brands:[], _marketKey:ls, _catKey:catKey});
+    return `<div class="spp-ls-chip" onclick="openSppSwatchPopover(${regIdx})">
+      <div class="spp-ls-chip-sw" style="background:${co.hex}"></div>
+      <div class="spp-ls-chip-name">${co.name}</div>
+      <div class="spp-ls-chip-code">${co.tcx} TCX</div>
+    </div>`;
+  };
+  Object.entries(lsMap).forEach(([ls, ids]) => {
+    const d = _SS27_DATA.curation[ls];
+    const ptEl = document.getElementById(ids.ptId);
+    const subEl = document.getElementById(ids.subId);
+    const metaEl = document.getElementById(ids.metaId);
+    if(ptEl) ptEl.innerHTML = d.point.map(co=>makeLsChip(co,ls,'point')).join('');
+    if(subEl) subEl.innerHTML = d.sub.map(co=>makeLsChip(co,ls,'sub')).join('');
+    if(metaEl) metaEl.textContent = `Point ${d.point.length} · Sub ${d.sub.length}`;
+  });
+  // _sppLifestylePalette도 동기화 (Edit 기능 호환)
+  _sppLifestylePalette.active     = {point:_SS27_DATA.curation.active.point.map(c=>({...c,pantone:c.tcx+' TCX',freq:1,brands:[]})), sub:_SS27_DATA.curation.active.sub.map(c=>({...c,pantone:c.tcx+' TCX',freq:1,brands:[]}))};
+  _sppLifestylePalette.athleisure = {point:_SS27_DATA.curation.athleisure.point.map(c=>({...c,pantone:c.tcx+' TCX',freq:1,brands:[]})), sub:_SS27_DATA.curation.athleisure.sub.map(c=>({...c,pantone:c.tcx+' TCX',freq:1,brands:[]}))};
+  _sppLifestylePalette.classic    = {point:_SS27_DATA.curation.classic.point.map(c=>({...c,pantone:c.tcx+' TCX',freq:1,brands:[]})), sub:_SS27_DATA.curation.classic.sub.map(c=>({...c,pantone:c.tcx+' TCX',freq:1,brands:[]}))};
+  _sppLifestylePaletteOriginal = JSON.parse(JSON.stringify(_sppLifestylePalette));
+
+  // ── 04. Basic Colors ──
+  _sppBasicCommon = _SS27_DATA.basic.map(c=>({...c, pantone:c.tcx+' TCX', freq:1, brands:[], _marketKey:'basic', _catKey:'common'}));
+  _sppBasicCommonOriginal = JSON.parse(JSON.stringify(_sppBasicCommon));
+  _sppRenderBasicCommon();
+}
+
 function _sppRenderBasicCommon(){
   const grid=document.getElementById('spp-ls-basic-common-grid'); if(!grid) return;
   // 최초 1회: 마켓 팔레트의 basic을 편집 가능한 상태로 복사
