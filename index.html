@@ -17702,9 +17702,9 @@ const _SS27_DATA = {
   sub: [
     {name:'Stone',        tcx:'18-1307', hex:'#695650'},
     {name:'Lilac',        tcx:'17-3313', hex:'#A1759C'},
-    {name:'Mint',         tcx:'15-6437', hex:'#7BB369'},
+    {name:'Mint',         tcx:'15-6437', hex:'#A8D8B0'},
     {name:'Oat',          tcx:'12-1008', hex:'#EDD2C0'},
-    {name:'Sage Mint',    tcx:'12-5409', hex:'#B8E2DC'},
+    {name:'Sage Mint',    tcx:'12-5409', hex:'#86A1A9'},
     {name:'Terracotta',   tcx:'16-1325', hex:'#C47E5A'},
     {name:'Hazel Brown',  tcx:'14-6408', hex:'#ABA798'},
     {name:'Purple',       tcx:'18-3530', hex:'#936A98'},
@@ -17719,23 +17719,58 @@ const _SS27_DATA = {
     {name:'Red',          tcx:'19-1664', hex:'#BF1932'},
     {name:'Electric Sky', tcx:'16-4030', hex:'#849BCC'},
   ],
+  // ── EU Version ──
+  eu_basic: [
+    {name:'White',        tcx:'11-0602', hex:'#F2F0EB'},
+    {name:'Black',        tcx:'19-4006', hex:'#292A2D'},
+    {name:'Navy',         tcx:'19-3832', hex:'#403F6F'},
+    {name:'Grey',         tcx:'15-4704', hex:'#A9AFAA'},
+    {name:'Umber Deep',   tcx:'19-1110', hex:'#3C2D2E'},
+    {name:'#676986',      tcx:'15-3909', hex:'#AAAAC4'},
+    {name:'Archive Ecru', tcx:'11-0809', hex:'#F3DFCA'},
+    {name:'Warm Stone',   tcx:'15-4502', hex:'#BEB7B0'},
+  ],
+  eu_sub: [
+    {name:'Stone',         tcx:'18-1307', hex:'#695650'},
+    {name:'Oat',           tcx:'12-1008', hex:'#EDD2C0'},
+    {name:'Scarlet Red',   tcx:'18-1660', hex:'#CE2939'},
+    {name:'Court Cobalt',  tcx:'18-4244', hex:'#0061A3'},
+    {name:'Racing Green',  tcx:'18-5025', hex:'#006865'},
+    {name:'Terracotta',    tcx:'16-1325', hex:'#C47E5A'},
+    {name:'Purple',        tcx:'18-3530', hex:'#936A98'},
+    {name:'Fuchsia Pink',  tcx:'15-2718', hex:'#DF88B7'},
+  ],
+  eu_key: [
+    {name:'Forest',       tcx:'19-0415', hex:'#394034'},
+    {name:'Blue',         tcx:'17-4027', hex:'#1A4FBF'},
+    {name:'Brown',        tcx:'19-1314', hex:'#493B39'},
+    {name:'Pink',         tcx:'16-2107', hex:'#B0879B'},
+    {name:'Butter',       tcx:'14-0721', hex:'#C0AD7C'},
+    {name:'Indigo',       tcx:'19-3842', hex:'#443F6F'},
+    {name:'Red',          tcx:'19-1664', hex:'#BF1932'},
+    {name:'Electric Sky', tcx:'16-4030', hex:'#849BCC'},
+  ],
   seasonal: {
     earlySpring: {
       label:'EARLY SPRING', badgeClass:'spp-seasonal-badge-fall',
       colors:[
-        {name:'Mauve',      tcx:'15-3909', hex:'#C4B0C8'},
-        {name:'Sage Mint',  tcx:'12-5409', hex:'#86A1A9'},
+        {name:'Mauve',       tcx:'15-3909', hex:'#C4B0C8'},
+        {name:'Sage Mint',   tcx:'12-5409', hex:'#86A1A9'},
+        {name:'Hazel Brown', tcx:'14-6408', hex:'#ABA798'},
+        {name:'Stone',       tcx:'18-1307', hex:'#695650'},
       ]
     },
     spring: {
       label:'SPRING', badgeClass:'spp-seasonal-badge-preWinter',
       colors:[
-        {name:'Hazel Brown',tcx:'14-6408', hex:'#C8B49A'},
-        {name:'Mint',       tcx:'15-6437', hex:'#A8D8B0'},
-        {name:'Oat',        tcx:'12-1008', hex:'#EDE3D0'},
-        {name:'Forest',     tcx:'19-0415', hex:'#2D4A2D'},
-        {name:'Butter',     tcx:'14-0721', hex:'#F5E6A3'},
-        {name:'Pink',       tcx:'16-2107', hex:'#E8A0B0'},
+        {name:'Hazel Brown', tcx:'14-6408', hex:'#C8B49A'},
+        {name:'Mint',        tcx:'15-6437', hex:'#A8D8B0'},
+        {name:'Oat',         tcx:'12-1008', hex:'#EDE3D0'},
+        {name:'Electric Sky',tcx:'16-4030', hex:'#88B4D6'},
+        {name:'Terracotta',  tcx:'16-1325', hex:'#C47E5A'},
+        {name:'Forest',      tcx:'19-0415', hex:'#2D4A2D'},
+        {name:'Butter',      tcx:'14-0721', hex:'#F5E6A3'},
+        {name:'Pink',        tcx:'16-2107', hex:'#E8A0B0'},
       ]
     },
     summer: {
@@ -17814,23 +17849,43 @@ function _spp27SS_render(){
         <div style="display:flex;flex-wrap:wrap;gap:3px;margin-top:4px">${similar}</div>
       </div>`;
     };
+    // GLOBAL (Asia Version)
     const subHtml   = _SS27_DATA.sub.map(co=>makeChip(co,'global','sub')).join('');
     const keyHtml   = _SS27_DATA.key.map(co=>makeChip(co,'global','key')).join('');
     const basicHtml = _SS27_DATA.basic.map(co=>makeChip(co,'global','basic')).join('');
-    marketWrap.innerHTML = `<div class="spp-market-section">
-      <div class="spp-trend-market-box">
-        <div class="spp-trend-market-hd">
-          <span class="spp-trend-market-flame">🎨 Fixed</span>
-          <span class="spp-trend-market-title">27SS</span>
-          <span class="spp-trend-market-sub">Asia Version · Confirmed Palette</span>
-          <span class="spp-trend-market-cnt">24개</span>
+    // EU Version
+    const euSubHtml   = _SS27_DATA.eu_sub.map(co=>makeChip(co,'eu','sub')).join('');
+    const euKeyHtml   = _SS27_DATA.eu_key.map(co=>makeChip(co,'eu','key')).join('');
+    const euBasicHtml = _SS27_DATA.eu_basic.map(co=>makeChip(co,'eu','basic')).join('');
+    marketWrap.innerHTML = `
+      <div class="spp-market-section">
+        <div class="spp-trend-market-box">
+          <div class="spp-trend-market-hd">
+            <span class="spp-trend-market-flame">🎨 Fixed</span>
+            <span class="spp-trend-market-title">GLOBAL</span>
+            <span class="spp-trend-market-sub">Asia Version · Confirmed Palette</span>
+            <span class="spp-trend-market-cnt">24개</span>
+          </div>
+          <div class="spp-trend-market-desc">27SS Final Palette — Asia Version 확정</div>
+          <div class="spp-cat-row"><div class="spp-cat-label">SUB <span class="cnt">${_SS27_DATA.sub.length}</span></div><div class="spp-chip-row">${subHtml}</div></div>
+          <div class="spp-cat-row"><div class="spp-cat-label">KEY <span class="cnt">${_SS27_DATA.key.length}</span></div><div class="spp-chip-row">${keyHtml}</div></div>
+          <div class="spp-cat-row"><div class="spp-cat-label">BASIC <span class="cnt">${_SS27_DATA.basic.length}</span></div><div class="spp-chip-row">${basicHtml}</div></div>
         </div>
-        <div class="spp-trend-market-desc">27SS Final Palette — Asia Version 확정</div>
-        <div class="spp-cat-row"><div class="spp-cat-label">SUB <span class="cnt">${_SS27_DATA.sub.length}</span></div><div class="spp-chip-row">${subHtml}</div></div>
-        <div class="spp-cat-row"><div class="spp-cat-label">KEY <span class="cnt">${_SS27_DATA.key.length}</span></div><div class="spp-chip-row">${keyHtml}</div></div>
-        <div class="spp-cat-row"><div class="spp-cat-label">BASIC <span class="cnt">${_SS27_DATA.basic.length}</span></div><div class="spp-chip-row">${basicHtml}</div></div>
       </div>
-    </div>`;
+      <div class="spp-market-section">
+        <div class="spp-trend-market-box">
+          <div class="spp-trend-market-hd">
+            <span class="spp-trend-market-flame">🎨 Fixed</span>
+            <span class="spp-trend-market-title">EU</span>
+            <span class="spp-trend-market-sub">Europe Version · Confirmed Palette</span>
+            <span class="spp-trend-market-cnt">24개</span>
+          </div>
+          <div class="spp-trend-market-desc">27SS Final Palette — Europe Version 확정</div>
+          <div class="spp-cat-row"><div class="spp-cat-label">SUB <span class="cnt">${_SS27_DATA.eu_sub.length}</span></div><div class="spp-chip-row">${euSubHtml}</div></div>
+          <div class="spp-cat-row"><div class="spp-cat-label">KEY <span class="cnt">${_SS27_DATA.eu_key.length}</span></div><div class="spp-chip-row">${euKeyHtml}</div></div>
+          <div class="spp-cat-row"><div class="spp-cat-label">BASIC <span class="cnt">${_SS27_DATA.eu_basic.length}</span></div><div class="spp-chip-row">${euBasicHtml}</div></div>
+        </div>
+      </div>`;
   }
   // Intersection 숨김
   const intSec = document.getElementById('spp-intersection-section');
