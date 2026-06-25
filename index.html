@@ -7920,7 +7920,6 @@ function _renderCspSimilar(catKey) {
     label: el.getAttribute('data-name') || el.getAttribute('data-hex')
   })) : [];
 
-  const existingHues = swatches.map(sw => _hexToHSLSimple(sw.hex)[0]);
 
   // ── 다른 계열 마켓 컬러 ──
   const HUE_GROUPS = [
@@ -7947,11 +7946,9 @@ function _renderCspSimilar(catKey) {
     return h>=g.minH && h<g.maxH;
   }
 
-  // 현재 카테고리에 없는 Hue 계열만
-  const diversePool = pool.filter(t => {
-    const [th] = _hexToHSLSimple(t.hex);
-    return existingHues.length === 0 || existingHues.every(eh => _hueDiff(th, eh) >= 40);
-  });
+  // 현재 카테고리에 이미 있는 hex만 제외
+  const existingHexSet = new Set(swatches.map(sw => sw.hex.toUpperCase()));
+  const diversePool = pool.filter(t => !existingHexSet.has(t.hex.toUpperCase()));
 
   const diverseGroups = [];
   const usedDiverse = new Set();
