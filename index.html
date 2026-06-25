@@ -578,6 +578,11 @@ function pickSeason(brand, season) {
 
   // ── 시즌 재선택 = 화면 깨끗이 비우고 새로 로드 ──
   if (typeof resetSeasonUI === 'function') resetSeasonUI();
+  // 팔레트 제안 결과 초기화 (시즌이 달라지면 결과도 달라지므로)
+  resultPalette = {asia:{point:[],sub:[],basic:[]}, europe:{point:[],sub:[],basic:[]}};
+  if (typeof window.__userReps !== 'undefined') window.__userReps = {};
+  // 01 Trend Collection 탭으로 이동
+  if (typeof switchTabByName === 'function') switchTabByName('trend');
 
   // 해당 브랜드 시즌 버튼 활성 스타일
   ['27SS','27FW','28SS','28FW'].forEach(s => {
@@ -7921,7 +7926,9 @@ function _renderCspSimilar(catKey) {
 
   // 각 색상별 유사색 그룹
   const usedInGroups = new Set();
-  groups.innerHTML = swatches.map(sw => {
+  const existingHues = swatches.map(sw => _hexToHSLSimple(sw.hex)[0]);
+
+  const simGroupsHtml = swatches.map(sw => {
     const simPool = pool
       .filter(t => {
         const h=t.hex.toUpperCase();
@@ -7931,6 +7938,7 @@ function _renderCspSimilar(catKey) {
       .sort((a,b)=>_rgbDistSimple(sw.hex,a.hex)-_rgbDistSimple(sw.hex,b.hex))
       .slice(0,5);
 
+    simPool.forEach(c => usedInGroups.add(c.hex.toUpperCase()));
     if (!simPool.length) return '';
     const chips = simPool.map(c=>_cspChipHtml(c)).join('');
     return `
@@ -7941,7 +7949,76 @@ function _renderCspSimilar(catKey) {
         </div>
         <div style="display:flex;flex-wrap:wrap;gap:6px">${chips}</div>
       </div>`;
-  }).join('') || '<div style="font-family:var(--mono);font-size:10px;color:var(--text4);text-align:center;padding:20px">유사색 No data</div>';
+  }).join('') || '';
+
+  // ── 다른 계열 마켓 컬러 추천 ──
+  // 현재 카테고리에 없는 Hue 계열의 컬러들을 색상군별로 묶어서 제안
+  const HUE_GROUPS = [
+    {label:'Red / Burgundy', minH:340, maxH:360, minH2:0, maxH2:20, minS:0.25},
+    {label:'Pink / Rose',    minH:320, maxH:340, minS:0.15},
+    {label:'Orange / Terra', minH:15,  maxH:45,  minS:0.2},
+    {label:'Yellow / Gold',  minH:45,  maxH:70,  minS:0.2},
+    {label:'Olive / Khaki',  minH:70,  maxH:100, minS:0.1},
+    {label:'Green',          minH:100, maxH:150, minS:0.15},
+    {label:'Teal / Mint',    minH:150, maxH:195, minS:0.15},
+    {label:'Blue / Navy',    minH:195, maxH:250, minS:0.1},
+    {label:'Purple / Violet',minH:250, maxH:320, minS:0.1},
+    {label:'Warm Neutral',   minH:20,  maxH:50,  maxS:0.2},
+    {label:'Cool Grey',      minH:0,   maxH:360, maxS:0.08},
+  ];
+
+  function _hueDiff(a,b){const d=Math.abs(a-b);return Math.min(d,360-d);}
+  function _inGroup(h,s,g){
+    if(g.maxS!==undefined && s>g.maxS) return false;
+    if(g.minS!==undefined && s<g.minS) return false;
+    if(g.minH2!==undefined){ // wrapping group (e.g. reds 340-360 + 0-20)
+      return (h>=g.minH && h<=g.maxH) || (h>=g.minH2 && h<=g.maxH2);
+    }
+    return h>=g.minH && h<g.maxH;
+  }
+
+  // 현재 카테고리에 없는 계열의 컬러만 대상
+  const diversePool = pool.filter(t => {
+    const hU = t.hex.toUpperCase();
+    if(usedInGroups.has(hU)) return false;
+    const [th] = _hexToHSLSimple(hU);
+    // 기존 색상 Hue와 40° 이상 차이나는 것만
+    return existingHues.every(eh => _hueDiff(th, eh) >= 40);
+  });
+
+  // 그룹별로 분류하고 대표 색상 뽑기 (최대 4개/그룹)
+  const diverseGroups = [];
+  const usedDiverse = new Set();
+  for(const g of HUE_GROUPS){
+    const members = diversePool.filter(t => {
+      if(usedDiverse.has(t.hex.toUpperCase())) return false;
+      const [h,s] = _hexToHSLSimple(t.hex);
+      return _inGroup(h,s,g);
+    });
+    if(!members.length) continue;
+    // 대표 4개: 밝기/채도 다양하게 — 정렬 후 균등 추출
+    members.sort((a,b)=>_hexToHSLSimple(b.hex)[2]-_hexToHSLSimple(a.hex)[2]);
+    const step = Math.max(1, Math.floor(members.length/4));
+    const picks = [];
+    for(let i=0;i<members.length && picks.length<4;i+=step) picks.push(members[i]);
+    picks.forEach(c => usedDiverse.add(c.hex.toUpperCase()));
+    diverseGroups.push({label: g.label, colors: picks});
+  }
+
+  let diverseSectionHtml = '';
+  if(diverseGroups.length > 0){
+    diverseSectionHtml = `
+      <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border)">
+        <div style="font-family:var(--mono);font-size:8px;color:var(--text3);letter-spacing:0.08em;margin-bottom:12px;text-transform:uppercase">다른 계열 마켓 컬러</div>
+        ${diverseGroups.map(g=>`
+          <div style="margin-bottom:10px">
+            <div style="font-family:var(--mono);font-size:7px;color:var(--text4);letter-spacing:0.06em;margin-bottom:6px;text-transform:uppercase">${g.label}</div>
+            <div style="display:flex;flex-wrap:wrap;gap:6px">${g.colors.map(c=>_cspChipHtml(c)).join('')}</div>
+          </div>`).join('')}
+      </div>`;
+  }
+
+  groups.innerHTML = (simGroupsHtml || '<div style="font-family:var(--mono);font-size:10px;color:var(--text4);text-align:center;padding:20px">유사색 No data</div>') + diverseSectionHtml;
 }
 
 function _cspChipHtml(c) {
