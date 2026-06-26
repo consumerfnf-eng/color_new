@@ -7435,7 +7435,7 @@ function _fillCatColors() {
     const pointColors = [];
     for (const c of poolPoint) {
       if (pointColors.length >= 2) break;
-      const tooClose = pointColors.some(p => Math.min(Math.abs(p._h-c._h), 360-Math.abs(p._h-c._h)) < 30);
+      const tooClose = pointColors.some(p => Math.min(Math.abs(p._h-c._h), 360-Math.abs(p._h-c._h)) < 40);
       if (!tooClose) pointColors.push(c);
     }
     for (const c of poolPoint) { if (pointColors.length >= 2) break; if (!pointColors.find(p => p.hex === c.hex)) pointColors.push(c); }
@@ -7448,7 +7448,7 @@ function _fillCatColors() {
       if (subColors.length >= 4) break;
       if (seenHex.has(c.hex)) continue;
       // Hue 25° 이내 유사 계열 이미 있으면 스킵 (중복 색상 계열 방지)
-      const tooClose = subColors.some(p => Math.min(Math.abs(p._h-c._h), 360-Math.abs(p._h-c._h)) < 25);
+      const tooClose = subColors.some(p => Math.min(Math.abs(p._h-c._h), 360-Math.abs(p._h-c._h)) < 40);
       if (tooClose) continue;
       seenHex.add(c.hex);
       subColors.push(c);
