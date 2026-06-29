@@ -17225,14 +17225,15 @@ function _sppBuildMarketPalette(rows){
   //   - 채도가 매우 낮아야 함(s<0.14) — 단, 베이지/아이보리처럼 살짝 웜톤인 경우 명도가 높으면 채도 살짝 허용(s<0.20 && l>0.75)
   //   - 극단 명도(매우 어둡거나 밝음)라도 채도가 있으면(녹색·레드 계열) BASIC 아님
   const isTrueNeutral = (s, l, h) => {
-    // White/Cream: 명도 높음
+    // White: 명도 매우 높음 (거의 흰색)
     if(l > 0.87) return true;
-    // Grey: 채도 매우 낮음 (무채색)
-    if(s < 0.12) return true;
     // Black: 명도 매우 낮음
     if(l < 0.12) return true;
-    // Navy: Hue 195~265° + 명도 낮음 (버건디·올리브 제외)
-    if(h >= 195 && h <= 265 && l < 0.35) return true;
+    // Grey: 채도 거의 없음 (무채색) — 어떤 Hue든 채도 낮으면 Grey
+    if(s < 0.10) return true;
+    // Navy: Hue 210~255° + 명도 낮음 + 채도 적당 (진짜 네이비만)
+    if(h >= 210 && h <= 255 && l < 0.30 && s >= 0.15) return true;
+    // 나머지 유채색은 모두 제외
     return false;
   };
   // TCX 코드 기준 분류 캐시 — 같은 TCX 코드는 마켓(KR/EU/GLOBAL)이 달라도 항상 같은 카테고리로 분류되도록 보장
