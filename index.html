@@ -1392,7 +1392,7 @@ function enterBrandFromHome(brand) {
           <div class="spp-ls-basic-common" id="spp-ls-basic-common">
             <div class="spp-ls-basic-common-hd">
               <span class="spp-ls-basic-common-title">Basic Colors — 공통</span>
-              <span class="spp-ls-basic-common-sub">3개 카테고리 공유 · White · Black · Navy · Grey 계열</span>
+              <span class="spp-ls-basic-common-sub">3개 카테고리 공유 · White · Black · Navy · Grey · Ivory · Ecru 계열</span>
               <div style="display:flex;align-items:center;gap:6px;margin-left:auto">
                 <button class="spp-ls-restore-btn" onclick="sppRestoreBasicCommon()" title="원본으로 복구">↺</button>
                 <button class="spp-ls-edit-btn" id="spp-basic-edit-btn" onclick="sppToggleBasicEdit()">Edit</button>
@@ -17743,6 +17743,10 @@ const _SS27_DATA = {
     {name:'Black',        tcx:'19-3906', hex:'#1A1A1A'},
     {name:'Navy',         tcx:'19-3832', hex:'#403F6F'},
     {name:'Grey',         tcx:'15-4704', hex:'#A9AFAA'},
+    {name:'Ivory',        tcx:'11-0907', hex:'#EDE9DC'},
+    {name:'Ecru',         tcx:'12-0104', hex:'#DBD5C5'},
+    {name:'Light Grey',   tcx:'14-4102', hex:'#D0CFCA'},
+    {name:'Charcoal',     tcx:'18-0306', hex:'#5C5C5A'},
   ],
   sub: [
     {name:'Stone',        tcx:'18-1307', hex:'#695650'},
@@ -17770,6 +17774,10 @@ const _SS27_DATA = {
     {name:'Black',        tcx:'19-4006', hex:'#292A2D'},
     {name:'Navy',         tcx:'19-3832', hex:'#403F6F'},
     {name:'Grey',         tcx:'15-4704', hex:'#A9AFAA'},
+    {name:'Ivory',        tcx:'11-0907', hex:'#EDE9DC'},
+    {name:'Ecru',         tcx:'12-0104', hex:'#DBD5C5'},
+    {name:'Light Grey',   tcx:'14-4102', hex:'#D0CFCA'},
+    {name:'Charcoal',     tcx:'18-0306', hex:'#5C5C5A'},
   ],
   eu_sub: [
     {name:'Stone',         tcx:'18-1307', hex:'#695650'},
@@ -18000,17 +18008,21 @@ function _sppRenderBasicCommon(){
     const _sppIsWBNG = (co) => {
       const cn = (co.name||'').toLowerCase();
       const [,s,l] = typeof rgbToHsl==='function' ? rgbToHsl(co.hex) : [0,0,0.5];
-      const WHITE_KEYS = ['white','ivory','ecru','off-white','chalk','optical white','bright white','snow','cream white'];
+      const WHITE_KEYS = ['white','ivory','ecru','off-white','chalk','optical white','bright white','snow','cream white','ivory','birch','eggshell','off white'];
       const BLACK_KEYS = ['black','jet','noir','ebony','raven','onyx'];
       const NAVY_KEYS  = ['navy','indigo','marine','midnight','dark blue','deep blue'];
       const GREY_KEYS  = ['grey','gray','charcoal','slate','silver','ash','cement','graphite','stone grey','cool grey','warm grey','heather'];
+      const BEIGE_KEYS = ['beige','ivory','ecru','oat','cream','sand','stone','linen','natural','parchment','bone','butter','vanilla','off white','warm white','antique white'];
       const matchKeys = (keys) => keys.some(k => cn.includes(k));
       if(matchKeys(WHITE_KEYS)) return true;
       if(matchKeys(BLACK_KEYS)) return true;
       if(matchKeys(NAVY_KEYS))  return true;
       if(matchKeys(GREY_KEYS))  return true;
+      if(matchKeys(BEIGE_KEYS)) return true;
       // 무채색(채도 10% 이하) — 어떤 색이든 흰/검/회 계열
       if(s < 0.10) return true;
+      // 베이지/아이보리 톤: 밝고 저채도 (명도 75%+, 채도 20% 이하)
+      if(l > 0.75 && s < 0.20) return true;
       // 매우 어두운 네이비 (명도 25% 이하, 채도 있음)
       if(l < 0.25 && s > 0.05 && s < 0.55) return true;
       return false;
