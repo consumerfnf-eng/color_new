@@ -7749,6 +7749,30 @@ function _fillCatColors() {
             }
             if (best2 && bd2 < LAB_T) best = best2;
           }
+          // 최종 안전장치: hue/LAB 상한 모두 풀고 풀 전체에서 무조건 최근접 색 1개 보장
+          // (어두운 near-black 등 LAB 28 안에 후보가 없어도 "—" 대신 가장 가까운 트렌드색 표시)
+          if (!best) {
+            // 1차: 이미 쓴 색상(hue)과 안 겹치는 후보 중 최근접
+            let bestU = null, bdU = Infinity;
+            for (const t of _fullKeyPool) {
+              if (!t.hex) continue;
+              const [th] = _hexToHSL(t.hex);
+              if (usedHues6.some(uh => _hueDist(uh, th) < 30)) continue;
+              const d = distFn3(co.hex, t.hex);
+              if (d < bdU) { bdU = d; bestU = t; }
+            }
+            if (bestU) best = bestU;
+            // 2차: 그래도 없으면 hue 중복 허용하고 절대 최근접
+            if (!best) {
+              let bestA = null, bdA = Infinity;
+              for (const t of _fullKeyPool) {
+                if (!t.hex) continue;
+                const d = distFn3(co.hex, t.hex);
+                if (d < bdA) { bdA = d; bestA = t; }
+              }
+              best = bestA;
+            }
+          }
           return best;
         })();
 
