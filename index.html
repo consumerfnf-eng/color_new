@@ -17231,6 +17231,8 @@ function _sppBuildMarketPalette(rows){
     if(l < 0.12) return true;
     // Grey: 채도 거의 없음 (무채색) — 어떤 Hue든 채도 낮으면 Grey
     if(s < 0.10) return true;
+    // Ivory / Ecru / Beige: 밝고 저채도 웜톤 (Hue 20~60°, 명도 75%+, 채도 20% 이하)
+    if(h >= 20 && h <= 65 && l > 0.75 && s <= 0.22) return true;
     // Navy: Hue 210~255° + 명도 낮음 + 채도 적당 (진짜 네이비만)
     if(h >= 210 && h <= 255 && l < 0.30 && s >= 0.15) return true;
     // 나머지 유채색은 모두 제외
@@ -18028,7 +18030,22 @@ function _sppRenderBasicCommon(){
       return false;
     };
     const filtered = pal.basic.filter(_sppIsWBNG);
-    _sppBasicCommon = JSON.parse(JSON.stringify(filtered.length ? filtered : pal.basic));
+    const base = filtered.length ? filtered : pal.basic;
+    // 8개 미만이면 마켓 데이터 전체 풀(key+sub)에서 neutral 계열로 부족분 채우기
+    const merged = [...base];
+    if(merged.length < 8){
+      const existHex = new Set(merged.map(c=>(c.hex||'').toUpperCase()));
+      const extraPool = [...(pal.sub||[]), ...(pal.key||[])].filter(c=>{
+        if(existHex.has((c.hex||'').toUpperCase())) return false;
+        return _sppIsWBNG(c);
+      }).sort((a,b)=>(b.score||b.freq||0)-(a.score||a.freq||0));
+      for(const co of extraPool){
+        if(merged.length >= 8) break;
+        merged.push(co);
+        existHex.add((co.hex||'').toUpperCase());
+      }
+    }
+    _sppBasicCommon = JSON.parse(JSON.stringify(merged));
     _sppBasicCommonOriginal = JSON.parse(JSON.stringify(_sppBasicCommon));
   }
   if(!_sppBasicCommon.length){ grid.innerHTML='<div class="spp-empty" style="grid-column:1/-1">02 Market Analysis 데이터를 로드하면 Basic 컬러가 표시됩니다.</div>'; return; }
