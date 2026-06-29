@@ -18033,9 +18033,9 @@ function _sppRenderBasicCommon(){
     const base = filtered.length ? filtered : pal.basic;
     // 8개 미만이면 마켓 데이터 전체 풀(key+sub)에서 neutral 계열로 부족분 채우기
     const merged = [...base];
+    const existHex = new Set(merged.map(c=>(c.hex||'').toUpperCase()));
     if(merged.length < 8){
-      const existHex = new Set(merged.map(c=>(c.hex||'').toUpperCase()));
-      const extraPool = [...(pal.sub||[]), ...(pal.key||[])].filter(c=>{
+      const extraPool = [...(pal.sub||[]), ...(pal.key||[])].filter(c=>{\
         if(existHex.has((c.hex||'').toUpperCase())) return false;
         return _sppIsWBNG(c);
       }).sort((a,b)=>(b.score||b.freq||0)-(a.score||a.freq||0));
@@ -18043,6 +18043,16 @@ function _sppRenderBasicCommon(){
         if(merged.length >= 8) break;
         merged.push(co);
         existHex.add((co.hex||'').toUpperCase());
+      }
+    }
+    // 그래도 8개 미달이면 _SS27_DATA.basic 하드코딩으로 부족분 채우기
+    if(merged.length < 8){
+      for(const def of (_SS27_DATA.basic||[])){
+        if(merged.length >= 8) break;
+        if(!existHex.has((def.hex||'').toUpperCase())){
+          merged.push({...def, pantone:def.tcx+' TCX', freq:0, brands:[], _marketKey:'basic', _catKey:'common'});
+          existHex.add((def.hex||'').toUpperCase());
+        }
       }
     }
     _sppBasicCommon = JSON.parse(JSON.stringify(merged));
