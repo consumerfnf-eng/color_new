@@ -17236,7 +17236,7 @@ function _sppBuildMarketPalette(rows){
     return false;
   };
   // TCX 코드 기준 분류 캐시 — 같은 TCX 코드는 마켓(KR/EU/GLOBAL)이 달라도 항상 같은 카테고리로 분류되도록 보장
-  window._sppCatCache = window._sppCatCache || {};
+  window._sppCatCache = {};
   entries.forEach(co=>{
     const [,sat,light] = _sppRgbToHsl(co.hex);
     const code = _sppPantoneApprox(co.hex);
