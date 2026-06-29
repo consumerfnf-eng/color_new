@@ -17224,11 +17224,15 @@ function _sppBuildMarketPalette(rows){
   // BASIC 판정: White/Black/Grey/Ivory/Beige 같은 진짜 무채색·뉴트럴만 인정
   //   - 채도가 매우 낮아야 함(s<0.14) — 단, 베이지/아이보리처럼 살짝 웜톤인 경우 명도가 높으면 채도 살짝 허용(s<0.20 && l>0.75)
   //   - 극단 명도(매우 어둡거나 밝음)라도 채도가 있으면(녹색·레드 계열) BASIC 아님
-  const isTrueNeutral = (s, l) => {
-    if(s < 0.18) return true; // 진짜 무채색(그레이/블랙/화이트)
-    if(l > 0.87 && s < 0.60) return true; // 화이트/아이보리/오프화이트 — 명도 매우 높으면 채도가 있어도 흰색 계열로 인지됨
-    if(l > 0.75 && s < 0.20) return true; // 베이지(중간 명도 + 저채도)
-    if(l < 0.35 && s < 0.55) return true; // 다크네이비/차콜/딥그레이 — 무난한 어두운 색은 BASIC, 선명한 코발트·버건디(s>=0.55)만 KEY 유지
+  const isTrueNeutral = (s, l, h) => {
+    // White/Cream: 명도 높음
+    if(l > 0.87) return true;
+    // Grey: 채도 매우 낮음 (무채색)
+    if(s < 0.12) return true;
+    // Black: 명도 매우 낮음
+    if(l < 0.12) return true;
+    // Navy: Hue 195~265° + 명도 낮음 (버건디·올리브 제외)
+    if(h >= 195 && h <= 265 && l < 0.35) return true;
     return false;
   };
   // TCX 코드 기준 분류 캐시 — 같은 TCX 코드는 마켓(KR/EU/GLOBAL)이 달라도 항상 같은 카테고리로 분류되도록 보장
@@ -17240,7 +17244,7 @@ function _sppBuildMarketPalette(rows){
     if(code && window._sppCatCache[code]){
       cat = window._sppCatCache[code];
     } else {
-      if(isTrueNeutral(sat, light)) cat = 'basic';
+      const [hh]=_sppRgbToHsl(co.hex); if(isTrueNeutral(sat, light, hh*360)) cat = 'basic';
       else if(sat>=SPP_SAT_POINT&&light>=0.20&&light<=0.80) cat = 'key';
       else if(sat>=SPP_SAT_SUB) cat = 'sub';
       else cat = 'basic';
@@ -17269,7 +17273,7 @@ function _sppBuildMarketPalette(rows){
     // fallback도 동일한 진짜 무채색 기준만 허용 (유채색 절대 끌려오지 않게) + 브랜드 제한 유지
     const extra=[...classified.sub,...classified.key]
       .filter(c=>!used.has(c.hex))
-      .filter(c=>{ const [,s,l]=_sppRgbToHsl(c.hex); return isTrueNeutral(s,l); })
+      .filter(c=>{ const [h,s,l]=_sppRgbToHsl(c.hex); return isTrueNeutral(s,l,h*360); })
       .sort((a,b)=>{const[,sa]=_sppRgbToHsl(a.hex),[,sb]=_sppRgbToHsl(b.hex);return sa-sb;});
     for(const co of extra){
       if(basic.length>=8)break;
@@ -17283,7 +17287,7 @@ function _sppBuildMarketPalette(rows){
       const used2=new Set(basic.map(c=>c.hex));
       const extra2=[...classified.basic,...classified.sub,...classified.key]
         .filter(c=>!used2.has(c.hex))
-        .filter(c=>{ const [,s,l]=_sppRgbToHsl(c.hex); return isTrueNeutral(s,l); })
+        .filter(c=>{ const [h,s,l]=_sppRgbToHsl(c.hex); return isTrueNeutral(s,l,h*360); })
         .sort((a,b)=>{const[,sa]=_sppRgbToHsl(a.hex),[,sb]=_sppRgbToHsl(b.hex);return sa-sb;});
       for(const co of extra2){ if(basic.length>=8)break; basic.push(co); }
     }
