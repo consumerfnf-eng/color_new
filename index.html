@@ -18003,59 +18003,9 @@ function _spp27SS_render(){
 
 function _sppRenderBasicCommon(){
   const grid=document.getElementById('spp-ls-basic-common-grid'); if(!grid) return;
-  // 최초 1회: 마켓 팔레트의 basic을 편집 가능한 상태로 복사
-  const pal=_sppMarketPalettes.global||_sppMarketPalettes.kr||_sppMarketPalettes.eu;
-  if(_sppBasicCommon.length===0 && pal && pal.basic.length){
-    // SERGIO: White/Black/Navy/Grey 계열만 허용
-    const _sppIsWBNG = (co) => {
-      const cn = (co.name||'').toLowerCase();
-      const [,s,l] = typeof rgbToHsl==='function' ? rgbToHsl(co.hex) : [0,0,0.5];
-      const WHITE_KEYS = ['white','ivory','ecru','off-white','chalk','optical white','bright white','snow','cream white','ivory','birch','eggshell','off white'];
-      const BLACK_KEYS = ['black','jet','noir','ebony','raven','onyx'];
-      const NAVY_KEYS  = ['navy','indigo','marine','midnight','dark blue','deep blue'];
-      const GREY_KEYS  = ['grey','gray','charcoal','slate','silver','ash','cement','graphite','stone grey','cool grey','warm grey','heather'];
-      const BEIGE_KEYS = ['beige','ivory','ecru','oat','cream','sand','stone','linen','natural','parchment','bone','butter','vanilla','off white','warm white','antique white'];
-      const matchKeys = (keys) => keys.some(k => cn.includes(k));
-      if(matchKeys(WHITE_KEYS)) return true;
-      if(matchKeys(BLACK_KEYS)) return true;
-      if(matchKeys(NAVY_KEYS))  return true;
-      if(matchKeys(GREY_KEYS))  return true;
-      if(matchKeys(BEIGE_KEYS)) return true;
-      // 무채색(채도 10% 이하) — 어떤 색이든 흰/검/회 계열
-      if(s < 0.10) return true;
-      // 베이지/아이보리 톤: 밝고 저채도 (명도 75%+, 채도 20% 이하)
-      if(l > 0.75 && s < 0.20) return true;
-      // 매우 어두운 네이비 (명도 25% 이하, 채도 있음)
-      if(l < 0.25 && s > 0.05 && s < 0.55) return true;
-      return false;
-    };
-    const filtered = pal.basic.filter(_sppIsWBNG);
-    const base = filtered.length ? filtered : pal.basic;
-    // 8개 미만이면 마켓 데이터 전체 풀(key+sub)에서 neutral 계열로 부족분 채우기
-    const merged = [...base];
-    const existHex = new Set(merged.map(c=>(c.hex||'').toUpperCase()));
-    if(merged.length < 8){
-      const extraPool = [...(pal.sub||[]), ...(pal.key||[])].filter(c=>{\
-        if(existHex.has((c.hex||'').toUpperCase())) return false;
-        return _sppIsWBNG(c);
-      }).sort((a,b)=>(b.score||b.freq||0)-(a.score||a.freq||0));
-      for(const co of extraPool){
-        if(merged.length >= 8) break;
-        merged.push(co);
-        existHex.add((co.hex||'').toUpperCase());
-      }
-    }
-    // 그래도 8개 미달이면 _SS27_DATA.basic 하드코딩으로 부족분 채우기
-    if(merged.length < 8){
-      for(const def of (_SS27_DATA.basic||[])){
-        if(merged.length >= 8) break;
-        if(!existHex.has((def.hex||'').toUpperCase())){
-          merged.push({...def, pantone:def.tcx+' TCX', freq:0, brands:[], _marketKey:'basic', _catKey:'common'});
-          existHex.add((def.hex||'').toUpperCase());
-        }
-      }
-    }
-    _sppBasicCommon = JSON.parse(JSON.stringify(merged));
+  // 최초 1회: 큐레이션된 Basic 8색 사용 (White·Black·Navy·Grey·Ivory·Ecru 계열)
+  if(_sppBasicCommon.length===0 && typeof _SS27_DATA!=='undefined' && _SS27_DATA.basic && _SS27_DATA.basic.length){
+    _sppBasicCommon = _SS27_DATA.basic.map(c=>({...c, pantone:c.tcx+' TCX', freq:1, brands:[], _marketKey:'basic', _catKey:'common'}));
     _sppBasicCommonOriginal = JSON.parse(JSON.stringify(_sppBasicCommon));
   }
   if(!_sppBasicCommon.length){ grid.innerHTML='<div class="spp-empty" style="grid-column:1/-1">02 Market Analysis 데이터를 로드하면 Basic 컬러가 표시됩니다.</div>'; return; }
