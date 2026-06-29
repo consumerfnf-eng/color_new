@@ -17225,14 +17225,14 @@ function _sppBuildMarketPalette(rows){
   //   - 채도가 매우 낮아야 함(s<0.14) — 단, 베이지/아이보리처럼 살짝 웜톤인 경우 명도가 높으면 채도 살짝 허용(s<0.20 && l>0.75)
   //   - 극단 명도(매우 어둡거나 밝음)라도 채도가 있으면(녹색·레드 계열) BASIC 아님
   const isTrueNeutral = (s, l, h) => {
-    // White: 명도 매우 높음 (거의 흰색)
-    if(l > 0.87) return true;
+    // White: 명도 높음 (화이트/아이보리/크림 포함)
+    if(l > 0.82) return true;
     // Black: 명도 매우 낮음
     if(l < 0.12) return true;
     // Grey: 채도 거의 없음 (무채색) — 어떤 Hue든 채도 낮으면 Grey
     if(s < 0.10) return true;
-    // Ivory / Ecru / Beige: 밝고 저채도 웜톤 (Hue 20~60°, 명도 75%+, 채도 20% 이하)
-    if(h >= 20 && h <= 65 && l > 0.75 && s <= 0.22) return true;
+    // Ivory / Ecru / Beige: 밝고 저채도 웜톤 (Hue 20~65°, 명도 65%+, 채도 28% 이하)
+    if(h >= 20 && h <= 65 && l >= 0.65 && s <= 0.28) return true;
     // Navy: Hue 210~255° + 명도 낮음 + 채도 적당 (진짜 네이비만)
     if(h >= 210 && h <= 255 && l < 0.30 && s >= 0.15) return true;
     // 나머지 유채색은 모두 제외
@@ -17247,7 +17247,7 @@ function _sppBuildMarketPalette(rows){
     if(code && window._sppCatCache[code]){
       cat = window._sppCatCache[code];
     } else {
-      const [hh]=_sppRgbToHsl(co.hex); if(isTrueNeutral(sat, light, hh*360)) cat = 'basic';
+      const [hh]=_sppRgbToHsl(co.hex); if(isTrueNeutral(sat, light, hh)) cat = 'basic';
       else if(sat>=SPP_SAT_POINT&&light>=0.20&&light<=0.80) cat = 'key';
       else if(sat>=SPP_SAT_SUB) cat = 'sub';
       else cat = 'basic';
@@ -17276,7 +17276,7 @@ function _sppBuildMarketPalette(rows){
     // fallback도 동일한 진짜 무채색 기준만 허용 (유채색 절대 끌려오지 않게) + 브랜드 제한 유지
     const extra=[...classified.sub,...classified.key]
       .filter(c=>!used.has(c.hex))
-      .filter(c=>{ const [h,s,l]=_sppRgbToHsl(c.hex); return isTrueNeutral(s,l,h*360); })
+      .filter(c=>{ const [h,s,l]=_sppRgbToHsl(c.hex); return isTrueNeutral(s,l,h); })
       .sort((a,b)=>{const[,sa]=_sppRgbToHsl(a.hex),[,sb]=_sppRgbToHsl(b.hex);return sa-sb;});
     for(const co of extra){
       if(basic.length>=8)break;
@@ -17290,7 +17290,7 @@ function _sppBuildMarketPalette(rows){
       const used2=new Set(basic.map(c=>c.hex));
       const extra2=[...classified.basic,...classified.sub,...classified.key]
         .filter(c=>!used2.has(c.hex))
-        .filter(c=>{ const [h,s,l]=_sppRgbToHsl(c.hex); return isTrueNeutral(s,l,h*360); })
+        .filter(c=>{ const [h,s,l]=_sppRgbToHsl(c.hex); return isTrueNeutral(s,l,h); })
         .sort((a,b)=>{const[,sa]=_sppRgbToHsl(a.hex),[,sb]=_sppRgbToHsl(b.hex);return sa-sb;});
       for(const co of extra2){ if(basic.length>=8)break; basic.push(co); }
     }
