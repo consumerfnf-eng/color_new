@@ -17130,18 +17130,9 @@ function _sppPickDiverse(arr, n, minDist, maxPerBrand){
   const out=[], used=[];
   const brandCount={};
   for(const co of arr){
+    if(out.length >= n) break;
     if(!co.hex) continue;
-    // 이미 선택된 색과 유사하면 → 대표 색에 브랜드 병합 후 skip (중복 브랜드 표시용)
-    const nearIdx = used.findIndex(u=>_sppRgbDist(u,co.hex) < minDist);
-    if(nearIdx>=0){
-      const rep = out[nearIdx];
-      if(rep){
-        if(!rep.brands) rep.brands=[];
-        if(co.brands) co.brands.forEach(b=>{ if(b && !rep.brands.includes(b)) rep.brands.push(b); });
-      }
-      continue;
-    }
-    if(out.length >= n) continue; // 슬롯이 차도 남은 유사색의 브랜드 병합을 위해 break 대신 continue
+    if(used.some(u=>_sppRgbDist(u,co.hex) < minDist)) continue;
     // 브랜드당 최대 개수 제한 (지정 시) — 한 브랜드가 풀을 독식하지 않게
     if(maxPerBrand){
       const b = (co.brands && co.brands[0]) || co.name || '';
@@ -17158,13 +17149,7 @@ function _sppDedupSimilar(arr, minDist){
   const out=[];
   for(const co of arr){
     if(!co.hex) continue;
-    const near = out.find(u=>_sppRgbDist(u.hex,co.hex) < minDist);
-    if(near){
-      // 유사색 흡수 — 브랜드 목록 병합 (한 색을 공유한 브랜드 모두 표시되도록)
-      if(!near.brands) near.brands=[];
-      if(co.brands) co.brands.forEach(b=>{ if(b && !near.brands.includes(b)) near.brands.push(b); });
-      continue;
-    }
+    if(out.some(u=>_sppRgbDist(u.hex,co.hex) < minDist)) continue;
     out.push(co);
   }
   return out;
@@ -17197,17 +17182,6 @@ function _sppGetTrendPool(){
   return [...src].sort((a,b)=>(b.freq||1)-(a.freq||1)).slice(0, SPP_TREND_POOL_TOP_N);
 }
 
-// ── 애슬레저 브랜드 가중치 (03 팔레트 제안에서 애슬레저 색이 더 많이 노출되도록) ──
-//   1.0 = 가중치 없음, 1.6 = 점수 60% 가산. 노출량 조절은 이 값만 바꾸면 됨.
-const SPP_ATH_WEIGHT = 1.6;
-function _sppIsAthleisureBrand(brand){
-  if(!brand) return false;
-  const list = (typeof COMP_LIFESTYLE_MAP!=='undefined' && COMP_LIFESTYLE_MAP['Athleisure']) ? COMP_LIFESTYLE_MAP['Athleisure'] : [];
-  if(typeof brandMatches==='function') return list.some(b=>brandMatches(brand,b));
-  const bl=(brand||'').toLowerCase();
-  return list.some(b=>bl.includes((b||'').toLowerCase()));
-}
-
 // ── rows 집계 + 트렌드 보너스 ──
 function _sppAggregateRows(rows){
   const map = new Map();
@@ -17234,14 +17208,11 @@ function _sppAggregateRows(rows){
   const out = [...map.values()];
   out.forEach(co=>{
     delete co._brandFreq; // 내부용 임시 필드 제거
-    // 애슬레저 가중치: 이 색을 애슬레저 브랜드가 사용했으면 정렬 점수 가산 (표시 ×빈도는 그대로)
-    const _athW = (co.brands && co.brands.some(_sppIsAthleisureBrand)) ? SPP_ATH_WEIGHT : 1;
-    co._athBoost = _athW > 1;
-    if(!trendPool.length){ co.score=co.freq*_athW; co.trendMatch=false; co._trendMatches=[]; return; }
+    if(!trendPool.length){ co.score=co.freq; co.trendMatch=false; co._trendMatches=[]; return; }
     const matches = trendPool.map(t=>({...t,_dist:_sppRgbDist(co.hex,t.hex)})).filter(t=>t._dist<SPP_TREND_MATCH_DIST).sort((a,b)=>a._dist-b._dist);
     co.trendMatch = matches.length>0;
     co._trendMatches = matches;
-    co.score = (co.trendMatch ? co.freq*(1+SPP_TREND_MATCH_BONUS) : co.freq) * _athW;
+    co.score = co.trendMatch ? co.freq*(1+SPP_TREND_MATCH_BONUS) : co.freq;
   });
   return out.sort((a,b)=>b.score-a.score);
 }
@@ -17585,8 +17556,7 @@ function _sppPickLifestyle(pool, ls, n){
   const scored=pool.map(co=>{
     const [h,s,l]=_sppRgbToHsl(co.hex);
     const cn=(co.name||'').toLowerCase();
-    // 애슬레저 브랜드가 쓴 색이면 기준 점수 가산 → 라이프스타일 큐레이션에서도 애슬레저 노출↑
-    let score=(co.freq||1) * ((co.brands && co.brands.some(_sppIsAthleisureBrand)) ? SPP_ATH_WEIGHT : 1);
+    let score=co.freq||1;
     if(ls==='active'){
       // 비비드 보너스는 명도가 충분히 밝아야 적용 — 어두운 딥버건디·딥네이비는 헤리티지(Classic)로 느껴지므로 제외
       if(s>0.65 && l>=0.40) score+=0.35;
