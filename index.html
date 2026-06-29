@@ -7691,15 +7691,17 @@ function _fillCatColors() {
     const cEl = document.getElementById('cat-' + cat.key + '-colors');
     if (cEl) {
       // 경쟁사 Colors 6개 수집 (POINT 2 + SUB 4, hidden 제외, override 포함)
+      // 슬롯(point/sub)을 색마다 태그 → 정렬해도 편집/override 유지
       const pointCols = [
-        ...aiPoint.filter(c => !hiddenPoint.has((c.hex||'').toUpperCase())),
-        ...addedPoint.map(c => ({ ...c, _isOv: true }))
+        ...aiPoint.filter(c => !hiddenPoint.has((c.hex||'').toUpperCase())).map(c => ({ ...c, _slot: 'point' })),
+        ...addedPoint.map((c, idx) => ({ ...c, _isOv: true, _slot: 'point', _ovIdx: idx }))
       ];
       const subCols = [
-        ...aiSub.filter(c => !hiddenSub.has((c.hex||'').toUpperCase())),
-        ...addedSub.map(c => ({ ...c, _isOv: true }))
+        ...aiSub.filter(c => !hiddenSub.has((c.hex||'').toUpperCase())).map(c => ({ ...c, _slot: 'sub' })),
+        ...addedSub.map((c, idx) => ({ ...c, _isOv: true, _slot: 'sub', _ovIdx: idx }))
       ];
-      const allCols = [...pointCols, ...subCols]; // point 2 + sub 4 = 6
+      // point 2 + sub 4 = 6개를 합쳐서 수집 빈도(total) 내림차순으로 통합 정렬
+      const allCols = [...pointCols, ...subCols].sort((a, b) => (b.total || 1) - (a.total || 1));
 
       if (!allCols.length) {
         cEl.innerHTML = noData(msg);
@@ -7707,12 +7709,9 @@ function _fillCatColors() {
       }
 
       // 왼쪽: 경쟁사 6개 칩
-      const leftChips = allCols.map((co, i) => {
-        const isOv = !!co._isOv;
-        const slot = i < pointCols.length ? 'point' : 'sub';
-        const ovIdx = isOv
-          ? (slot === 'point' ? addedPoint.indexOf(co) : addedSub.indexOf(co))
-          : undefined;
+      const leftChips = allCols.map((co) => {
+        const slot = co._slot;
+        const ovIdx = co._isOv ? co._ovIdx : undefined;
         return _catChip(co, cat.key, slot, ovIdx);
       }).join('');
 
