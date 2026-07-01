@@ -16417,15 +16417,21 @@ window.toggleMarketBrand = function(brandRaw){
   var sel = window._curMarketSel();
   if(sel.has(key)) sel.delete(key); else sel.add(key);
   window.renderMarketCsvBrands();   // 칩 상태·카운트 갱신
+  _persistMarketSel();              // 선택 기억
+  if (typeof renderCompBrandPage === 'function') renderCompBrandPage(); // 하단 카드 즉시 반영
 };
 window.marketSelectAll = function(){
   var sel = window._curMarketSel();
   (window._marketCsvBrands||[]).forEach(function(b){ sel.add(window._brandKeyNorm(b)); });
   window.renderMarketCsvBrands();
+  _persistMarketSel();
+  if (typeof renderCompBrandPage === 'function') renderCompBrandPage();
 };
 window.marketClearSel = function(){
   window._curMarketSel().clear();
   window.renderMarketCsvBrands();
+  _persistMarketSel();
+  if (typeof renderCompBrandPage === 'function') renderCompBrandPage();
 };
 
 // 기본 브랜드 세트로 초기화
@@ -16437,6 +16443,8 @@ window.marketResetDefault = function(){
   sel.clear();
   defaults.forEach(function(b){ sel.add(bkn(b)); });
   window.renderMarketCsvBrands();
+  _persistMarketSel();
+  if (typeof renderCompBrandPage === 'function') renderCompBrandPage();
 };
 
 // 선택 확정 → 그리드 + TREND BASED PALETTE 재생성
