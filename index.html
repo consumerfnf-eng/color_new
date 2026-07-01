@@ -10592,7 +10592,16 @@ function openPalDetail(c){
       if(trendSrcs.includes('wgsn')) trendLabels.push(`WGSN${srcFreq['wgsn']?' ×'+srcFreq['wgsn']:''}`);
       if(trendSrcs.includes('newsletter')) trendLabels.push(`Newsletter${srcFreq['newsletter']?' ×'+srcFreq['newsletter']:''}`);
       if(trendSrcs.includes('peclers')) trendLabels.push(`Peclers${srcFreq['peclers']?' ×'+srcFreq['peclers']:''}`);
-      if(trendSrcs.includes('trend') && trendLabels.length===0) trendLabels.push('Trend');
+      if(trendSrcs.includes('trend') && trendLabels.length===0){
+        // 'trend' fallback — wgsn/peclers 색상에서 온 것이므로 원본 소스 추론
+        const _inWgsn = (typeof wgsnColors!=='undefined') && wgsnColors.some(x=>x.hex&&typeof rgbDist==='function'&&rgbDist(x.hex,c.hex)<22);
+        const _inPec  = (typeof peclersColors!=='undefined') && peclersColors.some(x=>x.hex&&typeof rgbDist==='function'&&rgbDist(x.hex,c.hex)<22);
+        const _inNews = (typeof newsletterColors!=='undefined') && newsletterColors.some(x=>x.hex&&typeof rgbDist==='function'&&rgbDist(x.hex,c.hex)<22);
+        if(_inWgsn) trendLabels.push('WGSN');
+        if(_inPec)  trendLabels.push('Peclers');
+        if(_inNews) trendLabels.push('Newsletter');
+        if(!_inWgsn && !_inPec && !_inNews) trendLabels.push('Trend');
+      }
 
       html += `<div style="padding:6px 8px;background:var(--bg3);border-radius:6px">
         <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
@@ -12790,11 +12799,16 @@ async function runPdfParse(){
       mergeCollected(peclersColors.map(c=>({...c, source:'peclers', brand:'Peclers', group:'ALL', freq:c.fileCount||1})));
     } else {
       // fallback: 직접 merge
-      const allTrend = [...wgsnColors, ...peclersColors];
-      allTrend.forEach(c => {
+      // wgsn/peclers 각각 source 명시해서 merge
+      wgsnColors.forEach(c => {
         if(!c.hex) return;
         const exists = collectedColors.find(x => x.hex && rgbDist(x.hex, c.hex) < 10);
-        if(!exists) collectedColors.push({...c, source: c.source||'trend', brand: c.brand||'Trend', group:'ALL', freq:c.fileCount||1});
+        if(!exists) collectedColors.push({...c, source:'wgsn', brand:'WGSN', group:'ALL', freq:c.fileCount||1});
+      });
+      peclersColors.forEach(c => {
+        if(!c.hex) return;
+        const exists = collectedColors.find(x => x.hex && rgbDist(x.hex, c.hex) < 10);
+        if(!exists) collectedColors.push({...c, source:'peclers', brand:'Peclers', group:'ALL', freq:c.fileCount||1});
       });
     }
     renderTrendLists();
