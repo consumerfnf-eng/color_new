@@ -7691,17 +7691,15 @@ function _fillCatColors() {
     const cEl = document.getElementById('cat-' + cat.key + '-colors');
     if (cEl) {
       // 경쟁사 Colors 6개 수집 (POINT 2 + SUB 4, hidden 제외, override 포함)
-      // 슬롯(point/sub)을 색마다 태그 → 정렬해도 편집/override 유지
       const pointCols = [
-        ...aiPoint.filter(c => !hiddenPoint.has((c.hex||'').toUpperCase())).map(c => ({ ...c, _slot: 'point' })),
-        ...addedPoint.map((c, idx) => ({ ...c, _isOv: true, _slot: 'point', _ovIdx: idx }))
+        ...aiPoint.filter(c => !hiddenPoint.has((c.hex||'').toUpperCase())),
+        ...addedPoint.map(c => ({ ...c, _isOv: true }))
       ];
       const subCols = [
-        ...aiSub.filter(c => !hiddenSub.has((c.hex||'').toUpperCase())).map(c => ({ ...c, _slot: 'sub' })),
-        ...addedSub.map((c, idx) => ({ ...c, _isOv: true, _slot: 'sub', _ovIdx: idx }))
+        ...aiSub.filter(c => !hiddenSub.has((c.hex||'').toUpperCase())),
+        ...addedSub.map(c => ({ ...c, _isOv: true }))
       ];
-      // point 2 + sub 4 = 6개를 합쳐서 수집 빈도(total) 내림차순으로 통합 정렬
-      const allCols = [...pointCols, ...subCols].sort((a, b) => (b.total || 1) - (a.total || 1));
+      const allCols = [...pointCols, ...subCols]; // point 2 + sub 4 = 6
 
       if (!allCols.length) {
         cEl.innerHTML = noData(msg);
@@ -7709,9 +7707,12 @@ function _fillCatColors() {
       }
 
       // 왼쪽: 경쟁사 6개 칩
-      const leftChips = allCols.map((co) => {
-        const slot = co._slot;
-        const ovIdx = co._isOv ? co._ovIdx : undefined;
+      const leftChips = allCols.map((co, i) => {
+        const isOv = !!co._isOv;
+        const slot = i < pointCols.length ? 'point' : 'sub';
+        const ovIdx = isOv
+          ? (slot === 'point' ? addedPoint.indexOf(co) : addedSub.indexOf(co))
+          : undefined;
         return _catChip(co, cat.key, slot, ovIdx);
       }).join('');
 
@@ -7728,26 +7729,22 @@ function _fillCatColors() {
             ? (a,b) => { try { return rgbDistLab(rgbToLab(a), rgbToLab(b)); } catch(e) { return 999; } }
             : (a,b) => rgbDist(a,b) * 0.4;
           let best = null, bestDist = Infinity;
-          const [, bs] = _hexToHSL(co.hex); // 경쟁사 색 채도
           for (const t of _fullKeyPool) {
             if (!t.hex) continue;
-            const [th, ts] = _hexToHSL(t.hex);
+            const [th] = _hexToHSL(t.hex);
             if (_hueDist(bh, th) > 40) continue;
-            // 채도 가드: 한쪽은 유채색(≥0.18)인데 다른쪽이 거의 무채색(<0.10)이면 제외
-            if ((bs >= 0.18 && ts < 0.10) || (ts >= 0.18 && bs < 0.10)) continue;
             if (usedHues6.some(uh => _hueDist(uh, th) < 30)) continue;
             const d = distFn3(co.hex, t.hex);
             if (d < bestDist) { bestDist = d; best = t; }
           }
           if (best && bestDist > LAB_T) best = null;
-          // 폴백: hue 중복 무시 (채도 가드는 유지)
+          // 폴백: hue 중복 무시
           if (!best) {
             let best2 = null, bd2 = Infinity;
             for (const t of _fullKeyPool) {
               if (!t.hex) continue;
-              const [th, ts] = _hexToHSL(t.hex);
+              const [th] = _hexToHSL(t.hex);
               if (_hueDist(bh, th) > 40) continue;
-              if ((bs >= 0.18 && ts < 0.10) || (ts >= 0.18 && bs < 0.10)) continue;
               const d = distFn3(co.hex, t.hex);
               if (d < bd2) { bd2 = d; best2 = t; }
             }
@@ -10564,9 +10561,8 @@ function openPalDetail(c){
   const matSection = document.getElementById('paldm-material-section');
   if(matSection && c.hex){
     const mats=[
-      {key:'woven', label:'Woven', desc:'솔리드 발색 · 원본 Colors 기준'},
-      {key:'knit',  label:'Knit',  desc:'명도 +6% · 채도 -5% · 멜란지 보정'},
-      {key:'cotton',label:'Cotton',desc:'채도 -10% · 소프트 톤 보정'},
+      {key:'woven', label:'Woven', desc:'Cotton 대비 명도 -7% · 깊고 진한 발색'},
+      {key:'knit',  label:'Knit',  desc:'Cotton 대비 명도 -4% · 채도 -3%'},
     ];
     const feasColor={'●':'var(--pos)','△':'var(--gold)','✕':'var(--red)'};
     const f=typeof getFeasibility==='function'?getFeasibility(c.hex):{woven:'●',knit:'●',cotton:'●'};
@@ -13633,17 +13629,14 @@ function applyMaterialCorrection(hex, material){
   try{
     let [h,s,l] = rgbToHsl(hex);
     if(material==='woven'){
-      // 원본 그대로 (기준 소재)
+      // Woven: Cotton(기준값) 대비 더 깊고 진한 발색
+      // MLB 실물 칩 기준 (L.LAVENDER 페어): 명도 -7%, 채도 유지
+      l = Math.max(0, l - 0.07);
     } else if(material==='knit'){
-      // Knit: 루프 구조로 빛 흡수 → 어둡게 보임
-      // 보정: 명도 +6% (시각적 동질화), 채도 -5% (둔탁한 멜란지 감도)
-      l = Math.min(1, l + 0.06);
-      s = Math.max(0, s - 0.05);
-    } else if(material==='cotton'){
-      // Cotton: 드라이·탁도 높음 → 바랜 듯 보임
-      // 보정: 채도 -10% (소프트톤), 명도 +3% (탁도 상쇄)
-      s = Math.max(0, s - 0.10);
-      l = Math.min(1, l + 0.03);
+      // Knit: Cotton과 Woven 중간 — Cotton보다 약간 깊어짐
+      // MLB 실물 칩 기준: 명도 -4%, 채도 -3%
+      l = Math.max(0, l - 0.04);
+      s = Math.max(0, s - 0.03);
     }
     const [nr,ng,nb] = hslToRgb(h, s, l);
     return '#'+[nr,ng,nb].map(v=>Math.round(v).toString(16).padStart(2,'0')).join('');
@@ -13667,9 +13660,8 @@ function hslToRgb(h, s, l){
 // 소재별 Colors 팝업
 function openMaterialColorPopup(hex, name){
   const mats = [
-    {key:'woven',  label:'Woven',  desc:'원본 그대로 · 솔리드 발색'},
-    {key:'knit',   label:'Knit',   desc:'채도 -8% · 멜란지 톤'},
-    {key:'cotton', label:'Cotton', desc:'채도 -10% · 소프트 톤'},
+    {key:'woven',  label:'Woven',  desc:'Cotton 대비 명도 -7% · 깊고 진한 발색'},
+    {key:'knit',   label:'Knit',   desc:'Cotton 대비 명도 -4% · 채도 -3%'},
   ];
   const f = getFeasibility(hex);
   const feasColor = {'●':'#00c864','△':'#e8c060','✕':'#e03232'};
@@ -17133,18 +17125,9 @@ function _sppPickDiverse(arr, n, minDist, maxPerBrand){
   const out=[], used=[];
   const brandCount={};
   for(const co of arr){
+    if(out.length >= n) break;
     if(!co.hex) continue;
-    // 이미 선택된 색과 유사하면 → 대표 색에 브랜드 병합 후 skip (중복 브랜드 표시용)
-    const nearIdx = used.findIndex(u=>_sppRgbDist(u,co.hex) < minDist);
-    if(nearIdx>=0){
-      const rep = out[nearIdx];
-      if(rep){
-        if(!rep.brands) rep.brands=[];
-        if(co.brands) co.brands.forEach(b=>{ if(b && !rep.brands.includes(b)) rep.brands.push(b); });
-      }
-      continue;
-    }
-    if(out.length >= n) continue; // 슬롯이 차도 남은 유사색의 브랜드 병합을 위해 break 대신 continue
+    if(used.some(u=>_sppRgbDist(u,co.hex) < minDist)) continue;
     // 브랜드당 최대 개수 제한 (지정 시) — 한 브랜드가 풀을 독식하지 않게
     if(maxPerBrand){
       const b = (co.brands && co.brands[0]) || co.name || '';
@@ -17161,13 +17144,7 @@ function _sppDedupSimilar(arr, minDist){
   const out=[];
   for(const co of arr){
     if(!co.hex) continue;
-    const near = out.find(u=>_sppRgbDist(u.hex,co.hex) < minDist);
-    if(near){
-      // 유사색 흡수 — 브랜드 목록 병합 (한 색을 공유한 브랜드 모두 표시되도록)
-      if(!near.brands) near.brands=[];
-      if(co.brands) co.brands.forEach(b=>{ if(b && !near.brands.includes(b)) near.brands.push(b); });
-      continue;
-    }
+    if(out.some(u=>_sppRgbDist(u.hex,co.hex) < minDist)) continue;
     out.push(co);
   }
   return out;
@@ -17200,17 +17177,6 @@ function _sppGetTrendPool(){
   return [...src].sort((a,b)=>(b.freq||1)-(a.freq||1)).slice(0, SPP_TREND_POOL_TOP_N);
 }
 
-// ── 애슬레저 브랜드 가중치 (03 팔레트 제안에서 애슬레저 색이 더 많이 노출되도록) ──
-//   1.0 = 가중치 없음, 1.6 = 점수 60% 가산. 노출량 조절은 이 값만 바꾸면 됨.
-const SPP_ATH_WEIGHT = 1.6;
-function _sppIsAthleisureBrand(brand){
-  if(!brand) return false;
-  const list = (typeof COMP_LIFESTYLE_MAP!=='undefined' && COMP_LIFESTYLE_MAP['Athleisure']) ? COMP_LIFESTYLE_MAP['Athleisure'] : [];
-  if(typeof brandMatches==='function') return list.some(b=>brandMatches(brand,b));
-  const bl=(brand||'').toLowerCase();
-  return list.some(b=>bl.includes((b||'').toLowerCase()));
-}
-
 // ── rows 집계 + 트렌드 보너스 ──
 function _sppAggregateRows(rows){
   const map = new Map();
@@ -17237,14 +17203,11 @@ function _sppAggregateRows(rows){
   const out = [...map.values()];
   out.forEach(co=>{
     delete co._brandFreq; // 내부용 임시 필드 제거
-    // 애슬레저 가중치: 이 색을 애슬레저 브랜드가 사용했으면 정렬 점수 가산 (표시 ×빈도는 그대로)
-    const _athW = (co.brands && co.brands.some(_sppIsAthleisureBrand)) ? SPP_ATH_WEIGHT : 1;
-    co._athBoost = _athW > 1;
-    if(!trendPool.length){ co.score=co.freq*_athW; co.trendMatch=false; co._trendMatches=[]; return; }
+    if(!trendPool.length){ co.score=co.freq; co.trendMatch=false; co._trendMatches=[]; return; }
     const matches = trendPool.map(t=>({...t,_dist:_sppRgbDist(co.hex,t.hex)})).filter(t=>t._dist<SPP_TREND_MATCH_DIST).sort((a,b)=>a._dist-b._dist);
     co.trendMatch = matches.length>0;
     co._trendMatches = matches;
-    co.score = (co.trendMatch ? co.freq*(1+SPP_TREND_MATCH_BONUS) : co.freq) * _athW;
+    co.score = co.trendMatch ? co.freq*(1+SPP_TREND_MATCH_BONUS) : co.freq;
   });
   return out.sort((a,b)=>b.score-a.score);
 }
@@ -17257,15 +17220,17 @@ function _sppBuildMarketPalette(rows){
   //   - 채도가 매우 낮아야 함(s<0.14) — 단, 베이지/아이보리처럼 살짝 웜톤인 경우 명도가 높으면 채도 살짝 허용(s<0.20 && l>0.75)
   //   - 극단 명도(매우 어둡거나 밝음)라도 채도가 있으면(녹색·레드 계열) BASIC 아님
   const isTrueNeutral = (s, l, h) => {
-    // 실제 채도(RGB max−min 근사). 매우 밝은 색에서 HSL 채도가 부풀려지는 문제를 보정 → 파스텔과 뉴트럴을 안정적으로 구분
-    const C = (1 - Math.abs(2*l - 1)) * s;
-    // Black / White / Grey + 오프화이트 — 채도 거의 없는 진짜 무채색만
-    if(C < 0.06) return true;
-    // Ivory / Ecru / Beige — 밝은 웜톤(Hue 20~70°)에만 약간의 채도 허용. 핑크·파랑 파스텔은 hue가 달라 제외됨
-    if(h >= 20 && h <= 70 && l >= 0.60 && C <= 0.12) return true;
-    // Navy / Indigo — 어두운 파랑 계열만
-    if(h >= 210 && h <= 255 && l < 0.42 && C >= 0.04) return true;
-    // 그 외(파스텔 핑크/블루/민트 등 유채색)는 BASIC 아님 → SUB/KEY로 분류
+    // White: 명도 높음 (화이트/아이보리/크림 포함)
+    if(l > 0.82) return true;
+    // Black: 명도 매우 낮음
+    if(l < 0.12) return true;
+    // Grey: 채도 거의 없음 (무채색) — 어떤 Hue든 채도 낮으면 Grey
+    if(s < 0.10) return true;
+    // Ivory / Ecru / Beige: 밝고 저채도 웜톤 (Hue 20~65°, 명도 65%+, 채도 28% 이하)
+    if(h >= 20 && h <= 65 && l >= 0.65 && s <= 0.28) return true;
+    // Navy: Hue 210~255° + 명도 낮음 + 채도 적당 (진짜 네이비만)
+    if(h >= 210 && h <= 255 && l < 0.30 && s >= 0.15) return true;
+    // 나머지 유채색은 모두 제외
     return false;
   };
   // TCX 코드 기준 분류 캐시 — 같은 TCX 코드는 마켓(KR/EU/GLOBAL)이 달라도 항상 같은 카테고리로 분류되도록 보장
@@ -17586,8 +17551,7 @@ function _sppPickLifestyle(pool, ls, n){
   const scored=pool.map(co=>{
     const [h,s,l]=_sppRgbToHsl(co.hex);
     const cn=(co.name||'').toLowerCase();
-    // 애슬레저 브랜드가 쓴 색이면 기준 점수 가산 → 라이프스타일 큐레이션에서도 애슬레저 노출↑
-    let score=(co.freq||1) * ((co.brands && co.brands.some(_sppIsAthleisureBrand)) ? SPP_ATH_WEIGHT : 1);
+    let score=co.freq||1;
     if(ls==='active'){
       // 비비드 보너스는 명도가 충분히 밝아야 적용 — 어두운 딥버건디·딥네이비는 헤리티지(Classic)로 느껴지므로 제외
       if(s>0.65 && l>=0.40) score+=0.35;
@@ -18034,9 +17998,49 @@ function _spp27SS_render(){
 
 function _sppRenderBasicCommon(){
   const grid=document.getElementById('spp-ls-basic-common-grid'); if(!grid) return;
-  // 최초 1회: 큐레이션된 Basic 8색 사용 (White·Black·Navy·Grey·Ivory·Ecru 계열)
-  if(_sppBasicCommon.length===0 && typeof _SS27_DATA!=='undefined' && _SS27_DATA.basic && _SS27_DATA.basic.length){
-    _sppBasicCommon = _SS27_DATA.basic.map(c=>({...c, pantone:c.tcx+' TCX', freq:1, brands:[], _marketKey:'basic', _catKey:'common'}));
+  // 최초 1회: 마켓 팔레트의 basic을 편집 가능한 상태로 복사
+  const pal=_sppMarketPalettes.global||_sppMarketPalettes.kr||_sppMarketPalettes.eu;
+  if(_sppBasicCommon.length===0 && pal && pal.basic.length){
+    // SERGIO: White/Black/Navy/Grey 계열만 허용
+    const _sppIsWBNG = (co) => {
+      const cn = (co.name||'').toLowerCase();
+      const [,s,l] = typeof rgbToHsl==='function' ? rgbToHsl(co.hex) : [0,0,0.5];
+      const WHITE_KEYS = ['white','ivory','ecru','off-white','chalk','optical white','bright white','snow','cream white','ivory','birch','eggshell','off white'];
+      const BLACK_KEYS = ['black','jet','noir','ebony','raven','onyx'];
+      const NAVY_KEYS  = ['navy','indigo','marine','midnight','dark blue','deep blue'];
+      const GREY_KEYS  = ['grey','gray','charcoal','slate','silver','ash','cement','graphite','stone grey','cool grey','warm grey','heather'];
+      const BEIGE_KEYS = ['beige','ivory','ecru','oat','cream','sand','stone','linen','natural','parchment','bone','butter','vanilla','off white','warm white','antique white'];
+      const matchKeys = (keys) => keys.some(k => cn.includes(k));
+      if(matchKeys(WHITE_KEYS)) return true;
+      if(matchKeys(BLACK_KEYS)) return true;
+      if(matchKeys(NAVY_KEYS))  return true;
+      if(matchKeys(GREY_KEYS))  return true;
+      if(matchKeys(BEIGE_KEYS)) return true;
+      // 무채색(채도 10% 이하) — 어떤 색이든 흰/검/회 계열
+      if(s < 0.10) return true;
+      // 베이지/아이보리 톤: 밝고 저채도 (명도 75%+, 채도 20% 이하)
+      if(l > 0.75 && s < 0.20) return true;
+      // 매우 어두운 네이비 (명도 25% 이하, 채도 있음)
+      if(l < 0.25 && s > 0.05 && s < 0.55) return true;
+      return false;
+    };
+    const filtered = pal.basic.filter(_sppIsWBNG);
+    const base = filtered.length ? filtered : pal.basic;
+    // 8개 미만이면 마켓 데이터 전체 풀(key+sub)에서 neutral 계열로 부족분 채우기
+    const merged = [...base];
+    if(merged.length < 8){
+      const existHex = new Set(merged.map(c=>(c.hex||'').toUpperCase()));
+      const extraPool = [...(pal.sub||[]), ...(pal.key||[])].filter(c=>{
+        if(existHex.has((c.hex||'').toUpperCase())) return false;
+        return _sppIsWBNG(c);
+      }).sort((a,b)=>(b.score||b.freq||0)-(a.score||a.freq||0));
+      for(const co of extraPool){
+        if(merged.length >= 8) break;
+        merged.push(co);
+        existHex.add((co.hex||'').toUpperCase());
+      }
+    }
+    _sppBasicCommon = JSON.parse(JSON.stringify(merged));
     _sppBasicCommonOriginal = JSON.parse(JSON.stringify(_sppBasicCommon));
   }
   if(!_sppBasicCommon.length){ grid.innerHTML='<div class="spp-empty" style="grid-column:1/-1">02 Market Analysis 데이터를 로드하면 Basic 컬러가 표시됩니다.</div>'; return; }
@@ -18171,14 +18175,14 @@ function openSppSwatchPopover(regIdx){
     </div>`;
     if(brands.length){
       html += `<div style="padding:6px 8px;background:rgba(232,192,96,0.06);border:1px solid rgba(232,192,96,0.2);border-radius:6px">
-        <div style="font-family:var(--mono);font-size:8px;color:var(--gold);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:5px">Competitor Brands (${brands.length}) <span style="color:var(--text4);text-transform:none;letter-spacing:0">· 유사색 포함</span></div>
+        <div style="font-family:var(--mono);font-size:8px;color:var(--gold);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:5px">Competitor Brands (${brands.length})</div>
         <div style="display:flex;flex-wrap:wrap;gap:4px">
           ${brands.map(b=>`<span style="font-family:var(--mono);font-size:9px;color:var(--text2);background:var(--bg2);border:1px solid var(--border2);border-radius:4px;padding:2px 7px">${b}</span>`).join('')}
         </div>
       </div>`;
     }
     html += `<div style="display:flex;align-items:center;gap:6px;font-family:var(--mono);font-size:9px;color:var(--text3);padding:3px 0">
-      <span style="color:var(--accent)">×${co.freq||1}</span> 동일 색 수집 빈도 <span style="color:var(--text4)">(정확 hex 기준)</span>
+      <span style="color:var(--accent)">×${co.freq||1}</span> 총 수집 빈도
     </div>`;
     html += '</div></div>';
     evEl.innerHTML = html;
@@ -18187,9 +18191,8 @@ function openSppSwatchPopover(regIdx){
   const matSection = document.getElementById('spp-pop-material-section');
   if(matSection){
     const mats=[
-      {key:'woven', label:'Woven', desc:'솔리드 발색 · 원본 Colors 기준'},
-      {key:'knit',  label:'Knit',  desc:'명도 +6% · 채도 -5% · 멜란지 보정'},
-      {key:'cotton',label:'Cotton',desc:'채도 -10% · 소프트 톤 보정'},
+      {key:'woven', label:'Woven', desc:'Cotton 대비 명도 -7% · 깊고 진한 발색'},
+      {key:'knit',  label:'Knit',  desc:'Cotton 대비 명도 -4% · 채도 -3%'},
     ];
     const feasColor={'●':'var(--pos)','△':'var(--gold)','✕':'var(--red)'};
     const f=typeof getFeasibility==='function'?getFeasibility(hex):{woven:'●',knit:'●',cotton:'●'};
