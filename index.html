@@ -4803,14 +4803,23 @@ async function autoLoadAllSheets(season) {
 
     // 0b. WGSN Sheets — season 필터
     try {
+      const _wgsnSt = document.getElementById('wgsn-parse-status');
+      if (_wgsnSt) { _wgsnSt.textContent = `Loading [${s}]…`; _wgsnSt.style.color = 'var(--text3)'; }
       const wgsnCsv = await fetchSheetsCsv(SHEETS_URLS.wgsn);
       if (wgsnCsv) {
         const entries = parseTrendCsv(wgsnCsv, 'wgsn', s);
         counts.wgsn = entries.length;
-        if (entries.length) _applyWgsnEntries(entries, `Google Sheets [${s}]`);
-        else console.warn(`WGSN: ${s} 시즌 데이터 없음`);
+        if (entries.length) {
+          _applyWgsnEntries(entries, `Google Sheets [${s}]`);
+          if (_wgsnSt) { _wgsnSt.textContent = `✓ ${entries.length}개 Loaded [${s}]`; _wgsnSt.style.color = '#5A7A30'; }
+        } else {
+          console.warn(`WGSN: ${s} 시즌 데이터 없음`);
+          if (_wgsnSt) { _wgsnSt.textContent = `⚠ No data for ${s}`; _wgsnSt.style.color = 'var(--warn,#C08A2A)'; }
+        }
+      } else {
+        if (_wgsnSt) { _wgsnSt.textContent = '✗ Failed to load'; _wgsnSt.style.color = 'var(--red,#c0392b)'; }
       }
-    } catch(e) { console.warn('WGSN Sheets 로드 오류:', e); }
+    } catch(e) { console.warn('WGSN Sheets 로드 오류:', e); if (_wgsnSt) { _wgsnSt.textContent = '✗ Error'; _wgsnSt.style.color = 'var(--red)'; } }
 
     // 1. 판매 데이터 (MLB_SIGNAL) — 활성 브랜드의 판매 탭 사용, season 필터
     try {
@@ -4839,6 +4848,8 @@ async function autoLoadAllSheets(season) {
 
     // 3. Peclers — season 필터, 최대 3회 재시도
     try {
+      const _pecSt = document.getElementById('peclers-parse-status');
+      if (_pecSt) { _pecSt.textContent = `Loading [${s}]…`; _pecSt.style.color = 'var(--text3)'; }
       let pecCsv = null;
       for (let attempt = 0; attempt < 3; attempt++) {
         if (attempt > 0) await new Promise(r => setTimeout(r, 2000 * attempt));
@@ -4847,9 +4858,15 @@ async function autoLoadAllSheets(season) {
         if (pecCsv) break;
         console.warn('Peclers 재시도:', attempt + 1);
       }
-      if (pecCsv) results.peclers = await loadPeclersFromCsvText(pecCsv, s);
-      counts.peclers = (typeof peclersColors !== 'undefined') ? peclersColors.length : 0;
-    } catch(e) { console.warn('Peclers Load 오류:', e); }
+      if (pecCsv) {
+        results.peclers = await loadPeclersFromCsvText(pecCsv, s);
+        counts.peclers = (typeof peclersColors !== 'undefined') ? peclersColors.length : 0;
+        if (_pecSt) { _pecSt.textContent = `✓ ${counts.peclers}개 Loaded [${s}]`; _pecSt.style.color = '#5A7A30'; }
+      } else {
+        counts.peclers = 0;
+        if (_pecSt) { _pecSt.textContent = '✗ Failed to load'; _pecSt.style.color = 'var(--red,#c0392b)'; }
+      }
+    } catch(e) { console.warn('Peclers Load 오류:', e); const _pecSt2=document.getElementById('peclers-parse-status'); if(_pecSt2){_pecSt2.textContent='✗ Error';_pecSt2.style.color='var(--red)';} }
 
   } finally {
     const total = counts.newsletter + counts.wgsn + counts.mlb + counts.comp + counts.peclers;
@@ -4882,12 +4899,14 @@ function showSeasonEmptyNotice(season){
 // ── Google Sheets CSV → 프록시 경유 fetch ──
 // 각 프록시는 {url, json} 형태로 정의 — json:true면 응답을 JSON으로 파싱해서 .contents 추출
 const SHEETS_PROXIES = [
-  { fn: url => `https://corsproxy.io/?${encodeURIComponent(url)}`,                        json: false },
-  { fn: url => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,            json: false },
-  { fn: url => `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`,            json: true  },
-  { fn: url => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`,      json: false },
-  { fn: url => `https://corsproxy.io/?${encodeURIComponent(url)}&t=${Date.now()}`,        json: false },
-  { fn: url => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}&t=${Date.now()}`, json: false },
+  { fn: url => `https://corsproxy.io/?${encodeURIComponent(url)}`,                                   json: false },
+  { fn: url => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,                       json: false },
+  { fn: url => `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`,                       json: true  },
+  { fn: url => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`,                 json: false },
+  { fn: url => `https://thingproxy.freeboard.io/fetch/${url}`,                                        json: false },
+  { fn: url => `https://corsproxy.io/?${encodeURIComponent(url)}&_t=${Date.now()}`,                  json: false },
+  { fn: url => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}&_t=${Date.now()}`,     json: false },
+  { fn: url => `https://api.allorigins.win/get?url=${encodeURIComponent(url)}&_t=${Date.now()}`,     json: true  },
 ];
 async function fetchSheetsCsv(url, retry=0) {
   const isValidCsv = (csv) => csv && csv.length > 30 && csv.indexOf(',') > -1;
@@ -10523,33 +10542,51 @@ function openPalDetail(c){
     html += '<div style="font-size:9px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text3);margin-bottom:10px">Source · Brand</div>';
     html += '<div style="display:flex;flex-direction:column;gap:8px">';
 
-    // 소스별 행
+    // 소스별 행 — 뱃지 + 세부 출처 인라인 표기
     if(allSrcs.length){
       allSrcs.forEach(s=>{
         const label = srcMap[s]||s;
         const color = srcColor[s]||'var(--text3)';
-        const cnt = srcFreq[s]||'';
-        html += `<div style="display:flex;align-items:center;gap:8px;padding:5px 8px;background:var(--bg3);border-radius:6px">
-          <span style="padding:2px 10px;border-radius:20px;font-family:var(--mono);font-size:9px;font-weight:600;color:${color};border:1px solid ${color};background:rgba(0,0,0,0.2);white-space:nowrap">${label}</span>
-          ${cnt?`<span style="font-family:var(--mono);font-size:9px;color:var(--text3)">× ${cnt} times</span>`:''}
+        const cnt = srcFreq[s]||0;
+
+        let detail = '';
+        if(s==='comp' && compBrands.length){
+          // Competitor: 브랜드 태그 inline
+          const tags = compBrands.map(b=>`<span style="font-family:var(--mono);font-size:8px;color:var(--text2);background:var(--bg2);border:1px solid var(--border2);border-radius:3px;padding:1px 5px">${b}</span>`).join('');
+          detail = `<div style="display:flex;flex-wrap:wrap;gap:3px;margin-top:5px">${tags}</div>`;
+        } else if(s==='newsletter'||s==='wgsn'||s==='peclers'){
+          const srcLabel = s==='newsletter'?'Newsletter':s==='wgsn'?'WGSN':'Peclers';
+          detail = `<span style="font-family:var(--mono);font-size:9px;color:var(--text3)">— ${srcLabel}${cnt?` ×${cnt}`:''}</span>`;
+        }
+
+        html += `<div style="padding:6px 8px;background:var(--bg3);border-radius:6px">
+          <div style="display:flex;align-items:center;gap:8px">
+            <span style="padding:2px 10px;border-radius:20px;font-family:var(--mono);font-size:9px;font-weight:600;color:${color};border:1px solid ${color};background:rgba(0,0,0,0.2);white-space:nowrap">${label}</span>
+            ${(s==='newsletter'||s==='wgsn'||s==='peclers') ? detail : (cnt?`<span style="font-family:var(--mono);font-size:9px;color:var(--text3)">×${cnt}</span>`:'')}
+          </div>
+          ${s==='comp' ? detail : ''}
         </div>`;
       });
     }
 
-    // 경쟁사 브랜드 목록
-    if(compBrands.length){
-      html += `<div style="padding:6px 8px;background:rgba(232,192,96,0.06);border:1px solid rgba(232,192,96,0.2);border-radius:6px">
-        <div style="font-family:var(--mono);font-size:8px;color:var(--gold);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:5px">Competitor Brands (${compBrands.length})</div>
-        <div style="display:flex;flex-wrap:wrap;gap:4px">
-          ${compBrands.map(b=>`<span style="font-family:var(--mono);font-size:9px;color:var(--text2);background:var(--bg2);border:1px solid var(--border2);border-radius:4px;padding:2px 7px">${b}</span>`).join('')}
-        </div>
-      </div>`;
-    }
+    // 총 수집 빈도 + 출처별 분해
+    if(totalFreq>0){
+      const freqParts = [];
+      if(srcFreq['comp']) freqParts.push(`Competitor ×${srcFreq['comp']}`);
+      if(srcFreq['wgsn']) freqParts.push(`WGSN ×${srcFreq['wgsn']}`);
+      if(srcFreq['newsletter']) freqParts.push(`Newsletter ×${srcFreq['newsletter']}`);
+      if(srcFreq['peclers']) freqParts.push(`Peclers ×${srcFreq['peclers']}`);
+      Object.entries(srcFreq).forEach(([k,v])=>{
+        if(!['comp','wgsn','newsletter','peclers'].includes(k) && v)
+          freqParts.push(`${srcMap[k]||k} ×${v}`);
+      });
 
-    // 수집 빈도
-    if(totalFreq>1){
-      html += `<div style="display:flex;align-items:center;gap:6px;font-family:var(--mono);font-size:9px;color:var(--text3);padding:3px 0">
-        <span style="color:var(--accent)">×${totalFreq}</span> 총 수집 빈도
+      html += `<div style="padding:6px 8px;background:var(--bg3);border-radius:6px;font-family:var(--mono)">
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:${freqParts.length?'5px':'0'}">
+          <span style="font-size:9px;color:var(--text3)">총 수집 빈도</span>
+          <span style="font-size:12px;font-weight:700;color:var(--accent)">×${totalFreq}</span>
+        </div>
+        ${freqParts.length ? `<div style="display:flex;flex-wrap:wrap;gap:4px">${freqParts.map(p=>`<span style="font-size:8px;color:var(--text3);background:var(--bg2);border:1px solid var(--border2);border-radius:3px;padding:1px 6px">${p}</span>`).join('')}</div>` : ''}
       </div>`;
     }
 
