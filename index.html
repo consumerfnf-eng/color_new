@@ -4803,23 +4803,14 @@ async function autoLoadAllSheets(season) {
 
     // 0b. WGSN Sheets — season 필터
     try {
-      const _wgsnSt = document.getElementById('wgsn-parse-status');
-      if (_wgsnSt) { _wgsnSt.textContent = `Loading [${s}]…`; _wgsnSt.style.color = 'var(--text3)'; }
       const wgsnCsv = await fetchSheetsCsv(SHEETS_URLS.wgsn);
       if (wgsnCsv) {
         const entries = parseTrendCsv(wgsnCsv, 'wgsn', s);
         counts.wgsn = entries.length;
-        if (entries.length) {
-          _applyWgsnEntries(entries, `Google Sheets [${s}]`);
-          if (_wgsnSt) { _wgsnSt.textContent = `✓ ${entries.length}개 Loaded [${s}]`; _wgsnSt.style.color = '#5A7A30'; }
-        } else {
-          console.warn(`WGSN: ${s} 시즌 데이터 없음`);
-          if (_wgsnSt) { _wgsnSt.textContent = `⚠ No data for ${s}`; _wgsnSt.style.color = 'var(--warn,#C08A2A)'; }
-        }
-      } else {
-        if (_wgsnSt) { _wgsnSt.textContent = '✗ Failed to load'; _wgsnSt.style.color = 'var(--red,#c0392b)'; }
+        if (entries.length) _applyWgsnEntries(entries, `Google Sheets [${s}]`);
+        else console.warn(`WGSN: ${s} 시즌 데이터 없음`);
       }
-    } catch(e) { console.warn('WGSN Sheets 로드 오류:', e); if (_wgsnSt) { _wgsnSt.textContent = '✗ Error'; _wgsnSt.style.color = 'var(--red)'; } }
+    } catch(e) { console.warn('WGSN Sheets 로드 오류:', e); }
 
     // 1. 판매 데이터 (MLB_SIGNAL) — 활성 브랜드의 판매 탭 사용, season 필터
     try {
@@ -4848,8 +4839,6 @@ async function autoLoadAllSheets(season) {
 
     // 3. Peclers — season 필터, 최대 3회 재시도
     try {
-      const _pecSt = document.getElementById('peclers-parse-status');
-      if (_pecSt) { _pecSt.textContent = `Loading [${s}]…`; _pecSt.style.color = 'var(--text3)'; }
       let pecCsv = null;
       for (let attempt = 0; attempt < 3; attempt++) {
         if (attempt > 0) await new Promise(r => setTimeout(r, 2000 * attempt));
@@ -4858,15 +4847,9 @@ async function autoLoadAllSheets(season) {
         if (pecCsv) break;
         console.warn('Peclers 재시도:', attempt + 1);
       }
-      if (pecCsv) {
-        results.peclers = await loadPeclersFromCsvText(pecCsv, s);
-        counts.peclers = (typeof peclersColors !== 'undefined') ? peclersColors.length : 0;
-        if (_pecSt) { _pecSt.textContent = `✓ ${counts.peclers}개 Loaded [${s}]`; _pecSt.style.color = '#5A7A30'; }
-      } else {
-        counts.peclers = 0;
-        if (_pecSt) { _pecSt.textContent = '✗ Failed to load'; _pecSt.style.color = 'var(--red,#c0392b)'; }
-      }
-    } catch(e) { console.warn('Peclers Load 오류:', e); const _pecSt2=document.getElementById('peclers-parse-status'); if(_pecSt2){_pecSt2.textContent='✗ Error';_pecSt2.style.color='var(--red)';} }
+      if (pecCsv) results.peclers = await loadPeclersFromCsvText(pecCsv, s);
+      counts.peclers = (typeof peclersColors !== 'undefined') ? peclersColors.length : 0;
+    } catch(e) { console.warn('Peclers Load 오류:', e); }
 
   } finally {
     const total = counts.newsletter + counts.wgsn + counts.mlb + counts.comp + counts.peclers;
@@ -4899,14 +4882,12 @@ function showSeasonEmptyNotice(season){
 // ── Google Sheets CSV → 프록시 경유 fetch ──
 // 각 프록시는 {url, json} 형태로 정의 — json:true면 응답을 JSON으로 파싱해서 .contents 추출
 const SHEETS_PROXIES = [
-  { fn: url => `https://corsproxy.io/?${encodeURIComponent(url)}`,                                   json: false },
-  { fn: url => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,                       json: false },
-  { fn: url => `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`,                       json: true  },
-  { fn: url => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`,                 json: false },
-  { fn: url => `https://thingproxy.freeboard.io/fetch/${url}`,                                        json: false },
-  { fn: url => `https://corsproxy.io/?${encodeURIComponent(url)}&_t=${Date.now()}`,                  json: false },
-  { fn: url => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}&_t=${Date.now()}`,     json: false },
-  { fn: url => `https://api.allorigins.win/get?url=${encodeURIComponent(url)}&_t=${Date.now()}`,     json: true  },
+  { fn: url => `https://corsproxy.io/?${encodeURIComponent(url)}`,                        json: false },
+  { fn: url => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,            json: false },
+  { fn: url => `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`,            json: true  },
+  { fn: url => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`,      json: false },
+  { fn: url => `https://corsproxy.io/?${encodeURIComponent(url)}&t=${Date.now()}`,        json: false },
+  { fn: url => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}&t=${Date.now()}`, json: false },
 ];
 async function fetchSheetsCsv(url, retry=0) {
   const isValidCsv = (csv) => csv && csv.length > 30 && csv.indexOf(',') > -1;
@@ -10551,7 +10532,6 @@ function openPalDetail(c){
 
         let detail = '';
         if(s==='comp' && compBrands.length){
-          // Competitor: 브랜드 태그 inline
           const tags = compBrands.map(b=>`<span style="font-family:var(--mono);font-size:8px;color:var(--text2);background:var(--bg2);border:1px solid var(--border2);border-radius:3px;padding:1px 5px">${b}</span>`).join('');
           detail = `<div style="display:flex;flex-wrap:wrap;gap:3px;margin-top:5px">${tags}</div>`;
         } else if(s==='newsletter'||s==='wgsn'||s==='peclers'){
