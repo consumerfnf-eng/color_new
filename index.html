@@ -4751,6 +4751,7 @@ function clearSeasonScopedData(){
   try { Object.keys(MLB_SIGNAL).forEach(k=>delete MLB_SIGNAL[k]); } catch(e){}
   try { if(typeof compData!=='undefined') compData.length = 0; } catch(e){}
   try { if(typeof cnMarketData!=='undefined') cnMarketData.length = 0; } catch(e){}
+  try { window._cnBrandRows = []; } catch(e){}   // 미분류(CN) 브랜드 단위 행 보관소 초기화
   // 트렌드 소스 배열도 비움 (getTrendSourceColors가 직접 읽으므로 시즌 전환 시 잔존 방지)
   try { if(typeof newsletterColors!=='undefined') newsletterColors.length = 0; } catch(e){}
   try { if(typeof wgsnColors!=='undefined')       wgsnColors.length = 0; } catch(e){}
@@ -5093,6 +5094,18 @@ async function loadCompFromCsvText(csv, filterSeason) {
 
   // CN → cnMarketData
   if (cnRows.length > 0 && typeof cnMarketData !== 'undefined') {
+    // 브랜드 단위 CN 행 보관 (compData엔 없지만 체크 시 Other 카드로 복원용)
+    (function(){
+      window._cnBrandRows = window._cnBrandRows || [];
+      var _cbi = new Map();
+      window._cnBrandRows.forEach(function(r,i){ _cbi.set((r.brand||'')+'|'+r.hex, i); });
+      cnRows.forEach(function(r){
+        if(!r.brand || !r.hex) return;
+        var k=(r.brand||'')+'|'+r.hex, j=_cbi.get(k);
+        if(j!=null){ window._cnBrandRows[j].count=(window._cnBrandRows[j].count||1)+1; }
+        else { _cbi.set(k, window._cnBrandRows.length); window._cnBrandRows.push({hex:r.hex, brand:r.brand, count:1}); }
+      });
+    })();
     cnMarketData = Object.entries(hexCounter)
       .map(([hex,freq]) => {
         const hu=(hex||'').toUpperCase();
@@ -14052,6 +14065,18 @@ function handleUnifiedCompFile(input){
 
     // CN → cnMarketData 업데이트
     if(cnRows.length > 0 || Object.keys(hexCounter).length > 0){
+      // 브랜드 단위 CN 행 보관 (compData엔 없지만 체크 시 Other 카드로 복원용)
+      (function(){
+        window._cnBrandRows = window._cnBrandRows || [];
+        var _cbi = new Map();
+        window._cnBrandRows.forEach(function(r,i){ _cbi.set((r.brand||'')+'|'+r.hex, i); });
+        cnRows.forEach(function(r){
+          if(!r.brand || !r.hex) return;
+          var k=(r.brand||'')+'|'+r.hex, j=_cbi.get(k);
+          if(j!=null){ window._cnBrandRows[j].count=(window._cnBrandRows[j].count||1)+1; }
+          else { _cbi.set(k, window._cnBrandRows.length); window._cnBrandRows.push({hex:r.hex, brand:r.brand, count:1}); }
+        });
+      })();
       // cnMarketData 재구성 (기존 handleCNMarketFile 로직과 동일)
       cnMarketData = Object.entries(hexCounter)
         .map(([hex,freq])=>{
@@ -15018,6 +15043,29 @@ function renderCompBrandPage() {
   const allBrands = Object.values(brandMap);
   // ── 전역 Save — Category Curation이 이 데이터를 직접 참조 ──
   compBrandMap = brandMap;
+
+  // ── 미분류(China 마켓 등) 브랜드: 체크된 것만 'Other'로 편입 ──
+  //  compData에 없지만 체크된 브랜드를 _cnBrandRows에서 복원해 Other 섹션으로 노출.
+  //  체크가 없으면 Other 자체가 안 생김(기존 동작 유지).
+  (function(){
+    const selSet = (window._curMarketSel ? window._curMarketSel() : null);
+    if(!selSet || selSet.size === 0) return;
+    const cnBrandRows = window._cnBrandRows || [];
+    if(!cnBrandRows.length) return;
+    const otherMap = {};
+    cnBrandRows.forEach(r => {
+      if(!r.hex || !r.brand) return;
+      const key = brandKey(r.brand);
+      if(!key || !selSet.has(key)) return;   // 체크된 브랜드만
+      if(brandMap[key]) return;              // compData에 이미 있으면 스킵(중복 방지)
+      if(!otherMap[key]) otherMap[key] = { brand:r.brand, group:'Other', lifestyle:'Other', colors:[] };
+      const bm = otherMap[key];
+      const _dup = bm.colors.find(x => typeof rgbDist==='function' && rgbDist(x.hex, r.hex) < 18 && getColorType(x.hex)===getColorType(r.hex));
+      if(_dup){ _dup.count = (_dup.count||1) + (r.count||1); }
+      else { bm.colors.push({ hex:r.hex, name:r.brand, brand:r.brand, count:(r.count||1) }); }
+    });
+    Object.values(otherMap).forEach(b => allBrands.push(b));
+  })();
   const lsOrder = ['Luxury','Athleisure','Outdoor/Sports','Court Active','KR Brands','EU Brands Raw','Other'];
   const allLS = [...new Set(allBrands.map(b=>b.lifestyle))];
   const sortedLS = [...new Set([...lsOrder,...allLS])].filter(ls=>allLS.includes(ls));
