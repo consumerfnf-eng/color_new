@@ -6838,9 +6838,8 @@ function renderPalCrossView(){
       mlbColCode:c.mlbColCode||c.code||(_sc&&_sc.mlbColCode)||'',
       wRef:c.wRef||(_sc&&_sc.wRef), pRef:c.pRef||(_sc&&_sc.pRef),
       crossValidated:c.crossValidated||(_sc&&_sc.crossValidated),
-      compBrands:c.compBrands||(_sc&&_sc.compBrands)||[],
+      compBrands:c.compBrands||[],
       compCount:c.compCount||0,
-      srcFreq:c.srcFreq||(_sc&&_sc.srcFreq)||{},
       _isSales: mode==='sales',
     };
     // 팬톤 넘버 우선 표시
@@ -7219,7 +7218,7 @@ function renderSplitScoreList(){
       rightEl=`<div style="font-family:var(--mono);font-size:10px;color:var(--gold)">${Math.round((c.saleScore||0)*100)}</div>`;
     }
 
-    return `<div onclick="openPalDetail({hex:'${safeHex}',name:'${(c.name||c.hex).replace(/'/g,"\'")}',source:${JSON.stringify(c.source||'')},sources:${JSON.stringify(c.sources||[])},freq:${c.freq||1},totalFreqRaw:${c.totalFreqRaw||c.freq||1},qty:${c.qty||0},rate:${c.rate||0},saleScore:${c.saleScore||0},mlbColCode:'${(c.code||'').replace(/'/g,"")}',mlbCode:'${(c.code||'').replace(/'/g,"")}',_isSales:${mode==='sales'},compBrands:${JSON.stringify(c.compBrands||[])},srcFreq:${JSON.stringify(c.srcFreq||{})}})"
+    return `<div onclick="openPalDetail({hex:'${safeHex}',name:'${(c.name||c.hex).replace(/'/g,"\'")}',source:${JSON.stringify(c.source||'')},sources:${JSON.stringify(c.sources||[])},freq:${c.freq||1},totalFreqRaw:${c.totalFreqRaw||c.freq||1},qty:${c.qty||0},rate:${c.rate||0},saleScore:${c.saleScore||0},mlbColCode:'${(c.code||'').replace(/'/g,"")}',mlbCode:'${(c.code||'').replace(/'/g,"")}',_isSales:${mode==='sales'}})"
       style="display:flex;align-items:center;gap:8px;padding:5px 8px;border-radius:6px;cursor:pointer;background:${bg};transition:background 100ms"
       onmouseenter="this.style.background='rgba(255,255,255,0.05)'"
       onmouseleave="this.style.background='${bg}'">
