@@ -6838,8 +6838,9 @@ function renderPalCrossView(){
       mlbColCode:c.mlbColCode||c.code||(_sc&&_sc.mlbColCode)||'',
       wRef:c.wRef||(_sc&&_sc.wRef), pRef:c.pRef||(_sc&&_sc.pRef),
       crossValidated:c.crossValidated||(_sc&&_sc.crossValidated),
-      compBrands:c.compBrands||[],
+      compBrands:c.compBrands||(_sc&&_sc.compBrands)||[],
       compCount:c.compCount||0,
+      srcFreq:c.srcFreq||(_sc&&_sc.srcFreq)||{},
       _isSales: mode==='sales',
     };
     // 팬톤 넘버 우선 표시
@@ -7218,7 +7219,7 @@ function renderSplitScoreList(){
       rightEl=`<div style="font-family:var(--mono);font-size:10px;color:var(--gold)">${Math.round((c.saleScore||0)*100)}</div>`;
     }
 
-    return `<div onclick="openPalDetail({hex:'${safeHex}',name:'${(c.name||c.hex).replace(/'/g,"\'")}',source:${JSON.stringify(c.source||'')},sources:${JSON.stringify(c.sources||[])},freq:${c.freq||1},totalFreqRaw:${c.totalFreqRaw||c.freq||1},qty:${c.qty||0},rate:${c.rate||0},saleScore:${c.saleScore||0},mlbColCode:'${(c.code||'').replace(/'/g,"")}',mlbCode:'${(c.code||'').replace(/'/g,"")}',_isSales:${mode==='sales'}})"
+    return `<div onclick="openPalDetail({hex:'${safeHex}',name:'${(c.name||c.hex).replace(/'/g,"\'")}',source:${JSON.stringify(c.source||'')},sources:${JSON.stringify(c.sources||[])},freq:${c.freq||1},totalFreqRaw:${c.totalFreqRaw||c.freq||1},qty:${c.qty||0},rate:${c.rate||0},saleScore:${c.saleScore||0},mlbColCode:'${(c.code||'').replace(/'/g,"")}',mlbCode:'${(c.code||'').replace(/'/g,"")}',_isSales:${mode==='sales'},compBrands:${JSON.stringify(c.compBrands||[])},srcFreq:${JSON.stringify(c.srcFreq||{})}})"
       style="display:flex;align-items:center;gap:8px;padding:5px 8px;border-radius:6px;cursor:pointer;background:${bg};transition:background 100ms"
       onmouseenter="this.style.background='rgba(255,255,255,0.05)'"
       onmouseleave="this.style.background='${bg}'">
@@ -8275,7 +8276,8 @@ async function runScoring(){
     const k=co.hex.toUpperCase();
     if(!map[k]) map[k]={
       hex:k, names:[], brands:[], groups:[], sources:[],
-      totalFreq:0, wFreq:0, totalFreqRaw:0
+      totalFreq:0, wFreq:0, totalFreqRaw:0,
+      srcFreq:{}, compBrands:[]
     };
     map[k].names.push(co.name||'');
     map[k].brands.push(...(co.brands||[co.brand]).filter(Boolean));
@@ -8283,6 +8285,11 @@ async function runScoring(){
     const coSrcs = co.sources || (co.source ? [co.source] : []);
     coSrcs.forEach(s=>{ if(s && !map[k].sources.includes(s)) map[k].sources.push(s); });
     map[k].totalFreqRaw = (map[k].totalFreqRaw||0) + (co.freq||1);
+    // srcFreq 누적
+    if(co.srcFreq) Object.entries(co.srcFreq).forEach(([s,v])=>{ map[k].srcFreq[s]=(map[k].srcFreq[s]||0)+v; });
+    else if(co.source) map[k].srcFreq[co.source]=(map[k].srcFreq[co.source]||0)+(co.freq||1);
+    // compBrands 누적
+    if(co.compBrands && co.compBrands.length) co.compBrands.forEach(b=>{ if(b && !map[k].compBrands.includes(b)) map[k].compBrands.push(b); });
     // ALL 그룹은 A·B·C 모두에 기여
     if((co.group||'A')==='ALL'){
       map[k].groups.push('A','B','C');
@@ -10512,12 +10519,20 @@ function openPalDetail(c){
   if(srcEl){
     const srcMap={'wgsn':'WGSN','peclers':'Peclers','newsletter':'Newsletter','comp':'Competitor','csv':'CSV','manual':'Manual','pdf':'PDF','article':'Article','image':'Image'};
     const srcColor={'wgsn':'var(--blue)','peclers':'var(--purple)','newsletter':'var(--teal)','comp':'var(--gold)','csv':'var(--text2)','manual':'var(--text2)','pdf':'var(--blue)','article':'var(--teal)','image':'var(--text2)'};
-    // scoredColors에서 Add 데이터 보강
+    // scoredColors + collectedColors에서 데이터 보강
     const _sc2 = (typeof scoredColors!=='undefined') ? scoredColors.find(x=>(x.hex||'').toUpperCase()===(c.hex||'').toUpperCase()) : null;
-    const allSrcs=[...new Set([...(c.sources||[]),c.source,(_sc2&&(_sc2.sources||[]))].flat().filter(Boolean))];
-    const compBrands = c.compBrands||_sc2?.compBrands||[];
-    const totalFreq = c.totalFreqRaw||c.freq||_sc2?.totalFreqRaw||_sc2?.freq||1;
-    const srcFreq = c.srcFreq||_sc2?.srcFreq||{};
+    const _cc2 = (typeof collectedColors!=='undefined') ? collectedColors.find(x=>(x.hex||'').toUpperCase()===(c.hex||'').toUpperCase()) : null;
+    const allSrcs=[...new Set([...(c.sources||[]),c.source,(_sc2&&(_sc2.sources||[])),(_cc2&&(_cc2.sources||[]))].flat().filter(Boolean))];
+    // compBrands: 저장된 브랜드 + ΔE 22 이내 compData 브랜드 모두 수집
+    const _baseCompBrands = c.compBrands||_sc2?.compBrands||_cc2?.compBrands||[];
+    const _nearCompBrands = (typeof compData!=='undefined' && Array.isArray(compData) && c.hex)
+      ? [...new Set(compData
+          .filter(cd => cd.hex && cd.brand && typeof rgbDist==='function' && rgbDist(c.hex, cd.hex) < 22)
+          .map(cd => cd.brand))]
+      : [];
+    const compBrands = [...new Set([..._baseCompBrands, ..._nearCompBrands])];
+    const totalFreq = c.totalFreqRaw||c.freq||_sc2?.totalFreqRaw||_sc2?.freq||_cc2?.totalFreqRaw||_cc2?.freq||1;
+    const srcFreq = c.srcFreq||_sc2?.srcFreq||_cc2?.srcFreq||{};
 
     let html = '<div style="border-top:1px solid var(--border);margin-top:12px;padding-top:12px">';
     html += '<div style="font-size:9px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text3);margin-bottom:10px">Source · Brand</div>';
@@ -17142,9 +17157,18 @@ function _sppPickDiverse(arr, n, minDist, maxPerBrand){
   const out=[], used=[];
   const brandCount={};
   for(const co of arr){
-    if(out.length >= n) break;
     if(!co.hex) continue;
-    if(used.some(u=>_sppRgbDist(u,co.hex) < minDist)) continue;
+    // 이미 선택된 색과 유사하면 → 대표 색에 브랜드 병합 후 skip (중복 브랜드 표시용)
+    const nearIdx = used.findIndex(u=>_sppRgbDist(u,co.hex) < minDist);
+    if(nearIdx>=0){
+      const rep = out[nearIdx];
+      if(rep){
+        if(!rep.brands) rep.brands=[];
+        if(co.brands) co.brands.forEach(b=>{ if(b && !rep.brands.includes(b)) rep.brands.push(b); });
+      }
+      continue;
+    }
+    if(out.length >= n) continue; // 슬롯이 차도 남은 유사색의 브랜드 병합을 위해 break 대신 continue
     // 브랜드당 최대 개수 제한 (지정 시) — 한 브랜드가 풀을 독식하지 않게
     if(maxPerBrand){
       const b = (co.brands && co.brands[0]) || co.name || '';
@@ -17161,7 +17185,13 @@ function _sppDedupSimilar(arr, minDist){
   const out=[];
   for(const co of arr){
     if(!co.hex) continue;
-    if(out.some(u=>_sppRgbDist(u.hex,co.hex) < minDist)) continue;
+    const near = out.find(u=>_sppRgbDist(u.hex,co.hex) < minDist);
+    if(near){
+      // 유사색 흡수 — 브랜드 목록 병합 (한 색을 공유한 브랜드 모두 표시되도록)
+      if(!near.brands) near.brands=[];
+      if(co.brands) co.brands.forEach(b=>{ if(b && !near.brands.includes(b)) near.brands.push(b); });
+      continue;
+    }
     out.push(co);
   }
   return out;
