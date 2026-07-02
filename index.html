@@ -4776,6 +4776,7 @@ async function reloadMarketFromSheets() {
   if (st)  { st.textContent = ''; st.style.color = 'var(--text3)'; }
 
   try {
+    if(!SHEETS_URLS.competitor){ throw new Error('경쟁사 URL 미설정'); }
     const csv = await fetchSheetsCsv(SHEETS_URLS.competitor);
     if (!csv) throw new Error('Failed to fetch');
     const ok = await loadCompFromCsvText(csv, season);
@@ -4864,6 +4865,9 @@ function resetSeasonUI(){
 async function autoLoadAllSheets(season) {
   const s = (season || _activeSeason || '27FW').toUpperCase();
   showSheetsLoadBanner('loading');
+  // DISCOVERY: competitor URL 없으므로 임시 빈 처리
+  const _origCompUrl = SHEETS_URLS.competitor;
+  if(typeof _activeBrand!=='undefined' && _activeBrand==='DISCOVERY') SHEETS_URLS.competitor='';
   // ★ 시즌 전환마다 이전 데이터 초기화 → 빈 시즌 클릭 시 옛 27FW 데이터가 남지 않음
   clearSeasonScopedData();
   const results = { comp: false, peclers: false, mlb: false, season: s };
@@ -4910,10 +4914,13 @@ async function autoLoadAllSheets(season) {
       }
     } catch(e) { console.warn('판매 데이터 Load 오류:', e); }
 
-    // 2. 경쟁사 — season 필터
+    // 2. 경쟁사 — season 필터 (DISCOVERY는 별도 competitor URL 없으면 스킵)
     try {
-      const compCsv = await fetchSheetsCsv(SHEETS_URLS.competitor);
-      if (compCsv) results.comp = await loadCompFromCsvText(compCsv, s);
+      const _compUrl = SHEETS_URLS.competitor;
+      if(_compUrl && _activeBrand !== 'DISCOVERY') {
+        const compCsv = await fetchSheetsCsv(_compUrl);
+        if (compCsv) results.comp = await loadCompFromCsvText(compCsv, s);
+      }
       counts.comp = (typeof compData !== 'undefined') ? compData.length : 0;
     } catch(e) { console.warn('경쟁사 Load 오류:', e); }
 
@@ -4932,6 +4939,8 @@ async function autoLoadAllSheets(season) {
     } catch(e) { console.warn('Peclers Load 오류:', e); }
 
   } finally {
+    // competitor URL 복원
+    if(typeof _origCompUrl !== 'undefined') SHEETS_URLS.competitor = _origCompUrl;
     const total = counts.newsletter + counts.wgsn + counts.mlb + counts.comp + counts.peclers;
     window._lastLoadSummary = { season: s, counts, total };
     showSheetsLoadBanner('done', results);
@@ -5296,11 +5305,12 @@ function showSheetsLoadBanner(state, results) {
       : _isDISC
       ? `${ok(typeof counts!=='undefined' ? counts.wgsn : (window._lastLoadSummary&&window._lastLoadSummary.counts&&window._lastLoadSummary.counts.wgsn))} WGSN`
       : `${ok(results && results.mlb)} MLB 판매`;
+    // Discovery: 경쟁사 체크 표시 제거 (URL 없으므로)
+    const compCheck = _isDISC ? '' : `${ok(results && results.comp)} 경쟁사 &nbsp;`;
     el.innerHTML = `
       <div style="color:var(--text2);font-weight:600;margin-bottom:6px;font-size:11px">📡 Sheets Auto-Sync Complete</div>
       <div style="color:var(--text3)">
-        ${ok(results && results.comp)} 경쟁사 &nbsp;
-        ${ok(results && results.peclers)} Peclers &nbsp;
+        ${compCheck}${ok(results && results.peclers)} Peclers &nbsp;
         ${lastLine}
       </div>
       <div style="color:var(--text4);font-size:9px;margin-top:3px">Data has been applied automatically</div>`;
