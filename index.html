@@ -11034,12 +11034,19 @@ function openPalDetail(c){
     const _cc2 = (typeof collectedColors!=='undefined') ? collectedColors.find(x=>(x.hex||'').toUpperCase()===(c.hex||'').toUpperCase()) : null;
     const allSrcs=[...new Set([...(c.sources||[]),c.source,(_sc2&&(_sc2.sources||[])),(_cc2&&(_cc2.sources||[]))].flat().filter(Boolean))];
     // compBrands: 저장된 브랜드 + ΔE 22 이내 compData 브랜드 모두 수집
-    const _baseCompBrands = c.compBrands||_sc2?.compBrands||_cc2?.compBrands||[];
-    const _nearCompBrands = (typeof compData!=='undefined' && Array.isArray(compData) && c.hex)
+    const _baseCompBrandsRaw = c.compBrands||_sc2?.compBrands||_cc2?.compBrands||[];
+    const _nearCompBrandsRaw = (typeof compData!=='undefined' && Array.isArray(compData) && c.hex)
       ? [...new Set(compData
           .filter(cd => cd.hex && cd.brand && typeof rgbDist==='function' && rgbDist(c.hex, cd.hex) < 22)
           .map(cd => cd.brand))]
       : [];
+    // DISCOVERY: 체크한 브랜드로만 03 팔레트를 구성하므로, 여기 뱃지도 체크된 브랜드만 표시
+    const _isDiscPopup = (typeof _activeBrand!=='undefined' && _activeBrand==='DISCOVERY');
+    const _popSel = (_isDiscPopup && typeof window._curMarketSel==='function') ? window._curMarketSel() : null;
+    const _popBkn = window._brandKeyNorm || function(s){ return (s||'').toLowerCase().replace(/[\s._\-]+/g,'').trim(); };
+    const _filterToSel = (arr) => (_popSel && _popSel.size>0) ? arr.filter(b => _popSel.has(_popBkn(b))) : arr;
+    const _baseCompBrands = _isDiscPopup ? _filterToSel(_baseCompBrandsRaw) : _baseCompBrandsRaw;
+    const _nearCompBrands = _isDiscPopup ? _filterToSel(_nearCompBrandsRaw) : _nearCompBrandsRaw;
     const compBrands = [...new Set([..._baseCompBrands, ..._nearCompBrands])];
     const totalFreq = c.totalFreqRaw||c.freq||_sc2?.totalFreqRaw||_sc2?.freq||_cc2?.totalFreqRaw||_cc2?.freq||1;
     const srcFreq = c.srcFreq||_sc2?.srcFreq||_cc2?.srcFreq||{};
