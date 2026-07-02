@@ -16810,14 +16810,15 @@ window._defaultBrandSel = {
 window._curMarketSel = function(){
   var fb = (typeof _activeBrand !== 'undefined' && _activeBrand) ? _activeBrand : 'MLB';
   if(!window._marketBrandSelMap[fb]) window._marketBrandSelMap[fb] = new Set();
-  // 첫 진입 시 localStorage 복원 → 없으면 기본 브랜드 세트 적용
+  // 첫 진입 시 localStorage 복원 → 없거나 빈 배열이면 기본 브랜드 세트 적용
   if(!window._marketBrandSelMap[fb]._loaded){
     try{
       var raw = localStorage.getItem('fnf_marketSel_'+fb);
-      if(raw){
-        JSON.parse(raw).forEach(function(k){ window._marketBrandSelMap[fb].add(k); });
+      var parsed = raw ? JSON.parse(raw) : [];
+      if(parsed && parsed.length > 0){
+        parsed.forEach(function(k){ window._marketBrandSelMap[fb].add(k); });
       } else {
-        // localStorage 값 없으면 기본 세트 적용
+        // localStorage 값이 없거나 빈 배열([])이면 기본 세트 적용
         var defaults = window._defaultBrandSel[fb] || [];
         var bkn = window._brandKeyNorm || function(s){ return (s||'').toLowerCase().replace(/[\s._\-]+/g,'').trim(); };
         defaults.forEach(function(b){ window._marketBrandSelMap[fb].add(bkn(b)); });
