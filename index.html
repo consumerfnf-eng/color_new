@@ -663,7 +663,7 @@ function pickSeason(brand, season) {
     }
     // 새 데이터로 팔레트/분포/마켓칩 재렌더
     try { if (typeof renderMarketCsvBrands === 'function') renderMarketCsvBrands(); } catch(e){}
-    try { if (typeof renderPalCrossView === 'function') renderPalCrossView(); } catch(e){}
+    try { if (typeof renderPalCrossView === 'function' && !(typeof _activeBrand!=='undefined'&&_activeBrand==='DISCOVERY')) renderPalCrossView(); } catch(e){}
     try { if (typeof renderSplitScoreList === 'function' && typeof scoredColors !== 'undefined') renderSplitScoreList(scoredColors); } catch(e){}
     try { if (typeof refreshSeasonDist === 'function') refreshSeasonDist(); } catch(e){}
     // 피커는 자동으로 닫지 않음 — 사이드바 브랜드 클릭으로 접고 펴기
@@ -6767,6 +6767,7 @@ const EUROPE_COLOR_PROFILE={
 
 // ── 팔레트 탭 트렌드/판매 분리 뷰 ────────────────────────────────
 function renderPalCrossView(){
+  if(typeof _activeBrand!=='undefined'&&_activeBrand==='DISCOVERY') return;
   const salesEl = document.getElementById('cv-sales-list');
   const trendEl = document.getElementById('cv-trend-list');
   const crossEl = document.getElementById('cv-cross-col');
@@ -16753,7 +16754,7 @@ window.applyMarketBrandSelection = function(){
 
   // 2) TREND BASED PALETTE 재계산 (getTrendSourceColors 가 선택 브랜드만 사용)
   try { if (typeof renderSplitScoreList === 'function') renderSplitScoreList(typeof scoredColors!=='undefined'?scoredColors:[]); } catch(e){}
-  try { if (typeof renderPalCrossView === 'function') renderPalCrossView(); } catch(e){}
+  try { if (typeof renderPalCrossView === 'function' && !(typeof _activeBrand!=='undefined'&&_activeBrand==='DISCOVERY')) renderPalCrossView(); } catch(e){}
   try { if (typeof renderPalettePage === 'function') renderPalettePage(); } catch(e){}
   try { if (typeof updateTrendPreview === 'function') updateTrendPreview(); } catch(e){}
 
