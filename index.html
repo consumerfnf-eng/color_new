@@ -5022,6 +5022,16 @@ async function fetchSheetsCsv(url, retry=0) {
   return null;
 }
 
+// ── season 값 정규화 ──
+// 시트에 "2025-12", "2026-01" 같은 YYYY-MM 형식으로 들어오는 값은
+// 전부 27FW로 통일 처리 (일자별로 다른 시즌 취급하지 않음)
+function _normalizeSeasonValue(raw){
+  const s = (raw || '').trim();
+  if (!s) return s;
+  if (/^\d{4}-\d{2}$/.test(s)) return '27FW';
+  return s.toUpperCase();
+}
+
 // ── Competitor CSV Sheets Load (URL → 프록시) ──
 async function loadCompFromSheets(url) {
   if (!url) return false;
@@ -5090,9 +5100,9 @@ async function loadCompFromCsvText(csv, filterSeason) {
   lines.slice(1).forEach(l => {
     const p = parseLine(l);
 
-    // season 필터
+    // season 필터 (2025-12 / 2026-01 같은 YYYY-MM 값은 27FW로 정규화 후 비교)
     if (idxSeason >= 0 && filterSeason) {
-      const rowSeason = (p[idxSeason] || '').trim().toUpperCase();
+      const rowSeason = _normalizeSeasonValue(p[idxSeason] || '');
       if (rowSeason && rowSeason !== filterSeason.toUpperCase()) return;
     }
 
@@ -5105,7 +5115,7 @@ async function loadCompFromCsvText(csv, filterSeason) {
     const hexes    = (rawHex.match(/#[0-9a-fA-F]{6}/g) || []).map(h => h.toUpperCase());
     if (!hexes.length) return;
 
-    const season = idxSeason >= 0 ? (p[idxSeason] || '').trim() : '';
+    const season = idxSeason >= 0 ? _normalizeSeasonValue(p[idxSeason] || '') : '';
 
     if (country === 'KR') {
       hexes.forEach(hx => krRows.push({hex:hx, name:brand, brand, group, court, freq:1, source:'sheets-kr', season}));
@@ -14295,10 +14305,11 @@ function handleUnifiedCompFile(input){
       const brand   = idxBrand>=0 ? (p[idxBrand]||'').trim() : '';
       const group   = idxGroup>=0 ? (p[idxGroup]||'A').trim() : 'A';
       const court   = idxCourt>=0 ? (p[idxCourt]||'').trim().toUpperCase() : '';
-      const season  = idxSeason>=0 ? (p[idxSeason]||'').trim() : '';
+      const season  = idxSeason>=0 ? _normalizeSeasonValue(p[idxSeason]||'') : '';
       const rawHex  = idxHex>=0 ? (p[idxHex]||'').trim() : '';
 
       // season 필터 — 활성 시즌이 있고 CSV 행에 시즌값이 있으면 일치하는 것만
+      // (2025-12 / 2026-01 같은 YYYY-MM 값은 _normalizeSeasonValue에서 27FW로 정규화됨)
       if(_filterSeason && idxSeason>=0 && season && season.toUpperCase() !== _filterSeason) return;
 
       // 한 칸에 여러 HEX("#FF0000 | #FFFFFF" 등)가 있으면 각각 별도 Colors로 분리·카운트
