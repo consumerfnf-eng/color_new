@@ -8939,9 +8939,9 @@ function _renderDiscoveryPalette(){
 
   // 체크된 브랜드 선택(마켓 브랜드 체크박스)이 바뀔 때마다 반영되도록
   // 매번 재계산 — resultPalette가 이미 있어도 다시 생성
-  if(typeof scoredColors!=='undefined'&&scoredColors.length>0){
-    if(typeof selectFinalPalette==='function') selectFinalPalette();
-  }
+  // (scoredColors는 runScoring()을 수동 실행해야만 채워지므로 그 여부와 무관하게 항상 호출 —
+  //  _selectDiscoveryPalette 내부에서 getTrendSourceColors()로 이미 로드된 데이터를 직접 사용)
+  if(typeof selectFinalPalette==='function') selectFinalPalette();
 
   // 현재 활성 region 렌더
   discSetRegion(_discActiveRegion);
@@ -8953,11 +8953,13 @@ function _renderDiscoveryPalette(){
 // ── DISCOVERY 전용 팔레트 선발 함수 ────────────────────────────
 function _selectDiscoveryPalette(classified){
   if(!classified){
-    classified={
-      point: scoredColors.filter(co=>co.marketCat==='point'),
-      sub:   scoredColors.filter(co=>co.marketCat==='sub'),
-      basic: scoredColors.filter(co=>co.marketCat==='basic'),
-    };
+    // scoredColors는 runScoring()을 수동 실행해야만 채워짐(브랜드명도 약함).
+    // DISCOVERY는 브랜드 매칭이 핵심이므로 이미 로드된 compData/트렌드를 직접
+    // 합쳐주는 getTrendSourceColors()를 기본 소스로 사용 (브랜드명 포함, 즉시 사용 가능)
+    const _src = (typeof getTrendSourceColors === 'function')
+      ? getTrendSourceColors()
+      : (typeof scoredColors !== 'undefined' ? scoredColors : []);
+    classified = { point: _src, sub: [], basic: [] };
   }
 
   // Commute 50% / Wellness 30% / Outdoor Resort 20% — 실제 쿼터 배분
