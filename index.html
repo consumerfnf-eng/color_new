@@ -7368,6 +7368,9 @@ function toggleCatEditMode() {
 function renderCatGrid() {
   const grid = document.getElementById('cat-curation-grid');
   if (!grid) return;
+  // Discovery는 3개 카테고리 → 한 줄(3열)
+  const _isDiscGrid = (typeof _activeBrand!=='undefined'&&_activeBrand==='DISCOVERY');
+  grid.style.gridTemplateColumns = _isDiscGrid ? '1fr 1fr 1fr' : '1fr 1fr';
   if (!window._catDefs || !window._catDefs.length) {
     grid.innerHTML = `<div style="grid-column:1/-1;padding:24px;text-align:center;font-family:var(--mono);font-size:11px;color:var(--text4)">No categories</div>`;
     return;
