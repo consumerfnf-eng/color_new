@@ -1428,6 +1428,42 @@ function enterBrandFromHome(brand) {
         <div id="spp-pop-material-section" style="display:none"></div>
       </div>
 
+      <!-- ════ DISCOVERY 전용 팔레트 UI ════ -->
+      <div id="disc-palette-wrap" style="display:none">
+        <!-- KR / CN 탭 -->
+        <div style="display:flex;gap:8px;margin-bottom:16px;align-items:center">
+          <button id="disc-tab-kr" onclick="discSetRegion('kr')"
+            style="font-family:var(--mono);font-size:10px;font-weight:700;padding:5px 18px;border-radius:20px;border:1px solid var(--gold);background:var(--gold);color:#000;cursor:pointer">KR</button>
+          <button id="disc-tab-cn" onclick="discSetRegion('cn')"
+            style="font-family:var(--mono);font-size:10px;font-weight:700;padding:5px 18px;border-radius:20px;border:1px solid var(--border);background:transparent;color:var(--text2);cursor:pointer">CN</button>
+          <span id="disc-region-label" style="font-family:var(--mono);font-size:9px;color:var(--text3);margin-left:8px"></span>
+        </div>
+        <!-- SUB -->
+        <div style="margin-bottom:20px">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+            <span style="font-family:var(--mono);font-size:9px;font-weight:700;color:var(--blue);letter-spacing:0.1em;text-transform:uppercase">SUB</span>
+            <span id="disc-sub-cnt" style="font-family:var(--mono);font-size:9px;color:var(--text3)"></span>
+          </div>
+          <div id="disc-sub-grid" style="display:flex;flex-wrap:wrap;gap:8px"></div>
+        </div>
+        <!-- KEY -->
+        <div style="margin-bottom:20px">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+            <span style="font-family:var(--mono);font-size:9px;font-weight:700;color:#A090F0;letter-spacing:0.1em;text-transform:uppercase">KEY</span>
+            <span id="disc-key-cnt" style="font-family:var(--mono);font-size:9px;color:var(--text3)"></span>
+          </div>
+          <div id="disc-key-grid" style="display:flex;flex-wrap:wrap;gap:8px"></div>
+        </div>
+        <!-- BASIC -->
+        <div style="margin-bottom:20px">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+            <span style="font-family:var(--mono);font-size:9px;font-weight:700;color:var(--gold);letter-spacing:0.1em;text-transform:uppercase">BASIC</span>
+            <span id="disc-basic-cnt" style="font-family:var(--mono);font-size:9px;color:var(--text3)"></span>
+          </div>
+          <div id="disc-basic-grid" style="display:flex;flex-wrap:wrap;gap:8px"></div>
+        </div>
+      </div>
+
       <!-- ════ 기존 MLB 팔레트 UI (SERGIO가 아닐 때만 보임) ════ -->
       <div id="palette-empty" style="display:none"></div>
 
@@ -8674,6 +8710,88 @@ function isSharedBasic(co){
   return BASIC_SHARED_KEYS.some(k=>cn.includes(k)) || s<0.08;
 }
 
+
+// ── DISCOVERY 전용 팔레트 렌더 ──────────────────────────────
+let _discActiveRegion = 'kr';
+
+function discSetRegion(r){
+  _discActiveRegion = r;
+  const btnKr = document.getElementById('disc-tab-kr');
+  const btnCn = document.getElementById('disc-tab-cn');
+  const label = document.getElementById('disc-region-label');
+  if(btnKr){ btnKr.style.background=r==='kr'?'var(--gold)':'transparent'; btnKr.style.color=r==='kr'?'#000':'var(--text2)'; btnKr.style.borderColor=r==='kr'?'var(--gold)':'var(--border)'; }
+  if(btnCn){ btnCn.style.background=r==='cn'?'var(--gold)':'transparent'; btnCn.style.color=r==='cn'?'#000':'var(--text2)'; btnCn.style.borderColor=r==='cn'?'var(--gold)':'var(--border)'; }
+  if(label){ label.textContent=r==='kr'?'한국 마켓 기준':'중국 마켓 기준'; }
+  _renderDiscPaletteRegion(r);
+}
+
+function _renderDiscPaletteRegion(r){
+  // resultPalette: asia=KR, europe=CN
+  const regionKey = r==='kr'?'asia':'europe';
+  const pal = (typeof resultPalette!=='undefined'&&resultPalette[regionKey]) || {point:[],sub:[],basic:[]};
+  const sub   = pal.sub   || pal.point || [];
+  const key   = pal.point || [];
+  const basic = pal.basic || [];
+
+  const subGrid   = document.getElementById('disc-sub-grid');
+  const keyGrid   = document.getElementById('disc-key-grid');
+  const basicGrid = document.getElementById('disc-basic-grid');
+  const subCnt    = document.getElementById('disc-sub-cnt');
+  const keyCnt    = document.getElementById('disc-key-cnt');
+  const basicCnt  = document.getElementById('disc-basic-cnt');
+
+  if(subGrid)   subGrid.innerHTML   = sub.map(c=>_discChip(c,false)).join('');
+  if(keyGrid)   keyGrid.innerHTML   = key.map(c=>_discChip(c,true)).join('');
+  if(basicGrid) basicGrid.innerHTML = basic.map(c=>_discChip(c,false)).join('');
+  if(subCnt)    subCnt.textContent  = sub.length+'색';
+  if(keyCnt)    keyCnt.textContent  = key.length+'색';
+  if(basicCnt)  basicCnt.textContent= basic.length+'색';
+}
+
+function _discChip(c, isKey){
+  if(!c||!c.hex) return '';
+  const tc = (typeof textOn==='function')?textOn(c.hex):'#fff';
+  const cc = (window.hexToColoro&&window.hexToColoro(c.hex))||null;
+  const coloroLine = cc?`<div style="font-family:var(--mono);font-size:10px;font-weight:600;color:var(--accent);margin-top:2px">COLORO ${cc.coloro}</div>`:'';
+  const ptCode = c.pantone?('Pantone '+c.pantone+' TCX'):(cc?('Pantone '+cc.pantone+' TCX'):c.hex);
+  const scoreLine = c.total>0?`<div style="font-family:var(--mono);font-size:9px;color:var(--text3)">Score ${Math.round(c.total)}</div>`:'';
+  const brandLine = c.brand?`<div style="font-family:var(--mono);font-size:8px;color:var(--text4)">${c.brand}</div>`:'';
+  return `<div class="chip${isKey?' key-chip':''}" onclick="openPalDetail({hex:'${c.hex}',name:'${(c.name||c.hex).replace(/'/g,"\'")}'})" style="cursor:pointer">
+    <div class="chip-swatch" style="background:${c.hex}">
+      ${isKey?`<div style="position:absolute;top:8px;right:8px;background:rgba(160,120,64,0.9);color:#000;font-size:8px;font-weight:700;padding:2px 6px;border-radius:3px;font-family:var(--mono)">KEY</div>`:''}
+    </div>
+    <div class="chip-body">
+      <div class="chip-name">${c.name||c.hex}</div>
+      ${coloroLine}
+      <div class="chip-pantone">${ptCode}</div>
+      ${scoreLine}${brandLine}
+    </div>
+  </div>`;
+}
+
+function _renderDiscoveryPalette(){
+  // cross-view(MLB) 숨기고 disc-palette-wrap 표시
+  const _cv = document.getElementById('cross-view');
+  if(_cv) _cv.classList.add('hidden');
+  const _dw = document.getElementById('disc-palette-wrap');
+  if(_dw) _dw.style.display='block';
+  document.getElementById('palette-empty').classList.add('hidden');
+  document.getElementById('palette-content').classList.remove('hidden');
+
+  // 팔레트가 없으면 스코어링 실행 후 렌더
+  if(typeof resultPalette==='undefined'||(!resultPalette.asia&&!resultPalette.europe)){
+    if(typeof scoredColors!=='undefined'&&scoredColors.length>0){
+      if(typeof selectFinalPalette==='function') selectFinalPalette();
+    }
+  }
+
+  // 현재 활성 region 렌더
+  discSetRegion(_discActiveRegion);
+
+  // Category Curation도 갱신
+  if(typeof renderCatGrid==='function') renderCatGrid();
+}
+
 // ── DISCOVERY 전용 팔레트 선발 함수 ────────────────────────────
 function _selectDiscoveryPalette(classified){
   if(!classified){
@@ -13766,11 +13884,20 @@ let _palette=null;
 let _curMaterial='woven';
 
 function renderPalettePage(){
+  // ── DISCOVERY 전용 팔레트 렌더 ──────────────────────────
+  if(typeof _activeBrand!=='undefined' && _activeBrand==='DISCOVERY'){
+    _renderDiscoveryPalette();
+    return;
+  }
+
   _palette=buildPalette();
   const {basic,sub,key}=_palette;
   // palette-empty 항상 숨김, palette-content·cross-view 항상 표시
   document.getElementById('palette-empty').classList.add('hidden');
   document.getElementById('palette-content').classList.remove('hidden');
+  // disc-palette-wrap 숨김
+  const _dw=document.getElementById('disc-palette-wrap');
+  if(_dw) _dw.style.display='none';
   const _cv=document.getElementById('cross-view');
   if(_cv){ _cv.classList.remove('hidden'); renderPalCrossView(); }
   if(basic.length===0&&key.length===0&&(!sub||sub.length===0)) return;
