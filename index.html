@@ -9089,7 +9089,8 @@ function _selectDiscoveryPalette(classified){
   }
 
   resultPalette['asia'] = buildRegionPalette(krPool);
-  resultPalette['europe'] = buildRegionPalette(cnActual.length>=5 ? cnActual : allPool);
+  // CN은 KR/전체 풀로 폴백하지 않고 02 Market Analysis의 CN 데이터(cnMarketData)에서만 추출
+  resultPalette['europe'] = buildRegionPalette(cnActual);
 }
 
 
