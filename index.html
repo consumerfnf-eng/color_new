@@ -1643,6 +1643,17 @@ function enterBrandFromHome(brand) {
           </div>
         </div>
 
+        <!-- Category Curation — CN (DISCOVERY 전용, 읽기 전용 미리보기) -->
+        <div id="cat-curation-cn-wrap" style="display:none;border-top:1px solid var(--border);padding-top:20px;margin-top:20px">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px">
+            <span style="font-family:var(--mono);font-size:10px;font-weight:700;padding:5px 18px;border-radius:20px;border:1px solid var(--border);background:transparent;color:var(--text2);display:inline-block">CN</span>
+            <span style="font-family:var(--mono);font-size:9px;color:var(--text3)">중국 마켓 기준 · 02 Market Analysis CN 추출 Colors만 사용</span>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px" id="cat-curation-grid-cn">
+            <!-- JS로 동적 렌더 -->
+          </div>
+        </div>
+
       </div>
     </div>
     <div class="step-nav">
@@ -7489,6 +7500,67 @@ function renderCatGrid() {
       btn.style.display = (_catEditMode || hasOverride) ? 'flex' : 'none';
     }
   });
+
+  // ── DISCOVERY 전용 — CN 섹션 (읽기 전용 미리보기) ──
+  const cnWrap = document.getElementById('cat-curation-cn-wrap');
+  if (cnWrap) {
+    if (_isDiscGrid) {
+      cnWrap.style.display = 'block';
+      _renderCatGridCN();
+    } else {
+      cnWrap.style.display = 'none';
+    }
+  }
+}
+
+// ─ CN 카테고리 카드 렌더 (DISCOVERY 전용, cnMarketData 기준, 읽기 전용) ─
+function _renderCatGridCN(){
+  const grid = document.getElementById('cat-curation-grid-cn');
+  if (!grid) return;
+  const cnData = (typeof cnMarketData !== 'undefined' && cnMarketData) ? cnMarketData : [];
+  const defs = (typeof DISCOVERY_CAT_DEFS !== 'undefined') ? DISCOVERY_CAT_DEFS : [];
+  if (!defs.length) { grid.innerHTML = ''; return; }
+
+  const brandMatch = (brand, list) => (list||[]).some(b => brand && (brand.toLowerCase().includes(b.toLowerCase()) || b.toLowerCase().includes(brand.toLowerCase())));
+
+  grid.innerHTML = defs.map(cat => {
+    const c = CAT_COLOR_PRESETS[cat.colorIdx] || CAT_COLOR_PRESETS[0];
+
+    // 해당 카테고리 브랜드에 속하는 CN Colors만 추출 + 유사색(rgbDist<18) 병합
+    const rows = cnData.filter(r => r.hex && brandMatch(r.brand, cat.brandList));
+    const merged = [];
+    rows.forEach(r => {
+      const h = ('#' + (r.hex || '').replace('#', '')).toUpperCase();
+      if (!/^#[0-9A-F]{6}$/.test(h)) return;
+      const dup = merged.find(m => typeof rgbDist === 'function' && rgbDist(m.hex, h) < 18);
+      if (dup) dup.freq += (r.freq || 1);
+      else merged.push({ hex: h, brand: r.brand, freq: r.freq || 1 });
+    });
+    merged.sort((a, b) => b.freq - a.freq);
+    const top = merged.slice(0, 6);
+
+    const chips = top.length
+      ? top.map(co => `<div style="display:flex;flex-direction:column;align-items:center;gap:3px">
+          <div onclick="openCompColorDetail('${co.hex}','${(co.brand||co.hex).replace(/'/g,"\\'")}',${co.freq},'${(co.brand||'').replace(/'/g,"\\'")}')"
+            title="${(co.brand||co.hex)} · ${co.hex}"
+            style="width:40px;height:40px;border-radius:6px;background:${co.hex};border:1px solid rgba(255,255,255,0.12);cursor:pointer;transition:transform .11s"
+            onmouseenter="this.style.transform='scale(1.1)'"
+            onmouseleave="this.style.transform='scale(1)'"></div>
+          <div style="font-family:var(--mono);font-size:7px;color:var(--text3);text-align:center;max-width:50px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${co.hex}</div>
+        </div>`).join('')
+      : `<span style="font-family:var(--mono);font-size:9px;color:var(--text4)">CN 데이터 없음</span>`;
+
+    return `<div style="background:${c.bg};border:1px solid ${c.border};border-radius:10px;padding:16px;box-sizing:border-box;height:100%">
+      <div style="margin-bottom:10px">
+        <div style="font-size:11px;font-weight:700;color:${c.title};letter-spacing:0.04em">${cat.emoji} ${cat.name}${cat.subLabel?' <span style="font-weight:500;opacity:0.7;font-size:10px">('+cat.subLabel+')</span>':''}${cat.weight?' <span style="font-family:var(--mono);font-size:9px;opacity:0.6;margin-left:4px">'+Math.round(cat.weight*100)+'%</span>':''}</div>
+        <div style="font-family:var(--mono);font-size:8px;color:var(--text3);margin-top:2px;line-height:1.5">${cat.brands}</div>
+      </div>
+      <div>
+        <div style="font-family:var(--mono);font-size:8px;color:var(--text3);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:8px">CN COLORS</div>
+        <div style="display:flex;flex-wrap:wrap;gap:4px;align-items:flex-start">${chips}</div>
+      </div>
+    </div>`;
+  }).join('');
 }
 
 // ─ 스와치 칩 렌더 헬퍼 ─
@@ -8865,11 +8937,10 @@ function _renderDiscoveryPalette(){
   document.getElementById('palette-empty').classList.add('hidden');
   document.getElementById('palette-content').classList.remove('hidden');
 
-  // 팔레트가 없으면 스코어링 실행 후 렌더
-  if(typeof resultPalette==='undefined'||(!resultPalette.asia&&!resultPalette.europe)){
-    if(typeof scoredColors!=='undefined'&&scoredColors.length>0){
-      if(typeof selectFinalPalette==='function') selectFinalPalette();
-    }
+  // 체크된 브랜드 선택(마켓 브랜드 체크박스)이 바뀔 때마다 반영되도록
+  // 매번 재계산 — resultPalette가 이미 있어도 다시 생성
+  if(typeof scoredColors!=='undefined'&&scoredColors.length>0){
+    if(typeof selectFinalPalette==='function') selectFinalPalette();
   }
 
   // 현재 활성 region 렌더
@@ -8889,62 +8960,125 @@ function _selectDiscoveryPalette(classified){
     };
   }
 
-  // Commute(50%) / Wellness(30%) / Resort(20%) 비중 가중치
-  const DISC_WEIGHTS = { commute: 0.5, wellness: 0.3, resort: 0.2 };
+  // Commute 50% / Wellness 30% / Outdoor Resort 20% — 실제 쿼터 배분
+  const CAT_RATIO = { commute: 0.5, wellness: 0.3, resort: 0.2 };
 
-  // 브랜드별 카테고리 매핑
+  // 브랜드별 카테고리 매핑 (Commute는 한국=코오롱·휠라, 중국=CAMEL·Beneunder 추가 포함)
   const COMMUTE_BRANDS  = ['Sansan Gear','The North Face','North Face','TNF','Salomon','New Balance','Stone Island','코오롱','Kolon','휠라','Fila','CAMEL','Beneunder'];
   const WELLNESS_BRANDS = ['Alo','Alo Yoga','ALO YOGA','Lululemon','On Running','On','Aritzia','Sporty & Rich','Sporty and Rich','Adanola'];
   const RESORT_BRANDS   = ['Prada','Miumiu','miu miu','Louis Vuitton','LV','Dior','Loro Piana','Brunello Cucinelli','brunello cucinelli','Casablanca'];
 
   function _inBrands(co, list){ return list.some(b=>co.brand&&(co.brand.toLowerCase().includes(b.toLowerCase())||b.toLowerCase().includes((co.brand||'').toLowerCase()))); }
+  function categoryOf(co){
+    if(_inBrands(co, COMMUTE_BRANDS))  return 'commute';
+    if(_inBrands(co, WELLNESS_BRANDS)) return 'wellness';
+    if(_inBrands(co, RESORT_BRANDS))   return 'resort';
+    return 'other';
+  }
 
-  // 색상별 Discovery 가중 스코어
-  function discScore(co){
-    let w = 1;
-    if(_inBrands(co, COMMUTE_BRANDS))  w = DISC_WEIGHTS.commute;
-    if(_inBrands(co, WELLNESS_BRANDS)) w = DISC_WEIGHTS.wellness;
-    if(_inBrands(co, RESORT_BRANDS))   w = DISC_WEIGHTS.resort;
-    return ((co.total||0) + (co.freq||0)) * w;
+  const allPoolRaw = [...classified.point,...classified.sub,...classified.basic];
+
+  // ── 체크한 브랜드로만 03 팔레트 반영 ──────────────────────
+  // 마켓 브랜드 체크박스에서 선택된 브랜드가 있으면 그 브랜드 Colors만 사용,
+  // 선택이 없으면(전체 해제 상태) 전체 풀 사용
+  const _sel = (typeof window._curMarketSel === 'function') ? window._curMarketSel() : null;
+  const _bkn = window._brandKeyNorm || function(s){ return (s||'').toLowerCase().replace(/[\s._\-]+/g,'').trim(); };
+  let allPool = (_sel && _sel.size > 0)
+    ? allPoolRaw.filter(co => co.brand && _sel.has(_bkn(co.brand)))
+    : allPoolRaw;
+
+  // CN 마켓 데이터(cnMarketData)는 별도 배열로 관리되므로 여기서 병합 (country:'CN' 태깅)
+  if(typeof cnMarketData !== 'undefined' && cnMarketData && cnMarketData.length){
+    const cnExtra = cnMarketData
+      .filter(c=>c.hex && c.brand)
+      .filter(c=>!_sel || _sel.size===0 || _sel.has(_bkn(c.brand)))
+      .map(c=>({ hex:(c.hex||'').toUpperCase(), name:c.brand, brand:c.brand, freq:c.freq||1, total:0, country:'CN' }));
+    allPool = allPool.concat(cnExtra);
   }
 
   // CN 데이터 분리 (country='CN' 또는 cnData)
   const isCN = co => (co.country==='CN'||co.country==='cn'||(co.source||'').includes('cn')||co.group==='CN');
   const isKR = co => !isCN(co);
 
-  const allPool = [...classified.point,...classified.sub,...classified.basic];
+  const krPool = allPool.filter(isKR);
+  const cnActual = allPool.filter(isCN);
 
-  // KR 풀 / CN 풀
-  const krPool = allPool.filter(isKR).sort((a,b)=>discScore(b)-discScore(a));
-  const cnPool = allPool.filter(isCN).concat(allPool).sort((a,b)=>discScore(b)-discScore(a)); // CN 없으면 전체 사용
+  // 그룹별(12/8/12) 카테고리 쿼터 계산 — commute 50% / wellness 30% / resort 20%
+  function _quotas(total){
+    const commute = Math.round(total*CAT_RATIO.commute);
+    const wellness = Math.round(total*CAT_RATIO.wellness);
+    const resort = Math.max(total - commute - wellness, 0);
+    return { commute, wellness, resort };
+  }
 
   function buildRegionPalette(pool){
-    const sorted = [...pool].sort((a,b)=>discScore(b)-discScore(a));
+    const sorted = [...pool].sort((a,b)=>((b.total||0)+(b.freq||0))-((a.total||0)+(a.freq||0)));
+
+    // 카테고리 쿼터대로 픽 + 부족분은 commute→wellness→resort→other 우선순위로 보충
+    function pickByQuota(swatchPool, total, minDist){
+      const q = _quotas(total);
+      const cats = ['commute','wellness','resort'];
+      const quotaMap = { commute:q.commute, wellness:q.wellness, resort:q.resort };
+      const picked = [];
+      const usedHex = new Set();
+
+      cats.forEach(cat=>{
+        const need = quotaMap[cat];
+        if(need<=0) return;
+        const catPool = swatchPool.filter(co=>categoryOf(co)===cat && !usedHex.has(co.hex));
+        const got = pickDiverse(catPool, need, minDist);
+        got.forEach(co=>{ if(!usedHex.has(co.hex)){ picked.push(co); usedHex.add(co.hex); } });
+      });
+
+      // 부족분 보충 — commute > wellness > resort > other 순서로, 완화된 다양성 기준 적용
+      if(picked.length < total){
+        const priorityPools = [
+          swatchPool.filter(co=>categoryOf(co)==='commute'  && !usedHex.has(co.hex)),
+          swatchPool.filter(co=>categoryOf(co)==='wellness' && !usedHex.has(co.hex)),
+          swatchPool.filter(co=>categoryOf(co)==='resort'   && !usedHex.has(co.hex)),
+          swatchPool.filter(co=>categoryOf(co)==='other'    && !usedHex.has(co.hex)),
+        ];
+        for(const pp of priorityPools){
+          for(const co of pp){
+            if(picked.length>=total) break;
+            if(picked.some(p=>rgbDist(co.hex,p.hex)<Math.max(minDist-10,15))) continue;
+            picked.push(co); usedHex.add(co.hex);
+          }
+          if(picked.length>=total) break;
+        }
+      }
+      // 그래도 부족하면 다양성 기준 없이 전체 풀에서 채움
+      if(picked.length < total){
+        for(const co of sorted){
+          if(picked.length>=total) break;
+          if(usedHex.has(co.hex)) continue;
+          picked.push(co); usedHex.add(co.hex);
+        }
+      }
+      return picked.slice(0, total);
+    }
+
     // BASIC 12 — 뉴트럴(흰/검/회/네이비)
-    const basicPool = sorted.filter(co=>{ const[,s,l]=rgbToHsl(co.hex); return s<0.18||l>0.85||l<0.12; });
-    const basic = pickDiverse(basicPool, 12, 35);
-    if(basic.length<12){ const used=new Set(basic.map(c=>c.hex)); for(const co of sorted){ if(basic.length>=12)break; if(!used.has(co.hex)&&!basic.some(p=>rgbDist(co.hex,p.hex)<25)){basic.push(co);used.add(co.hex);} } }
+    const basicPoolAll = sorted.filter(co=>{ const[,s,l]=rgbToHsl(co.hex); return s<0.18||l>0.85||l<0.12; });
+    const basic = pickByQuota(basicPoolAll, 12, 35);
     const basicSet = new Set(basic.map(c=>c.hex));
 
     // KEY 8 — 고채도/강한 포인트
-    const keyPool = sorted.filter(co=>{ if(basicSet.has(co.hex))return false; const[,s,l]=rgbToHsl(co.hex); return s>=0.35&&l>=0.2&&l<=0.8; });
-    const key = pickDiverse(keyPool, 8, 48);
-    if(key.length<8){ const used=new Set([...basicSet,...key.map(c=>c.hex)]); for(const co of sorted){ if(key.length>=8)break; if(!used.has(co.hex)&&!key.some(p=>rgbDist(co.hex,p.hex)<30)){key.push(co);used.add(co.hex);} } }
+    const keyPoolAll = sorted.filter(co=>{ if(basicSet.has(co.hex))return false; const[,s,l]=rgbToHsl(co.hex); return s>=0.35&&l>=0.2&&l<=0.8; });
+    const key = pickByQuota(keyPoolAll, 8, 48);
     const keySet = new Set(key.map(c=>c.hex));
 
     // SUB 12 — 미디엄 채도 서브 컬러
-    const subPool = sorted.filter(co=>!basicSet.has(co.hex)&&!keySet.has(co.hex));
-    const sub = pickDiverse(subPool, 12, 35);
-    if(sub.length<12){ const used=new Set([...basicSet,...keySet,...sub.map(c=>c.hex)]); for(const co of sorted){ if(sub.length>=12)break; if(!used.has(co.hex)&&!sub.some(p=>rgbDist(co.hex,p.hex)<25)){sub.push(co);used.add(co.hex);} } }
+    const subPoolAll = sorted.filter(co=>!basicSet.has(co.hex)&&!keySet.has(co.hex));
+    const sub = pickByQuota(subPoolAll, 12, 35);
 
     return {point:key, sub, basic, key};
   }
 
-  // CN 풀이 충분한지 체크 (10개 이상이면 CN 데이터 존재)
-  const cnActual = allPool.filter(isCN);
   resultPalette['asia'] = buildRegionPalette(krPool);
   resultPalette['europe'] = buildRegionPalette(cnActual.length>=5 ? cnActual : allPool);
 }
+
 
 function selectFinalPalette(classified){
   // ── DISCOVERY 전용 팔레트 선발 (KR/CN 각각 SUB12/KEY8/BASIC12) ──
@@ -16661,6 +16795,15 @@ window._defaultBrandSel = {
     'louis vuitton','Lululemon','miu miu','miumiu',
     'moncler','New Balance','On','On Running','prada',
     'Salomon','Sansan Gear','stone island','The North Face','valentino'
+  ],
+  DISCOVERY: [
+    'Sansan Gear','The North Face','Salomon','New Balance','Stone Island',
+    'Alo','ALO YOGA','Lululemon',
+    'On','On Running','Aritzia','Sporty & Rich','Adanola','Adenola',
+    'Prada','Miu Miu','miumiu',
+    'Louis Vuitton','louis vuitton','LV',
+    'Dior','Loro Piana','loro piana',
+    'Brunello Cucinelli','brunello cucinelli','Casablanca'
   ],
 };
 
