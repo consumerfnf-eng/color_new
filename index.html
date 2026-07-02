@@ -1430,37 +1430,66 @@ function enterBrandFromHome(brand) {
 
       <!-- ════ DISCOVERY 전용 팔레트 UI ════ -->
       <div id="disc-palette-wrap" style="display:none">
-        <!-- KR / CN 탭 -->
+        <!-- ── KR 섹션 ── -->
         <div style="display:flex;gap:8px;margin-bottom:16px;align-items:center">
-          <button id="disc-tab-kr" onclick="discSetRegion('kr')"
-            style="font-family:var(--mono);font-size:10px;font-weight:700;padding:5px 18px;border-radius:20px;border:1px solid var(--gold);background:var(--gold);color:#000;cursor:pointer">KR</button>
-          <button id="disc-tab-cn" onclick="discSetRegion('cn')"
-            style="font-family:var(--mono);font-size:10px;font-weight:700;padding:5px 18px;border-radius:20px;border:1px solid var(--border);background:transparent;color:var(--text2);cursor:pointer">CN</button>
-          <span id="disc-region-label" style="font-family:var(--mono);font-size:9px;color:var(--text3);margin-left:8px"></span>
+          <span style="font-family:var(--mono);font-size:10px;font-weight:700;padding:5px 18px;border-radius:20px;border:1px solid var(--gold);background:var(--gold);color:#000;display:inline-block">KR</span>
+          <span style="font-family:var(--mono);font-size:9px;color:var(--text3);margin-left:8px">한국 마켓 기준</span>
         </div>
-        <!-- SUB -->
+        <!-- SUB (KR) -->
         <div style="margin-bottom:20px">
           <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
             <span style="font-family:var(--mono);font-size:9px;font-weight:700;color:var(--blue);letter-spacing:0.1em;text-transform:uppercase">SUB</span>
-            <span id="disc-sub-cnt" style="font-family:var(--mono);font-size:9px;color:var(--text3)"></span>
+            <span id="disc-sub-cnt-kr" style="font-family:var(--mono);font-size:9px;color:var(--text3)"></span>
           </div>
-          <div id="disc-sub-grid" style="display:flex;flex-wrap:wrap;gap:5px"></div>
+          <div id="disc-sub-grid-kr" style="display:flex;flex-wrap:wrap;gap:14px"></div>
         </div>
-        <!-- KEY -->
+        <!-- KEY (KR) -->
         <div style="margin-bottom:20px">
           <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
             <span style="font-family:var(--mono);font-size:9px;font-weight:700;color:#A090F0;letter-spacing:0.1em;text-transform:uppercase">KEY</span>
-            <span id="disc-key-cnt" style="font-family:var(--mono);font-size:9px;color:var(--text3)"></span>
+            <span id="disc-key-cnt-kr" style="font-family:var(--mono);font-size:9px;color:var(--text3)"></span>
           </div>
-          <div id="disc-key-grid" style="display:flex;flex-wrap:wrap;gap:5px"></div>
+          <div id="disc-key-grid-kr" style="display:flex;flex-wrap:wrap;gap:14px"></div>
         </div>
-        <!-- BASIC -->
+        <!-- BASIC (KR) -->
         <div style="margin-bottom:20px">
           <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
             <span style="font-family:var(--mono);font-size:9px;font-weight:700;color:var(--gold);letter-spacing:0.1em;text-transform:uppercase">BASIC</span>
-            <span id="disc-basic-cnt" style="font-family:var(--mono);font-size:9px;color:var(--text3)"></span>
+            <span id="disc-basic-cnt-kr" style="font-family:var(--mono);font-size:9px;color:var(--text3)"></span>
           </div>
-          <div id="disc-basic-grid" style="display:flex;flex-wrap:wrap;gap:5px"></div>
+          <div id="disc-basic-grid-kr" style="display:flex;flex-wrap:wrap;gap:14px"></div>
+        </div>
+
+        <div style="height:1px;background:var(--border);margin:24px 0"></div>
+
+        <!-- ── CN 섹션 ── -->
+        <div style="display:flex;gap:8px;margin-bottom:16px;align-items:center">
+          <span style="font-family:var(--mono);font-size:10px;font-weight:700;padding:5px 18px;border-radius:20px;border:1px solid var(--border);background:transparent;color:var(--text2);display:inline-block">CN</span>
+          <span style="font-family:var(--mono);font-size:9px;color:var(--text3);margin-left:8px">중국 마켓 기준</span>
+        </div>
+        <!-- SUB (CN) -->
+        <div style="margin-bottom:20px">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+            <span style="font-family:var(--mono);font-size:9px;font-weight:700;color:var(--blue);letter-spacing:0.1em;text-transform:uppercase">SUB</span>
+            <span id="disc-sub-cnt-cn" style="font-family:var(--mono);font-size:9px;color:var(--text3)"></span>
+          </div>
+          <div id="disc-sub-grid-cn" style="display:flex;flex-wrap:wrap;gap:14px"></div>
+        </div>
+        <!-- KEY (CN) -->
+        <div style="margin-bottom:20px">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+            <span style="font-family:var(--mono);font-size:9px;font-weight:700;color:#A090F0;letter-spacing:0.1em;text-transform:uppercase">KEY</span>
+            <span id="disc-key-cnt-cn" style="font-family:var(--mono);font-size:9px;color:var(--text3)"></span>
+          </div>
+          <div id="disc-key-grid-cn" style="display:flex;flex-wrap:wrap;gap:14px"></div>
+        </div>
+        <!-- BASIC (CN) -->
+        <div style="margin-bottom:20px">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+            <span style="font-family:var(--mono);font-size:9px;font-weight:700;color:var(--gold);letter-spacing:0.1em;text-transform:uppercase">BASIC</span>
+            <span id="disc-basic-cnt-cn" style="font-family:var(--mono);font-size:9px;color:var(--text3)"></span>
+          </div>
+          <div id="disc-basic-grid-cn" style="display:flex;flex-wrap:wrap;gap:14px"></div>
         </div>
       </div>
 
@@ -8716,19 +8745,56 @@ function isSharedBasic(co){
 
 
 // ── DISCOVERY 전용 팔레트 렌더 ──────────────────────────────
-let _discActiveRegion = 'kr';
+let _discActiveRegion = 'kr'; // 하위 호환용(더 이상 탭 전환에 사용하지 않음, KR/CN 동시 표시)
 
-function discSetRegion(r){
-  _discActiveRegion = r;
-  const btnKr = document.getElementById('disc-tab-kr');
-  const btnCn = document.getElementById('disc-tab-cn');
-  const label = document.getElementById('disc-region-label');
-  if(btnKr){ btnKr.style.background=r==='kr'?'var(--gold)':'transparent'; btnKr.style.color=r==='kr'?'#000':'var(--text2)'; btnKr.style.borderColor=r==='kr'?'var(--gold)':'var(--border)'; }
-  if(btnCn){ btnCn.style.background=r==='cn'?'var(--gold)':'transparent'; btnCn.style.color=r==='cn'?'#000':'var(--text2)'; btnCn.style.borderColor=r==='cn'?'var(--gold)':'var(--border)'; }
-  if(label){ label.textContent=r==='kr'?'한국 마켓 기준':'중국 마켓 기준'; }
-  _renderDiscPaletteRegion(r);
+// 메인 Colors 기준 유사색 최대 4개 (PANTONE_TCX_DB 기반 ΔE 순) — pal-detail 팝업과 동일 로직
+function _discFindSimilar4(hex){
+  try{
+    if(!hex || typeof PANTONE_TCX_DB==='undefined' || typeof rgbToLab!=='function') return [];
+    const tLab = rgbToLab(hex);
+    const entries = typeof _buildPantoneLabEntries==='function' ? _buildPantoneLabEntries() : [];
+    const hexU = hex.toUpperCase();
+    return entries
+      .map(e=>({ code:e.code, hex:(PANTONE_TCX_DB[e.code]&&PANTONE_TCX_DB[e.code][0])||'', dist: typeof rgbDistLab==='function'?rgbDistLab(tLab,e.lab):999 }))
+      .filter(e=>e.hex && e.hex.toUpperCase()!==hexU && e.dist<25)
+      .sort((a,b)=>a.dist-b.dist)
+      .slice(0,4);
+  }catch(e){ return []; }
 }
 
+// renderPalCrossView의 makeChip 스타일 사용 + 하단에 유사색 4개 미니칩 표시
+function _discMakeChip(c){
+  const safeHex=(c.hex||'').replace(/'/g,"\'");
+  const chipId='disc_chip_'+Math.random().toString(36).slice(2,7);
+  window._chipData=window._chipData||{};
+  window._chipData[chipId]={hex:c.hex,name:c.name||c.hex,sources:c.sources||[],freq:c.freq||1,totalFreqRaw:c.freq||1,compBrands:c.compBrands||[],srcFreq:c.srcFreq||{}};
+  const _ptRaw=(typeof pantoneApprox==='function')?pantoneApprox(c.hex):'';
+  const pantoneLabel=_ptRaw?_ptRaw.replace(' TCX',''):(c.name||c.hex);
+  const freq=c.freq||1;
+
+  const sims = _discFindSimilar4(c.hex);
+  const simChips = sims.map(s=>`<div title="${s.code}"
+      onclick="event.stopPropagation();openPalDetail({hex:'${s.hex}',name:'${s.code}',finalCode:'${s.code} TCX'})"
+      style="width:13px;height:13px;border-radius:3px;background:${s.hex};border:1px solid rgba(255,255,255,0.12);cursor:pointer;transition:transform .12s"
+      onmouseenter="this.style.transform='scale(1.2)'"
+      onmouseleave="this.style.transform='scale(1)'"></div>`).join('');
+  const simRow = sims.length
+    ? `<div style="display:flex;gap:3px;margin-top:3px">${simChips}</div>`
+    : '';
+
+  return `<div onclick="openPalDetail(window._chipData['${chipId}'])"
+    title="${(c.name||c.hex)}"
+    style="display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;transition:transform 120ms"
+    onmouseenter="this.style.transform='scale(1.08)'"
+    onmouseleave="this.style.transform='scale(1)'">
+    <div style="width:62px;height:62px;border-radius:8px;background:${c.hex};border:1px solid rgba(255,255,255,0.08)"></div>
+    <div style="font-family:var(--mono);font-size:9px;color:var(--accent);font-weight:600">×${freq}</div>
+    <div style="font-family:var(--mono);font-size:8px;color:var(--text3);text-align:center;max-width:70px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${pantoneLabel}</div>
+    ${simRow}
+  </div>`;
+}
+
+// KR/CN 각 리전을 지정된 grid id 접미사(kr/cn)에 렌더
 function _renderDiscPaletteRegion(r){
   // resultPalette: asia=KR, europe=CN
   const regionKey = r==='kr'?'asia':'europe';
@@ -8737,32 +8803,12 @@ function _renderDiscPaletteRegion(r){
   const key   = pal.point || [];
   const basic = pal.basic || [];
 
-  const subGrid   = document.getElementById('disc-sub-grid');
-  const keyGrid   = document.getElementById('disc-key-grid');
-  const basicGrid = document.getElementById('disc-basic-grid');
-  const subCnt    = document.getElementById('disc-sub-cnt');
-  const keyCnt    = document.getElementById('disc-key-cnt');
-  const basicCnt  = document.getElementById('disc-basic-cnt');
-
-  // renderPalCrossView의 makeChip 스타일 사용
-  function _discMakeChip(c){
-    const safeHex=(c.hex||'').replace(/'/g,"\'");
-    const chipId='disc_chip_'+Math.random().toString(36).slice(2,7);
-    window._chipData=window._chipData||{};
-    window._chipData[chipId]={hex:c.hex,name:c.name||c.hex,sources:c.sources||[],freq:c.freq||1,totalFreqRaw:c.freq||1,compBrands:c.compBrands||[],srcFreq:c.srcFreq||{}};
-    const _ptRaw=(typeof pantoneApprox==='function')?pantoneApprox(c.hex):'';
-    const pantoneLabel=_ptRaw?_ptRaw.replace(' TCX',''):(c.name||c.hex);
-    const freq=c.freq||1;
-    return `<div onclick="openPalDetail(window._chipData['${chipId}'])"
-      title="${(c.name||c.hex)}"
-      style="display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;transition:transform 120ms"
-      onmouseenter="this.style.transform='scale(1.08)'"
-      onmouseleave="this.style.transform='scale(1)'">
-      <div style="width:62px;height:62px;border-radius:8px;background:${c.hex};border:1px solid rgba(255,255,255,0.08)"></div>
-      <div style="font-family:var(--mono);font-size:9px;color:var(--accent);font-weight:600">×${freq}</div>
-      <div style="font-family:var(--mono);font-size:8px;color:var(--text3);text-align:center;max-width:70px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${pantoneLabel}</div>
-    </div>`;
-  }
+  const subGrid   = document.getElementById('disc-sub-grid-'+r);
+  const keyGrid   = document.getElementById('disc-key-grid-'+r);
+  const basicGrid = document.getElementById('disc-basic-grid-'+r);
+  const subCnt    = document.getElementById('disc-sub-cnt-'+r);
+  const keyCnt    = document.getElementById('disc-key-cnt-'+r);
+  const basicCnt  = document.getElementById('disc-basic-cnt-'+r);
 
   const empty='<span style="font-family:var(--mono);font-size:9px;color:var(--text4)">—</span>';
   if(subGrid)   subGrid.innerHTML   = sub.length   ? sub.map(_discMakeChip).join('')   : empty;
@@ -8771,6 +8817,12 @@ function _renderDiscPaletteRegion(r){
   if(subCnt)    subCnt.textContent  = sub.length+'색';
   if(keyCnt)    keyCnt.textContent  = key.length+'색';
   if(basicCnt)  basicCnt.textContent= basic.length+'색';
+}
+
+// KR + CN 동시 렌더 (탭 전환 없이 세로로 함께 표시)
+function discSetRegion(){
+  _renderDiscPaletteRegion('kr');
+  _renderDiscPaletteRegion('cn');
 }
 
 function _discChip(c, isKey){
