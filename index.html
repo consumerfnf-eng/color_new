@@ -8733,7 +8733,7 @@ function _renderDiscPaletteRegion(r){
   // resultPalette: asia=KR, europe=CN
   const regionKey = r==='kr'?'asia':'europe';
   const pal = (typeof resultPalette!=='undefined'&&resultPalette[regionKey]) || {point:[],sub:[],basic:[]};
-  const sub   = pal.sub   || pal.point || [];
+  const sub   = pal.sub   || [];
   const key   = pal.point || [];
   const basic = pal.basic || [];
 
@@ -8744,9 +8744,30 @@ function _renderDiscPaletteRegion(r){
   const keyCnt    = document.getElementById('disc-key-cnt');
   const basicCnt  = document.getElementById('disc-basic-cnt');
 
-  if(subGrid)   subGrid.innerHTML   = sub.map(c=>chipHtml(c,false)).join('');
-  if(keyGrid)   keyGrid.innerHTML   = key.map(c=>chipHtml(c,true)).join('');
-  if(basicGrid) basicGrid.innerHTML = basic.map(c=>chipHtml(c,false)).join('');
+  // renderPalCrossView의 makeChip 스타일 사용
+  function _discMakeChip(c){
+    const safeHex=(c.hex||'').replace(/'/g,"\'");
+    const chipId='disc_chip_'+Math.random().toString(36).slice(2,7);
+    window._chipData=window._chipData||{};
+    window._chipData[chipId]={hex:c.hex,name:c.name||c.hex,sources:c.sources||[],freq:c.freq||1,totalFreqRaw:c.freq||1,compBrands:c.compBrands||[],srcFreq:c.srcFreq||{}};
+    const _ptRaw=(typeof pantoneApprox==='function')?pantoneApprox(c.hex):'';
+    const pantoneLabel=_ptRaw?_ptRaw.replace(' TCX',''):(c.name||c.hex);
+    const freq=c.freq||1;
+    return `<div onclick="openPalDetail(window._chipData['${chipId}'])"
+      title="${(c.name||c.hex)}"
+      style="display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;transition:transform 120ms"
+      onmouseenter="this.style.transform='scale(1.08)'"
+      onmouseleave="this.style.transform='scale(1)'">
+      <div style="width:62px;height:62px;border-radius:8px;background:${c.hex};border:1px solid rgba(255,255,255,0.08)"></div>
+      <div style="font-family:var(--mono);font-size:9px;color:var(--accent);font-weight:600">×${freq}</div>
+      <div style="font-family:var(--mono);font-size:8px;color:var(--text3);text-align:center;max-width:70px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${pantoneLabel}</div>
+    </div>`;
+  }
+
+  const empty='<span style="font-family:var(--mono);font-size:9px;color:var(--text4)">—</span>';
+  if(subGrid)   subGrid.innerHTML   = sub.length   ? sub.map(_discMakeChip).join('')   : empty;
+  if(keyGrid)   keyGrid.innerHTML   = key.length   ? key.map(_discMakeChip).join('')   : empty;
+  if(basicGrid) basicGrid.innerHTML = basic.length ? basic.map(_discMakeChip).join('') : empty;
   if(subCnt)    subCnt.textContent  = sub.length+'색';
   if(keyCnt)    keyCnt.textContent  = key.length+'색';
   if(basicCnt)  basicCnt.textContent= basic.length+'색';
