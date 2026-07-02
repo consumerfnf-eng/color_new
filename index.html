@@ -8968,7 +8968,18 @@ function _selectDiscoveryPalette(classified){
   const WELLNESS_BRANDS = ['Alo','Alo Yoga','ALO YOGA','Lululemon','On Running','On','Aritzia','Sporty & Rich','Sporty and Rich','Adanola'];
   const RESORT_BRANDS   = ['Prada','Miumiu','miu miu','Louis Vuitton','LV','Dior','Loro Piana','Brunello Cucinelli','brunello cucinelli','Casablanca'];
 
-  function _inBrands(co, list){ return list.some(b=>co.brand&&(co.brand.toLowerCase().includes(b.toLowerCase())||b.toLowerCase().includes((co.brand||'').toLowerCase()))); }
+  function _brandsOf(co){
+    const out = [];
+    if(co.brand) out.push(co.brand);
+    if(Array.isArray(co.brands)) out.push(...co.brands);
+    if(Array.isArray(co.compBrands)) out.push(...co.compBrands);
+    return out.filter(Boolean);
+  }
+  function _inBrands(co, list){
+    const brands = _brandsOf(co);
+    if(!brands.length) return false;
+    return brands.some(cb => list.some(b => cb.toLowerCase().includes(b.toLowerCase()) || b.toLowerCase().includes(cb.toLowerCase())));
+  }
   function categoryOf(co){
     if(_inBrands(co, COMMUTE_BRANDS))  return 'commute';
     if(_inBrands(co, WELLNESS_BRANDS)) return 'wellness';
@@ -8984,7 +8995,7 @@ function _selectDiscoveryPalette(classified){
   const _sel = (typeof window._curMarketSel === 'function') ? window._curMarketSel() : null;
   const _bkn = window._brandKeyNorm || function(s){ return (s||'').toLowerCase().replace(/[\s._\-]+/g,'').trim(); };
   let allPool = (_sel && _sel.size > 0)
-    ? allPoolRaw.filter(co => co.brand && _sel.has(_bkn(co.brand)))
+    ? allPoolRaw.filter(co => _brandsOf(co).some(b => _sel.has(_bkn(b))))
     : allPoolRaw;
 
   // CN 마켓 데이터(cnMarketData)는 별도 배열로 관리되므로 여기서 병합 (country:'CN' 태깅)
