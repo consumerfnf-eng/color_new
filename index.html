@@ -5276,7 +5276,7 @@ function showSheetsLoadBanner(state, results) {
     const lastLine = _isSERGIO
       ? `${ok(window._lastLoadSummary && window._lastLoadSummary.counts && window._lastLoadSummary.counts.wgsn)} WGSN`
       : _isDISC
-      ? `${ok(results && results.wgsn)} WGSN`
+      ? `${ok(typeof counts!=='undefined' ? counts.wgsn : (window._lastLoadSummary&&window._lastLoadSummary.counts&&window._lastLoadSummary.counts.wgsn))} WGSN`
       : `${ok(results && results.mlb)} MLB 판매`;
     el.innerHTML = `
       <div style="color:var(--text2);font-weight:600;margin-bottom:6px;font-size:11px">📡 Sheets Auto-Sync Complete</div>
@@ -7409,8 +7409,7 @@ function renderCatGrid() {
   if (!grid) return;
   // Discovery는 3개 카테고리 → 한 줄(3열)
   const _isDiscGrid = (typeof _activeBrand!=='undefined'&&_activeBrand==='DISCOVERY');
-  grid.style.gridTemplateColumns = _isDiscGrid ? '1fr 1fr 1fr' : '1fr 1fr';
-  grid.style.alignItems = 'stretch';
+  grid.style.cssText = `display:grid;grid-template-columns:${_isDiscGrid?'1fr 1fr 1fr':'1fr 1fr'};gap:16px;align-items:stretch`;
   if (!window._catDefs || !window._catDefs.length) {
     grid.innerHTML = `<div style="grid-column:1/-1;padding:24px;text-align:center;font-family:var(--mono);font-size:11px;color:var(--text4)">No categories</div>`;
     return;
@@ -8822,7 +8821,7 @@ function _selectDiscoveryPalette(classified){
     if(_inBrands(co, COMMUTE_BRANDS))  w = DISC_WEIGHTS.commute;
     if(_inBrands(co, WELLNESS_BRANDS)) w = DISC_WEIGHTS.wellness;
     if(_inBrands(co, RESORT_BRANDS))   w = DISC_WEIGHTS.resort;
-    return (co.total||0) * w + (co.freq||0) * w;
+    return ((co.total||0) + (co.freq||0)) * w;
   }
 
   // CN 데이터 분리 (country='CN' 또는 cnData)
@@ -13943,7 +13942,7 @@ function chipHtml(c,isKey){
   const mlbBadge=(!_isDisc&&c.mlbCode)?`<span class="badge badge-mlb">${c.mlbCode}</span>`:'';
   const crossBadge=c.cross?`<span class="badge badge-cross">교차✓</span>`:'';
   const qtyLine=(!_isDisc&&c.qty>0)?`<div class="chip-score">판매 ${fmtN(c.qty)}개 · 판매율 ${(c.rate*100||0).toFixed(0)}%</div>`:((!_isDisc)?`<div class="chip-score" style="color:var(--teal)">신규</div>`:'');
-  const scoreLine=c.total>0?`<div class="chip-score">Score ${c.total}</div>`:'';
+  const scoreLine=(!_isDisc&&c.total>0)?`<div class="chip-score">Score ${Math.round(c.total)}</div>`:'';
   return`<div class="chip${isKey?' key-chip':''}" onclick="openPalDetail(window._paletteColorMap&&window._paletteColorMap['${c.hex.toUpperCase()}']||{hex:'${c.hex}',name:'${(c.name||c.hex).replace(/'/g,"\'").replace(/\`/g,'\`')}'})" style="cursor:pointer">
     <div class="chip-swatch" style="background:${c.hex}">
       ${isKey?`<div style="position:absolute;top:8px;right:8px;background:rgba(160,120,64,0.9);color:#000;font-size:8px;font-weight:700;padding:2px 6px;border-radius:3px;font-family:var(--mono)">KEY</div>`:''}
