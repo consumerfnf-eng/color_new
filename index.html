@@ -7521,20 +7521,21 @@ function _renderCatGridCN(){
   const defs = (typeof DISCOVERY_CAT_DEFS !== 'undefined') ? DISCOVERY_CAT_DEFS : [];
   if (!defs.length) { grid.innerHTML = ''; return; }
 
-  const brandMatch = (brand, list) => (list||[]).some(b => brand && (brand.toLowerCase().includes(b.toLowerCase()) || b.toLowerCase().includes(brand.toLowerCase())));
+  const brandMatch = (brands, list) => (Array.isArray(brands) ? brands : []).some(brand => (list||[]).some(b => brand && (brand.toLowerCase().includes(b.toLowerCase()) || b.toLowerCase().includes(brand.toLowerCase()))));
 
   grid.innerHTML = defs.map(cat => {
     const c = CAT_COLOR_PRESETS[cat.colorIdx] || CAT_COLOR_PRESETS[0];
 
     // 해당 카테고리 브랜드에 속하는 CN Colors만 추출 + 유사색(rgbDist<18) 병합
-    const rows = cnData.filter(r => r.hex && brandMatch(r.brand, cat.brandList));
+    const rows = cnData.filter(r => r.hex && brandMatch(r.brands, cat.brandList));
     const merged = [];
     rows.forEach(r => {
       const h = ('#' + (r.hex || '').replace('#', '')).toUpperCase();
       if (!/^#[0-9A-F]{6}$/.test(h)) return;
+      const repBrand = (Array.isArray(r.brands) && r.brands[0]) || '';
       const dup = merged.find(m => typeof rgbDist === 'function' && rgbDist(m.hex, h) < 18);
       if (dup) dup.freq += (r.freq || 1);
-      else merged.push({ hex: h, brand: r.brand, freq: r.freq || 1 });
+      else merged.push({ hex: h, brand: repBrand, freq: r.freq || 1 });
     });
     merged.sort((a, b) => b.freq - a.freq);
     const top = merged.slice(0, 6);
@@ -9001,11 +9002,17 @@ function _selectDiscoveryPalette(classified){
     : allPoolRaw;
 
   // CN 마켓 데이터(cnMarketData)는 별도 배열로 관리되므로 여기서 병합 (country:'CN' 태깅)
+  // cnMarketData 항목은 brand(단수)가 아니라 brands(배열)를 가짐
   if(typeof cnMarketData !== 'undefined' && cnMarketData && cnMarketData.length){
-    const cnExtra = cnMarketData
-      .filter(c=>c.hex && c.brand)
-      .filter(c=>!_sel || _sel.size===0 || _sel.has(_bkn(c.brand)))
-      .map(c=>({ hex:(c.hex||'').toUpperCase(), name:c.brand, brand:c.brand, freq:c.freq||1, total:0, country:'CN' }));
+    const cnExtra = [];
+    cnMarketData.forEach(c=>{
+      if(!c.hex) return;
+      const bList = Array.isArray(c.brands) ? c.brands : (c.brand ? [c.brand] : []);
+      if(!bList.length) return;
+      const matched = !_sel || _sel.size===0 || bList.some(b=>_sel.has(_bkn(b)));
+      if(!matched) return;
+      cnExtra.push({ hex:(c.hex||'').toUpperCase(), name:bList[0], brand:bList[0], brands:bList, freq:c.freq||1, total:0, country:'CN' });
+    });
     allPool = allPool.concat(cnExtra);
   }
 
