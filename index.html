@@ -5272,8 +5272,11 @@ function showSheetsLoadBanner(state, results) {
       ? `<span style="color:var(--teal)">✓</span>`
       : `<span style="color:var(--red)">✗</span>`;
     const _isSERGIO = (typeof _activeBrand !== 'undefined' && _activeBrand === 'SERGIO');
+    const _isDISC   = (typeof _activeBrand !== 'undefined' && _activeBrand === 'DISCOVERY');
     const lastLine = _isSERGIO
       ? `${ok(window._lastLoadSummary && window._lastLoadSummary.counts && window._lastLoadSummary.counts.wgsn)} WGSN`
+      : _isDISC
+      ? `${ok(results && results.wgsn)} WGSN`
       : `${ok(results && results.mlb)} MLB 판매`;
     el.innerHTML = `
       <div style="color:var(--text2);font-weight:600;margin-bottom:6px;font-size:11px">📡 Sheets Auto-Sync Complete</div>
@@ -7360,7 +7363,7 @@ const DEFAULT_CAT_DEFS = [
 const DISCOVERY_CAT_DEFS = [
   {
     key: 'commute', emoji: '🧭', name: 'Commute', subLabel: 'Outdoor Active',
-    brands: 'Sansan Gear · The North Face · Salomon · New Balance · Stone Island · 코오롱 · 휠라 · CAMEL · Beneunder',
+    brands: 'Sansan Gear · The North Face · Salomon · New Balance · Stone Island<br>코오롱 · 휠라 · CAMEL · Beneunder',
     lsKey: 'Outdoor/Sports', colorIdx: 2, weight: 0.5,
     brandList: ['Sansan Gear','The North Face','North Face','TNF','Salomon','New Balance','Stone Island','코오롱','Kolon','휠라','Fila','CAMEL','Beneunder']
   },
@@ -7407,6 +7410,7 @@ function renderCatGrid() {
   // Discovery는 3개 카테고리 → 한 줄(3열)
   const _isDiscGrid = (typeof _activeBrand!=='undefined'&&_activeBrand==='DISCOVERY');
   grid.style.gridTemplateColumns = _isDiscGrid ? '1fr 1fr 1fr' : '1fr 1fr';
+  grid.style.alignItems = 'stretch';
   if (!window._catDefs || !window._catDefs.length) {
     grid.innerHTML = `<div style="grid-column:1/-1;padding:24px;text-align:center;font-family:var(--mono);font-size:11px;color:var(--text4)">No categories</div>`;
     return;
@@ -7414,11 +7418,11 @@ function renderCatGrid() {
   grid.innerHTML = window._catDefs.map(cat => {
     const c = CAT_COLOR_PRESETS[cat.colorIdx] || CAT_COLOR_PRESETS[0];
     return `
-    <div style="background:${c.bg};border:1px solid ${c.border};border-radius:10px;padding:16px">
+    <div style="background:${c.bg};border:1px solid ${c.border};border-radius:10px;padding:16px;box-sizing:border-box;height:100%">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
         <div style="min-width:0;flex:1">
           <div style="font-size:11px;font-weight:700;color:${c.title};letter-spacing:0.04em">${cat.emoji} ${cat.name}${cat.subLabel ? ' <span style="font-weight:500;opacity:0.7;font-size:10px">('+cat.subLabel+')</span>' : ''}${cat.weight ? ' <span style="font-family:var(--mono);font-size:9px;opacity:0.6;margin-left:4px">'+Math.round(cat.weight*100)+'%</span>' : ''}</div>
-          <div style="font-family:var(--mono);font-size:8px;color:var(--text3);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${cat.brands}</div>
+          <div style="font-family:var(--mono);font-size:8px;color:var(--text3);margin-top:2px;line-height:1.5">${cat.brands}</div>
         </div>
         <button id="cat-reset-btn-${cat.key}"
           onclick="resetCatOverride('${cat.key}')"
