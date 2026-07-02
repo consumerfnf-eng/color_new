@@ -562,6 +562,10 @@ function selectBrand(brand) {
   if (typeof clearSeasonScopedData === 'function') clearSeasonScopedData();
   if (typeof resetSeasonUI === 'function') resetSeasonUI();
 
+  // 브랜드 전환 시 _catDefs 리셋
+  window._catDefs = JSON.parse(JSON.stringify(brand==='DISCOVERY' ? DISCOVERY_CAT_DEFS : DEFAULT_CAT_DEFS));
+  window._catOverrides = {};
+
   if (typeof applySidebarFilters === 'function') applySidebarFilters();
   // SERGIO 브랜드 활성 시 Palette Proposal 탭 분기 동기화
   if (typeof _spp_syncActive === 'function') _spp_syncActive();
@@ -7316,7 +7320,29 @@ const DEFAULT_CAT_DEFS = [
   { key: 'street',   emoji: '🔥', name: 'Street',    subLabel: 'KR Brands',  brands: 'Somewherebutter · Ttudement · Raive · Dunst · The Barnet · Levar · Ronron · Partimento', lsKey: 'KR Brands', colorIdx: 3 },
 ];
 
-if (typeof window._catDefs === 'undefined')     window._catDefs = JSON.parse(JSON.stringify(DEFAULT_CAT_DEFS));
+// ── DISCOVERY 전용 Category Curation 그룹 ──────────────────
+const DISCOVERY_CAT_DEFS = [
+  {
+    key: 'commute', emoji: '🧭', name: 'Commute', subLabel: 'Outdoor Active',
+    brands: 'Sansan Gear · The North Face · Salomon · New Balance · Stone Island · 코오롱 · 휠라 · CAMEL · Beneunder',
+    lsKey: 'Outdoor/Sports', colorIdx: 2, weight: 0.5,
+    brandList: ['Sansan Gear','The North Face','North Face','TNF','Salomon','New Balance','Stone Island','코오롱','Kolon','휠라','Fila','CAMEL','Beneunder']
+  },
+  {
+    key: 'wellness', emoji: '🌿', name: 'Wellness', subLabel: 'Active Lifestyle',
+    brands: 'Alo · Lululemon · On Running · Aritzia · Sporty & Rich · Adanola',
+    lsKey: 'Athleisure', colorIdx: 0, weight: 0.3,
+    brandList: ['Alo','Alo Yoga','ALO YOGA','Lululemon','On Running','On','Aritzia','Sporty & Rich','Sporty and Rich','Adanola']
+  },
+  {
+    key: 'resort', emoji: '🏔', name: 'Outdoor Resort', subLabel: 'Luxury',
+    brands: 'Prada · Miumiu · LV · Dior · Loro Piana · Brunello Cucinelli · Casablanca',
+    lsKey: 'Luxury', colorIdx: 1, weight: 0.2,
+    brandList: ['Prada','Miumiu','miu miu','Louis Vuitton','LV','Dior','Loro Piana','Brunello Cucinelli','brunello cucinelli','Casablanca','casablanca']
+  },
+];
+
+if (typeof window._catDefs === 'undefined')     window._catDefs = JSON.parse(JSON.stringify((typeof _activeBrand!=='undefined'&&_activeBrand==='DISCOVERY')?DISCOVERY_CAT_DEFS:DEFAULT_CAT_DEFS));
 // _catOverrides: { [catKey]: { point: [{hex,name,pantone},...], sub: [...] } }
 if (typeof window._catOverrides === 'undefined') window._catOverrides = {};
 
@@ -7352,7 +7378,7 @@ function renderCatGrid() {
     <div style="background:${c.bg};border:1px solid ${c.border};border-radius:10px;padding:16px">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
         <div style="min-width:0;flex:1">
-          <div style="font-size:11px;font-weight:700;color:${c.title};letter-spacing:0.04em">${cat.emoji} ${cat.name}${cat.subLabel ? ' <span style="font-weight:500;opacity:0.7;font-size:10px">('+cat.subLabel+')</span>' : ''}</div>
+          <div style="font-size:11px;font-weight:700;color:${c.title};letter-spacing:0.04em">${cat.emoji} ${cat.name}${cat.subLabel ? ' <span style="font-weight:500;opacity:0.7;font-size:10px">('+cat.subLabel+')</span>' : ''}${cat.weight ? ' <span style="font-family:var(--mono);font-size:9px;opacity:0.6;margin-left:4px">'+Math.round(cat.weight*100)+'%</span>' : ''}</div>
           <div style="font-family:var(--mono);font-size:8px;color:var(--text3);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${cat.brands}</div>
         </div>
         <button id="cat-reset-btn-${cat.key}"
@@ -7439,13 +7465,23 @@ function _fillCatColors() {
   function getAIColors(catKey) {
     if (!srcData) return { point: [], sub: [] };
     const targetLS = LS_MAP[catKey];
+    // ── DISCOVERY: brandList 기반 직접 필터링 ──
+    const _isDiscovery = (typeof _activeBrand!=='undefined'&&_activeBrand==='DISCOVERY');
+    const _discCatDef = _isDiscovery ? (DISCOVERY_CAT_DEFS.find(d=>d.key===catKey)||null) : null;
+    const _discBrandList = _discCatDef ? _discCatDef.brandList : null;
     const brandMap = {};
     srcData.forEach(c => {
       if (!c.hex || !c.brand) return;
       const h = (c.hex || '').toUpperCase();
       if (!/^#[0-9A-F]{6}$/.test(h)) return;
-      const ls = typeof getLifestyle === 'function' ? getLifestyle(c.brand, c.group || '', c.source, c.court) : (c.group || '');
-      if (ls !== targetLS) return;
+      if(_isDiscovery && _discBrandList){
+        // Discovery: brandList에 속하는 브랜드만 포함
+        const _bMatch = _discBrandList.some(b=>c.brand.toLowerCase().includes(b.toLowerCase())||b.toLowerCase().includes(c.brand.toLowerCase()));
+        if(!_bMatch) return;
+      } else {
+        const ls = typeof getLifestyle === 'function' ? getLifestyle(c.brand, c.group || '', c.source, c.court) : (c.group || '');
+        if (ls !== targetLS) return;
+      }
       const key = brandKey(c.brand);
       if (!key) return;
       if (!brandMap[key]) brandMap[key] = { brand: c.brand, colors: [] };
@@ -8635,7 +8671,80 @@ function isSharedBasic(co){
   return BASIC_SHARED_KEYS.some(k=>cn.includes(k)) || s<0.08;
 }
 
+// ── DISCOVERY 전용 팔레트 선발 함수 ────────────────────────────
+function _selectDiscoveryPalette(classified){
+  if(!classified){
+    classified={
+      point: scoredColors.filter(co=>co.marketCat==='point'),
+      sub:   scoredColors.filter(co=>co.marketCat==='sub'),
+      basic: scoredColors.filter(co=>co.marketCat==='basic'),
+    };
+  }
+
+  // Commute(50%) / Wellness(30%) / Resort(20%) 비중 가중치
+  const DISC_WEIGHTS = { commute: 0.5, wellness: 0.3, resort: 0.2 };
+
+  // 브랜드별 카테고리 매핑
+  const COMMUTE_BRANDS  = ['Sansan Gear','The North Face','North Face','TNF','Salomon','New Balance','Stone Island','코오롱','Kolon','휠라','Fila','CAMEL','Beneunder'];
+  const WELLNESS_BRANDS = ['Alo','Alo Yoga','ALO YOGA','Lululemon','On Running','On','Aritzia','Sporty & Rich','Sporty and Rich','Adanola'];
+  const RESORT_BRANDS   = ['Prada','Miumiu','miu miu','Louis Vuitton','LV','Dior','Loro Piana','Brunello Cucinelli','brunello cucinelli','Casablanca'];
+
+  function _inBrands(co, list){ return list.some(b=>co.brand&&(co.brand.toLowerCase().includes(b.toLowerCase())||b.toLowerCase().includes((co.brand||'').toLowerCase()))); }
+
+  // 색상별 Discovery 가중 스코어
+  function discScore(co){
+    let w = 1;
+    if(_inBrands(co, COMMUTE_BRANDS))  w = DISC_WEIGHTS.commute;
+    if(_inBrands(co, WELLNESS_BRANDS)) w = DISC_WEIGHTS.wellness;
+    if(_inBrands(co, RESORT_BRANDS))   w = DISC_WEIGHTS.resort;
+    return (co.total||0) * w + (co.freq||0) * w;
+  }
+
+  // CN 데이터 분리 (country='CN' 또는 cnData)
+  const isCN = co => (co.country==='CN'||co.country==='cn'||(co.source||'').includes('cn')||co.group==='CN');
+  const isKR = co => !isCN(co);
+
+  const allPool = [...classified.point,...classified.sub,...classified.basic];
+
+  // KR 풀 / CN 풀
+  const krPool = allPool.filter(isKR).sort((a,b)=>discScore(b)-discScore(a));
+  const cnPool = allPool.filter(isCN).concat(allPool).sort((a,b)=>discScore(b)-discScore(a)); // CN 없으면 전체 사용
+
+  function buildRegionPalette(pool){
+    const sorted = [...pool].sort((a,b)=>discScore(b)-discScore(a));
+    // BASIC 12 — 뉴트럴(흰/검/회/네이비)
+    const basicPool = sorted.filter(co=>{ const[,s,l]=rgbToHsl(co.hex); return s<0.18||l>0.85||l<0.12; });
+    const basic = pickDiverse(basicPool, 12, 35);
+    if(basic.length<12){ const used=new Set(basic.map(c=>c.hex)); for(const co of sorted){ if(basic.length>=12)break; if(!used.has(co.hex)&&!basic.some(p=>rgbDist(co.hex,p.hex)<25)){basic.push(co);used.add(co.hex);} } }
+    const basicSet = new Set(basic.map(c=>c.hex));
+
+    // KEY 8 — 고채도/강한 포인트
+    const keyPool = sorted.filter(co=>{ if(basicSet.has(co.hex))return false; const[,s,l]=rgbToHsl(co.hex); return s>=0.35&&l>=0.2&&l<=0.8; });
+    const key = pickDiverse(keyPool, 8, 48);
+    if(key.length<8){ const used=new Set([...basicSet,...key.map(c=>c.hex)]); for(const co of sorted){ if(key.length>=8)break; if(!used.has(co.hex)&&!key.some(p=>rgbDist(co.hex,p.hex)<30)){key.push(co);used.add(co.hex);} } }
+    const keySet = new Set(key.map(c=>c.hex));
+
+    // SUB 12 — 미디엄 채도 서브 컬러
+    const subPool = sorted.filter(co=>!basicSet.has(co.hex)&&!keySet.has(co.hex));
+    const sub = pickDiverse(subPool, 12, 35);
+    if(sub.length<12){ const used=new Set([...basicSet,...keySet,...sub.map(c=>c.hex)]); for(const co of sorted){ if(sub.length>=12)break; if(!used.has(co.hex)&&!sub.some(p=>rgbDist(co.hex,p.hex)<25)){sub.push(co);used.add(co.hex);} } }
+
+    return {point:key, sub, basic, key};
+  }
+
+  // CN 풀이 충분한지 체크 (10개 이상이면 CN 데이터 존재)
+  const cnActual = allPool.filter(isCN);
+  resultPalette['asia'] = buildRegionPalette(krPool);
+  resultPalette['europe'] = buildRegionPalette(cnActual.length>=5 ? cnActual : allPool);
+}
+
 function selectFinalPalette(classified){
+  // ── DISCOVERY 전용 팔레트 선발 (KR/CN 각각 SUB12/KEY8/BASIC12) ──
+  if(typeof _activeBrand!=='undefined' && _activeBrand==='DISCOVERY'){
+    _selectDiscoveryPalette(classified);
+    return;
+  }
+
   if(!classified){
     classified={
       point: scoredColors.filter(co=>co.marketCat==='point'),
@@ -8711,8 +8820,11 @@ function selectFinalPalette(classified){
 // ════════════════════════════════════════════════════════
 function setRegion(r){
   activeRegion=r;
-  document.getElementById('rtab-a').className='r-tab'+(r==='asia'?' ra':'');
-  document.getElementById('rtab-e').className='r-tab'+(r==='europe'?' re':'');
+  const _isDisc2=(typeof _activeBrand!=='undefined'&&_activeBrand==='DISCOVERY');
+  const _tabA=document.getElementById('rtab-a');
+  const _tabE=document.getElementById('rtab-e');
+  if(_tabA){_tabA.className='r-tab'+(r==='asia'?' ra':'');_tabA.textContent=_isDisc2?'KR':'Asia';}
+  if(_tabE){_tabE.className='r-tab'+(r==='europe'?' re':'');_tabE.textContent=_isDisc2?'CN':'Europe';}
   renderResult();
   // 판매기반 resultPalette 연동 → 시즌 칩 재갱신
   try{ renderSeasonChips(); }catch(e){}
@@ -13693,9 +13805,10 @@ function chipHtml(c,isKey){
   const coloroLine=cc?`<div class="chip-coloro" style="font-family:var(--mono);font-size:10px;font-weight:600;color:var(--accent);margin-top:2px">COLORO ${cc.coloro}</div>`:'';
   const ptCode=c.pantone?('Pantone '+c.pantone+' TCX'):(cc?('Pantone '+cc.pantone+' TCX'):c.hex);
   const dirBadge=c.direction&&c.direction!=='maintain'?`<span class="badge badge-dir-${c.direction}">${c.direction}</span>`:'';
-  const mlbBadge=c.mlbCode?`<span class="badge badge-mlb">${c.mlbCode}</span>`:'';
+  const _isDisc = (typeof _activeBrand!=='undefined'&&_activeBrand==='DISCOVERY');
+  const mlbBadge=(!_isDisc&&c.mlbCode)?`<span class="badge badge-mlb">${c.mlbCode}</span>`:'';
   const crossBadge=c.cross?`<span class="badge badge-cross">교차✓</span>`:'';
-  const qtyLine=c.qty>0?`<div class="chip-score">판매 ${fmtN(c.qty)}개 · 판매율 ${(c.rate*100||0).toFixed(0)}%</div>`:`<div class="chip-score" style="color:var(--teal)">신규</div>`;
+  const qtyLine=(!_isDisc&&c.qty>0)?`<div class="chip-score">판매 ${fmtN(c.qty)}개 · 판매율 ${(c.rate*100||0).toFixed(0)}%</div>`:((!_isDisc)?`<div class="chip-score" style="color:var(--teal)">신규</div>`:'');
   const scoreLine=c.total>0?`<div class="chip-score">Score ${c.total}</div>`:'';
   return`<div class="chip${isKey?' key-chip':''}" onclick="openPalDetail(window._paletteColorMap&&window._paletteColorMap['${c.hex.toUpperCase()}']||{hex:'${c.hex}',name:'${(c.name||c.hex).replace(/'/g,"\'").replace(/\`/g,'\`')}'})" style="cursor:pointer">
     <div class="chip-swatch" style="background:${c.hex}">
