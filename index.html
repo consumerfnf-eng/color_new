@@ -1444,7 +1444,7 @@ function enterBrandFromHome(brand) {
             <span style="font-family:var(--mono);font-size:9px;font-weight:700;color:var(--blue);letter-spacing:0.1em;text-transform:uppercase">SUB</span>
             <span id="disc-sub-cnt" style="font-family:var(--mono);font-size:9px;color:var(--text3)"></span>
           </div>
-          <div id="disc-sub-grid" style="display:flex;flex-wrap:wrap;gap:8px"></div>
+          <div id="disc-sub-grid" style="display:flex;flex-wrap:wrap;gap:5px"></div>
         </div>
         <!-- KEY -->
         <div style="margin-bottom:20px">
@@ -1452,7 +1452,7 @@ function enterBrandFromHome(brand) {
             <span style="font-family:var(--mono);font-size:9px;font-weight:700;color:#A090F0;letter-spacing:0.1em;text-transform:uppercase">KEY</span>
             <span id="disc-key-cnt" style="font-family:var(--mono);font-size:9px;color:var(--text3)"></span>
           </div>
-          <div id="disc-key-grid" style="display:flex;flex-wrap:wrap;gap:8px"></div>
+          <div id="disc-key-grid" style="display:flex;flex-wrap:wrap;gap:5px"></div>
         </div>
         <!-- BASIC -->
         <div style="margin-bottom:20px">
@@ -1460,7 +1460,7 @@ function enterBrandFromHome(brand) {
             <span style="font-family:var(--mono);font-size:9px;font-weight:700;color:var(--gold);letter-spacing:0.1em;text-transform:uppercase">BASIC</span>
             <span id="disc-basic-cnt" style="font-family:var(--mono);font-size:9px;color:var(--text3)"></span>
           </div>
-          <div id="disc-basic-grid" style="display:flex;flex-wrap:wrap;gap:8px"></div>
+          <div id="disc-basic-grid" style="display:flex;flex-wrap:wrap;gap:5px"></div>
         </div>
       </div>
 
@@ -8740,9 +8740,9 @@ function _renderDiscPaletteRegion(r){
   const keyCnt    = document.getElementById('disc-key-cnt');
   const basicCnt  = document.getElementById('disc-basic-cnt');
 
-  if(subGrid)   subGrid.innerHTML   = sub.map(c=>_discChip(c,false)).join('');
-  if(keyGrid)   keyGrid.innerHTML   = key.map(c=>_discChip(c,true)).join('');
-  if(basicGrid) basicGrid.innerHTML = basic.map(c=>_discChip(c,false)).join('');
+  if(subGrid)   subGrid.innerHTML   = sub.map(c=>chipHtml(c,false)).join('');
+  if(keyGrid)   keyGrid.innerHTML   = key.map(c=>chipHtml(c,true)).join('');
+  if(basicGrid) basicGrid.innerHTML = basic.map(c=>chipHtml(c,false)).join('');
   if(subCnt)    subCnt.textContent  = sub.length+'색';
   if(keyCnt)    keyCnt.textContent  = key.length+'색';
   if(basicCnt)  basicCnt.textContent= basic.length+'색';
