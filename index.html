@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- BUILD_VERSION: DISC_NEUTRAL_THRESHOLD_WIDEN_v20 (2026-07-03) -->
+<!-- BUILD_VERSION: DISC_NEUTRAL_HIGHLIGHT_SAT35_v21 (2026-07-03) -->
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
@@ -9253,10 +9253,11 @@ function _selectDiscoveryPalette(classified){
     // → 진짜 무채색(화이트/블랙/그레이/아이보리/네이비)만 BASIC으로 인정.
     const DISC_SAT_KEY = 0.50;
     const isTrueNeutral = (s, l, h) => {
+      if (l >= 0.85 && s < 0.35) return true;                      // 매우 밝으면(85%+) 채도 35%까지 화이트/아이보리/크림 허용
       if (l > 0.78 && s < 0.20) return true;                       // White/Ivory/Cream (밝고 채도도 낮아야)
       if (l < 0.12 && s < 0.15) return true;                       // Black (어둡고 채도도 낮아야)
       if (s < 0.10) return true;                                  // Grey (무채색)
-      if (h >= 15 && h <= 70 && l >= 0.60 && s <= 0.32) return true; // Ivory/Ecru/Beige
+      if (h >= 15 && h <= 70 && l >= 0.60 && s <= 0.35) return true; // Ivory/Ecru/Beige
       if (h >= 210 && h <= 255 && l < 0.30 && s >= 0.15) return true; // Navy
       return false;                                               // 그 외 유채색은 BASIC 아님
     };
