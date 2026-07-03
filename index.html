@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- BUILD_VERSION: DISC_LABEL_DEDUP_v29 (2026-07-03) -->
+<!-- BUILD_VERSION: TRENDPROP_NOBORDER_v30 (2026-07-03) -->
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
@@ -8066,7 +8066,7 @@ function _fillCatColors() {
 
         const safeH = best.hex.replace(/'/g,"\'");
         return `<div style="display:inline-flex;flex-direction:column;align-items:center;gap:2px">
-          <div style="width:40px;height:40px;border-radius:6px;background:${best.hex};border:1px solid rgba(160,120,64,0.25);cursor:pointer;transition:transform 110ms"
+          <div style="width:40px;height:40px;border-radius:6px;background:${best.hex};cursor:pointer;transition:transform 110ms"
             onmouseenter="this.style.transform='scale(1.1)'" onmouseleave="this.style.transform='scale(1)'"
             onclick="openCompColorDetail('${safeH}','${safeH}',1,'')" title="${best.name||best.hex} · ${best.hex}"></div>
           <div style="font-family:var(--mono);font-size:7px;color:var(--text3);text-align:center">${best.hex}</div>
