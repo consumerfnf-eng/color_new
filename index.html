@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- BUILD_VERSION: DISC_CATCURATION_CN_MERGED_v11 (2026-07-03) -->
+<!-- BUILD_VERSION: DISC_CN_MINI_EXCLUDE_NEUTRAL_v12 (2026-07-03) -->
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
@@ -7903,12 +7903,16 @@ function _fillCatColors() {
     });
     if (!merged.length) return '';
     merged.forEach(c => { const [, s, l] = (typeof rgbToHsl === 'function' ? rgbToHsl(c.hex) : [0,0,0.5]); c._s = s; c._l = l; });
-    merged.sort((a, b) => b.freq - a.freq);
+    // 그레이/블랙/화이트 같은 모노톤(베이직) 컬러는 제외 — 유채색만 후보로 남김
+    const isBasicNeutral = c => (c._s < 0.12) || (c._l > 0.90) || (c._l < 0.10);
+    const colorful = merged.filter(c => !isBasicNeutral(c));
+    if (!colorful.length) return '';
+    colorful.sort((a, b) => b.freq - a.freq);
     // 빈도순 상위 중 포인트 자격(고채도·중간명도) 1개 + 나머지 서브 2개
     const isPoint = c => c._s >= 0.35 && c._l >= 0.30 && c._l <= 0.65;
-    const point = merged.filter(isPoint).slice(0, 1);
+    const point = colorful.filter(isPoint).slice(0, 1);
     const usedH = new Set(point.map(c => c.hex));
-    const sub = merged.filter(c => !usedH.has(c.hex)).slice(0, 2);
+    const sub = colorful.filter(c => !usedH.has(c.hex)).slice(0, 2);
     const top3 = [...point, ...sub].slice(0, 3);
     if (!top3.length) return '';
 
