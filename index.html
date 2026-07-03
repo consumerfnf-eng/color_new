@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- BUILD_VERSION: DISC_NEUTRAL_HIGHLIGHT_SAT35_v21 (2026-07-03) -->
+<!-- BUILD_VERSION: DISC_POPUP_HIDE_SCORES_v22 (2026-07-03) -->
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
@@ -11183,6 +11183,13 @@ function openPalDetail(c){
   // 스코어 박스
   const scEl = document.getElementById('paldm-scores');
   if(scEl){
+    const _isDiscScores = (typeof _activeBrand!=='undefined' && _activeBrand==='DISCOVERY');
+    if(_isDiscScores){
+      // DISCOVERY: TREND/MLB/TOTAL 점수가 항상 0으로 의미 없으므로 박스 자체를 숨김
+      scEl.style.display = 'none';
+      scEl.innerHTML = '';
+    } else {
+    scEl.style.display = '';
     scEl.style.gridTemplateColumns = '1fr 1fr 1fr';
     if(c._isSales){
       // Sales-Based: 판매량 / 판매율 / 판매점수
@@ -11211,6 +11218,7 @@ function openPalDetail(c){
         <div style="font-family:var(--mono);font-size:9px;color:var(--text3);margin-bottom:4px">${s.label}</div>
         <div style="font-size:15px;font-weight:700;color:${s.color}">${s.val!=null?s.val:'—'}</div>
       </div>`).join('');
+    }
     }
   }
 
