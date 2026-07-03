@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- BUILD_VERSION: DISC_KEY_LMIN_028_v28 (2026-07-03) -->
+<!-- BUILD_VERSION: DISC_LABEL_DEDUP_v29 (2026-07-03) -->
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
@@ -9227,21 +9227,21 @@ function _selectDiscoveryPalette(classified){
         const need = quotaMap[cat];
         if(need<=0) return;
         const catPool = swatchPool.filter(co=>categoryOf(co)===cat && !usedHex.has(co.hex));
-        // 1차: 전체 picked 기준 minDist 이상만
+        // 1차: 전체 picked 기준 minDist 이상만 (+ Pantone 라벨 동일 여부도 확인)
         let count = 0;
         for(const co of catPool){
           if(count>=need) break;
           if(usedHex.has(co.hex)) continue;
-          const tooClose = picked.some(p=>rgbDist(p.hex, co.hex) < minDist);
+          const tooClose = picked.some(p=>rgbDist(p.hex, co.hex) < minDist || _labelOf(p.hex)===_labelOf(co.hex));
           if(tooClose) continue;
           picked.push(co); usedHex.add(co.hex); count++;
         }
-        // 2차: 부족하면 완화된 기준(전체 picked 대비 minDist*0.5)으로 재시도
+        // 2차: 부족하면 완화된 기준(전체 picked 대비 minDist*0.5)으로 재시도 (라벨 동일은 여전히 제외)
         if(count<need){
           for(const co of catPool){
             if(count>=need) break;
             if(usedHex.has(co.hex)) continue;
-            const tooClose = picked.some(p=>rgbDist(p.hex, co.hex) < minDist*0.5);
+            const tooClose = picked.some(p=>rgbDist(p.hex, co.hex) < minDist*0.5 || _labelOf(p.hex)===_labelOf(co.hex));
             if(tooClose) continue;
             picked.push(co); usedHex.add(co.hex); count++;
           }
@@ -9267,7 +9267,7 @@ function _selectDiscoveryPalette(classified){
         for(const pp of priorityPools){
           for(const co of pp){
             if(picked.length>=total) break;
-            if(picked.some(p=>rgbDist(co.hex,p.hex)<Math.max(minDist-10,15))) continue;
+            if(picked.some(p=>rgbDist(co.hex,p.hex)<Math.max(minDist-10,15) || _labelOf(p.hex)===_labelOf(co.hex))) continue;
             picked.push(co); usedHex.add(co.hex);
           }
           if(picked.length>=total) break;
@@ -9304,10 +9304,13 @@ function _selectDiscoveryPalette(classified){
       return 'sub'; // 진짜 무채색이 아니면(더스티 핑크·라벤더 등 저채도 파스텔 포함) SUB
     }
 
-    // 그룹 간 근접색 제외용 헬퍼 — 정확히 같은 hex뿐 아니라 색거리(rgbDist) 20 이내도 "이미 쓴 색"으로 취급
-    // (Pantone 근사 라벨은 같아도 hex가 미세하게 달라 SUB/KEY에 같은 계열이 중복 등장하는 것 방지)
+    // 그룹 간 근접색 제외용 헬퍼 — 정확히 같은 hex뿐 아니라 색거리(rgbDist) 30 이내,
+    // 또는 Pantone 근사 라벨이 동일하면 "이미 쓴 색"으로 취급
+    // (Pantone 근사 라벨은 같은데 hex 거리가 멀어서 안 걸러지면 화면엔 같은 코드가 중복 표시됨)
     const NEAR_DUP_DIST = 30;
-    const isNearAny = (co, list) => list.some(p => co.hex === p.hex || rgbDist(co.hex, p.hex) < NEAR_DUP_DIST);
+    const _labelOf = (hex) => { try { return (typeof pantoneApprox==='function' ? (pantoneApprox(hex)||hex) : hex); } catch(e){ return hex; } };
+    const _sameOrNear = (hexA, hexB) => hexA === hexB || rgbDist(hexA, hexB) < NEAR_DUP_DIST || _labelOf(hexA) === _labelOf(hexB);
+    const isNearAny = (co, list) => list.some(p => _sameOrNear(co.hex, p.hex));
 
     // BASIC 12 — 진짜 무채색(화이트/블랙/그레이/아이보리/네이비)만
     const basicPoolAll = sorted.filter(co=>classifyDisc(co)==='basic');
