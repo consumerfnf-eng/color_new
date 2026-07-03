@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- BUILD_VERSION: DISC_PICKQUOTA_CROSSCAT_DIVERSITY_v25 (2026-07-03) -->
+<!-- BUILD_VERSION: DISC_NEARDUP_CROSSGROUP_v26 (2026-07-03) -->
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
@@ -9304,18 +9304,21 @@ function _selectDiscoveryPalette(classified){
       return 'sub'; // 진짜 무채색이 아니면(더스티 핑크·라벤더 등 저채도 파스텔 포함) SUB
     }
 
+    // 그룹 간 근접색 제외용 헬퍼 — 정확히 같은 hex뿐 아니라 색거리(rgbDist) 20 이내도 "이미 쓴 색"으로 취급
+    // (Pantone 근사 라벨은 같아도 hex가 미세하게 달라 SUB/KEY에 같은 계열이 중복 등장하는 것 방지)
+    const NEAR_DUP_DIST = 20;
+    const isNearAny = (co, list) => list.some(p => co.hex === p.hex || rgbDist(co.hex, p.hex) < NEAR_DUP_DIST);
+
     // BASIC 12 — 진짜 무채색(화이트/블랙/그레이/아이보리/네이비)만
     const basicPoolAll = sorted.filter(co=>classifyDisc(co)==='basic');
     const basic = pickByQuota(basicPoolAll, 12, 35);
-    const basicSet = new Set(basic.map(c=>c.hex));
 
-    // KEY 8 — 고채도/강한 포인트
-    const keyPoolAll = sorted.filter(co=>!basicSet.has(co.hex) && classifyDisc(co)==='key');
+    // KEY 8 — 고채도/강한 포인트 (BASIC과 근접색 제외)
+    const keyPoolAll = sorted.filter(co=>!isNearAny(co, basic) && classifyDisc(co)==='key');
     const key = pickByQuota(keyPoolAll, 8, 48);
-    const keySet = new Set(key.map(c=>c.hex));
 
-    // SUB 12 — 미디엄 채도 서브 컬러
-    const subPoolAll = sorted.filter(co=>!basicSet.has(co.hex)&&!keySet.has(co.hex) && classifyDisc(co)==='sub');
+    // SUB 12 — 미디엄 채도 서브 컬러 (BASIC·KEY와 근접색 제외)
+    const subPoolAll = sorted.filter(co=>!isNearAny(co, basic) && !isNearAny(co, key) && classifyDisc(co)==='sub');
     const sub = pickByQuota(subPoolAll, 12, 35);
 
     return {point:key, sub, basic, key};
