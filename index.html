@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- BUILD_VERSION: DISC_INTERSECTION_AND_NEUTRAL_SAT_FIX_v2 (2026-07-03) -->
+<!-- BUILD_VERSION: DISC_INTERSECTION_COLOR_FAMILY_v3 (2026-07-03) -->
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
@@ -8966,47 +8966,91 @@ function _renderDiscoveryPalette(){
   if(typeof renderCatGrid==='function') renderCatGrid();
 }
 
-// ── KR ∩ CN 교집합(Intersection) 렌더 — 두 마켓에 공통으로 등장하는 Colors만 ──
+// ── KR ∩ CN 교집합(Intersection) 렌더 — MLB와 동일한 색상군(RED/PINK/NAVY/BLUE 등) 클러스터 방식 ──
 function _renderDiscIntersection(){
   const wrap = document.getElementById('disc-intersection-groups');
   if(!wrap) return;
   const kr = (typeof resultPalette!=='undefined' && resultPalette['asia'])   || {sub:[],key:[],basic:[]};
   const cn = (typeof resultPalette!=='undefined' && resultPalette['europe'])|| {sub:[],key:[],basic:[]};
 
-  function intersectGroup(a, b){
-    const out = [];
-    const usedB = new Set();
-    (a||[]).forEach(ca=>{
-      const match = (b||[]).find(cb => !usedB.has(cb.hex) && ca.hex && cb.hex && typeof rgbDist==='function' && rgbDist(ca.hex, cb.hex) < 20);
-      if(match){ usedB.add(match.hex); out.push(ca); }
-    });
-    return out;
-  }
+  const _getHSL = hex => { try{ return typeof rgbToHsl==='function' ? rgbToHsl(hex) : [0,0,0.5]; }catch(e){ return [0,0,0.5]; } };
+  const _inHue = (h, mn, mx) => mn<=mx ? (h>=mn&&h<=mx) : (h>=mn||h<=mx);
+  const inCat = (hex, cat) => {
+    const [h,s,l] = _getHSL(hex);
+    if(s < (cat.satMin||0)) return false;
+    if(cat.satMax !== undefined && s > cat.satMax) return false;
+    if(cat.lMin !== undefined && l < cat.lMin) return false;
+    if(cat.lMax !== undefined && l > cat.lMax) return false;
+    return _inHue(h, cat.hueMin, cat.hueMax);
+  };
+  const _isNearWhite = hex => { const [,s,l] = _getHSL(hex); return l > 0.88 && s < 0.25; };
+  const _isChromaticEnough = hex => {
+    const [,s,l] = _getHSL(hex);
+    if(l < 0.35) return s >= 0.10 && l >= 0.08;
+    return s >= 0.18 && l >= 0.12 && l <= 0.88;
+  };
 
-  const groups = [
-    { key:'sub',   label:'SUB',   dotColor:'var(--blue)' },
-    { key:'key',   label:'KEY',   dotColor:'#A090F0' },
-    { key:'basic', label:'BASIC', dotColor:'var(--gold)' },
+  // MLB Intersection과 동일한 색상군 정의 (RED/PINK/ORANGE·YELLOW/GREEN/NAVY/BLUE/PURPLE/BROWN·KHAKI)
+  const COLOR_CATS = [
+    { label:'Red',            color:'#CC3333', hueMin:338, hueMax:18,  satMin:0.40, lMin:0.18, lMax:0.58 },
+    { label:'Pink',           color:'#E87090', hueMin:300, hueMax:355, satMin:0.20, lMin:0.40 },
+    { label:'Orange·Yellow',  color:'#D07020', hueMin:18,  hueMax:72,  satMin:0.35, lMin:0.28 },
+    { label:'Green',          color:'#3A8050', hueMin:72,  hueMax:168, satMin:0.15 },
+    { label:'Navy',           color:'#152848', hueMin:195, hueMax:255, satMin:0.10, lMin:0.06, lMax:0.38 },
+    { label:'Blue',           color:'#3060B0', hueMin:168, hueMax:245, satMin:0.20, lMin:0.38 },
+    { label:'Purple',         color:'#7040A0', hueMin:252, hueMax:315, satMin:0.18 },
+    { label:'Brown·Khaki',    color:'#7A5530', hueMin:18,  hueMax:60,  satMin:0.08, satMax:0.38, lMin:0.12, lMax:0.58 },
+  ];
+  const PINNED_CATS = ['Red','Pink','Navy','Blue'];
+
+  const _allChips = [
+    ...[...(kr.sub||[]), ...(kr.key||[])].filter(c=>c.hex && !_isNearWhite(c.hex) && _isChromaticEnough(c.hex)).map(c=>({...c, _mode:'kr'})),
+    ...[...(cn.sub||[]), ...(cn.key||[])].filter(c=>c.hex && !_isNearWhite(c.hex) && _isChromaticEnough(c.hex)).map(c=>({...c, _mode:'cn'})),
   ];
 
-  wrap.innerHTML = groups.map(g=>{
-    const list = intersectGroup(kr[g.key], cn[g.key]);
-    const chips = list.length
-      ? list.map(co=>{
-          const _pt = (typeof pantoneApprox==='function') ? (pantoneApprox(co.hex)||'') : '';
-          const label = _pt ? _pt.replace(' TCX','') : (co.name||co.hex);
-          return `<div style="display:flex;flex-direction:column;align-items:center;gap:3px">
-            <div style="width:44px;height:44px;border-radius:7px;background:${co.hex};border:1px solid rgba(255,255,255,0.08)"></div>
-            <div style="font-family:var(--mono);font-size:7px;color:var(--text3);text-align:center;max-width:52px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${label}</div>
-          </div>`;
-        }).join('')
-      : `<span style="font-family:var(--mono);font-size:9px;color:var(--text4);font-style:italic">공통 Colors 없음</span>`;
-    return `<div style="display:flex;flex-direction:column;gap:8px;padding:10px 12px;border:3px dashed ${list.length?'rgba(60,180,100,0.7)':'rgba(160,160,160,0.40)'};border-radius:10px">
+  const makeChipWithLabel = (c) => {
+    const label = c._mode==='kr'
+      ? `<div style="font-family:var(--mono);font-size:6px;color:var(--accent);letter-spacing:0.04em;margin-bottom:2px;text-align:center">KR</div>`
+      : `<div style="font-family:var(--mono);font-size:6px;color:var(--gold);letter-spacing:0.04em;margin-bottom:2px;text-align:center">CN</div>`;
+    const _fr = c.total||c.freq||1;
+    const _pt = (typeof pantoneApprox==='function' ? (pantoneApprox(c.hex)||'') : '').replace(/ TCX$/i,'') || (c.name||c.hex||'');
+    const _cl = c._mode==='kr' ? 'var(--accent)' : 'var(--gold)';
+    return `<div style="display:flex;flex-direction:column;align-items:center;gap:3px">
+      ${label}
+      <div style="width:44px;height:44px;border-radius:7px;background:${c.hex};border:1px solid rgba(255,255,255,0.12)"></div>
+      <div style="font-family:var(--mono);font-size:8px;color:${_cl};text-align:center">×${_fr}</div>
+      <div style="font-family:var(--mono);font-size:7px;color:var(--text3);text-align:center;max-width:52px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${_pt}</div>
+    </div>`;
+  };
+
+  const catGroups = COLOR_CATS.map(cat => {
+    const chips = _allChips.filter(c => inCat(c.hex, cat));
+    const isPinned = PINNED_CATS.includes(cat.label);
+    return { ...cat, chips, isPinned };
+  }).filter(g =>
+    g.isPinned ||
+    (g.chips.length >= 2 && g.chips.some(c=>c._mode==='kr') && g.chips.some(c=>c._mode==='cn'))
+  );
+
+  if(!catGroups.length){
+    wrap.innerHTML = '<div style="font-family:var(--mono);font-size:9px;color:var(--text4);padding:4px 0">No Intersection</div>';
+    return;
+  }
+
+  wrap.innerHTML = catGroups.map(g => {
+    const ordered = [...g.chips.filter(c=>c._mode==='kr'), ...g.chips.filter(c=>c._mode==='cn')];
+    const isEmpty = ordered.length === 0;
+    const borderColor = isEmpty ? 'rgba(160,160,160,0.40)' : 'rgba(60,180,100,1.0)';
+    const emptyMsg = isEmpty
+      ? `<div style="font-family:var(--mono);font-size:8px;color:var(--text4);padding:6px 2px;font-style:italic">No data this session</div>`
+      : '';
+    return `<div style="display:flex;flex-direction:column;gap:8px;padding:10px 12px;border:3px dashed ${borderColor};border-radius:10px">
       <div style="display:flex;align-items:center;gap:5px">
-        <span style="width:8px;height:8px;border-radius:50%;background:${g.dotColor};flex-shrink:0;display:inline-block"></span>
-        <span style="font-family:var(--mono);font-size:8px;color:var(--text3);font-weight:700;letter-spacing:0.05em">${g.label} · ${list.length}</span>
+        <div style="width:8px;height:8px;border-radius:50%;background:${g.color};flex-shrink:0"></div>
+        <span style="font-family:var(--mono);font-size:8px;color:var(--text3);font-weight:600;letter-spacing:0.05em">${g.label.toUpperCase()}</span>
+        ${g.isPinned ? '<span style="font-family:var(--mono);font-size:7px;color:var(--text4);margin-left:2px">★ fixed</span>' : ''}
       </div>
-      <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:flex-start">${chips}</div>
+      ${isEmpty ? emptyMsg : `<div style="display:flex;gap:6px;flex-wrap:wrap;align-items:flex-start">${ordered.map(makeChipWithLabel).join('')}</div>`}
     </div>`;
   }).join('');
 }
