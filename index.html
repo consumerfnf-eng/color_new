@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- BUILD_VERSION: DISC_TRENDPOOL_EXCLUDE_COMP_v6 (2026-07-03) -->
+<!-- BUILD_VERSION: CATCOLOR_DIVERSITY_CROSSCHECK_v7 (2026-07-03) -->
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
@@ -7680,6 +7680,13 @@ function _fillCatColors() {
       const tooClose = pointColors.some(p => Math.min(Math.abs(p._h-c._h), 360-Math.abs(p._h-c._h)) < 40);
       if (!tooClose) pointColors.push(c);
     }
+    // Hue 40도로 못 채웠으면 20도로 완화해서 재시도 (그래도 계열 겹침 최소화)
+    for (const c of poolPoint) {
+      if (pointColors.length >= 2) break;
+      if (pointColors.find(p => p.hex === c.hex)) continue;
+      const tooClose = pointColors.some(p => Math.min(Math.abs(p._h-c._h), 360-Math.abs(p._h-c._h)) < 20);
+      if (!tooClose) pointColors.push(c);
+    }
     for (const c of poolPoint) { if (pointColors.length >= 2) break; if (!pointColors.find(p => p.hex === c.hex)) pointColors.push(c); }
     const usedHex = new Set(pointColors.map(c => c.hex));
     poolSub.sort((a, b) => (b.count||1) - (a.count||1) || (b._s - a._s));
@@ -7689,13 +7696,22 @@ function _fillCatColors() {
     for (const c of [...poolSub, ...subExtra]) {
       if (subColors.length >= 4) break;
       if (seenHex.has(c.hex)) continue;
-      // Hue 25° 이내 유사 계열 이미 있으면 스킵 (중복 색상 계열 방지)
-      const tooClose = subColors.some(p => Math.min(Math.abs(p._h-c._h), 360-Math.abs(p._h-c._h)) < 40);
+      // Hue 40° 이내 유사 계열(point 컬러 포함) 이미 있으면 스킵 (중복 색상 계열 방지)
+      const tooClose = [...pointColors, ...subColors].some(p => Math.min(Math.abs(p._h-c._h), 360-Math.abs(p._h-c._h)) < 40);
       if (tooClose) continue;
       seenHex.add(c.hex);
       subColors.push(c);
     }
-    // Hue 제한으로 4개 못 채웠으면 제한 없이 보충
+    // Hue 40도로 못 채웠으면 20도로 완화해서 재시도
+    for (const c of [...poolSub, ...subExtra]) {
+      if (subColors.length >= 4) break;
+      if (seenHex.has(c.hex)) continue;
+      const tooClose = [...pointColors, ...subColors].some(p => Math.min(Math.abs(p._h-c._h), 360-Math.abs(p._h-c._h)) < 20);
+      if (tooClose) continue;
+      seenHex.add(c.hex);
+      subColors.push(c);
+    }
+    // 그래도 4개 못 채웠으면(브랜드 풀 자체가 협소) 제한 없이 보충 — 최후의 수단
     for (const c of [...poolSub, ...subExtra]) {
       if (subColors.length >= 4) break;
       if (seenHex.has(c.hex)) continue;
