@@ -9083,7 +9083,6 @@ function _selectDiscoveryPalette(classified){
     // 명도/채도만으로 판정하면 네이비가 SUB로 새고 밝은 파스텔(핑크·연노랑)이 BASIC으로 잘못 들어감.
     // → 진짜 무채색(화이트/블랙/그레이/아이보리/네이비)만 BASIC으로 인정.
     const DISC_SAT_KEY = 0.50;
-    const DISC_SAT_SUB = 0.20;
     const isTrueNeutral = (s, l, h) => {
       if (l > 0.82) return true;                                  // White/Ivory/Cream
       if (l < 0.12) return true;                                  // Black
@@ -9096,8 +9095,7 @@ function _selectDiscoveryPalette(classified){
       const [h,s,l] = rgbToHsl(co.hex);
       if (isTrueNeutral(s,l,h)) return 'basic';
       if (s>=DISC_SAT_KEY && l>=0.20 && l<=0.80) return 'key';
-      if (s>=DISC_SAT_SUB) return 'sub';
-      return 'basic'; // 저채도 catch-all
+      return 'sub'; // 진짜 무채색이 아니면(더스티 핑크·라벤더 등 저채도 파스텔 포함) SUB
     }
 
     // BASIC 12 — 진짜 무채색(화이트/블랙/그레이/아이보리/네이비)만
