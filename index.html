@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- BUILD_VERSION: DISC_CN_MINI_EXCLUDE_NEUTRAL_v12 (2026-07-03) -->
+<!-- BUILD_VERSION: DISC_CN_MINI_EMPTY_REASON_v13 (2026-07-03) -->
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
@@ -7888,10 +7888,15 @@ function _fillCatColors() {
   function _discCatCNMini(cat) {
     if (typeof _activeBrand === 'undefined' || _activeBrand !== 'DISCOVERY') return '';
     const cnData = (typeof cnMarketData !== 'undefined' && cnMarketData) ? cnMarketData : [];
-    if (!cnData.length) return '';
+    const cnBadge = `<span style="font-family:var(--mono);font-size:9px;font-weight:700;padding:2px 8px;border-radius:10px;border:1px solid var(--border);color:var(--text2)">CN</span>`;
+    const emptyBlock = msg => `<div style="display:flex;align-items:center;gap:6px;margin-top:2px;padding-top:8px;border-top:1px dashed rgba(255,255,255,0.08)">
+        ${cnBadge}
+        <span style="font-family:var(--mono);font-size:8px;color:var(--text4)">${msg}</span>
+      </div>`;
+    if (!cnData.length) return emptyBlock('CN 마켓 데이터 없음 (02 Market Analysis에서 로드 필요)');
     const brandMatch = (brands, list) => (Array.isArray(brands) ? brands : []).some(b => (list||[]).some(x => b && (b.toLowerCase().includes(x.toLowerCase()) || x.toLowerCase().includes(b.toLowerCase()))));
     const rows = cnData.filter(r => r.hex && brandMatch(r.brands, cat.brandList));
-    if (!rows.length) return '';
+    if (!rows.length) return emptyBlock('이 카테고리 브랜드의 CN 데이터 없음');
     const merged = [];
     rows.forEach(r => {
       const h = ('#' + (r.hex || '').replace('#', '')).toUpperCase();
@@ -7901,12 +7906,12 @@ function _fillCatColors() {
       if (dup) dup.freq += (r.freq || 1);
       else merged.push({ hex: h, brand: repBrand, freq: r.freq || 1 });
     });
-    if (!merged.length) return '';
+    if (!merged.length) return emptyBlock('이 카테고리 브랜드의 CN 데이터 없음');
     merged.forEach(c => { const [, s, l] = (typeof rgbToHsl === 'function' ? rgbToHsl(c.hex) : [0,0,0.5]); c._s = s; c._l = l; });
     // 그레이/블랙/화이트 같은 모노톤(베이직) 컬러는 제외 — 유채색만 후보로 남김
     const isBasicNeutral = c => (c._s < 0.12) || (c._l > 0.90) || (c._l < 0.10);
     const colorful = merged.filter(c => !isBasicNeutral(c));
-    if (!colorful.length) return '';
+    if (!colorful.length) return emptyBlock(`CN Colors ${merged.length}개 있으나 전부 무채색(그레이·블랙·화이트)이라 제외됨`);
     colorful.sort((a, b) => b.freq - a.freq);
     // 빈도순 상위 중 포인트 자격(고채도·중간명도) 1개 + 나머지 서브 2개
     const isPoint = c => c._s >= 0.35 && c._l >= 0.30 && c._l <= 0.65;
@@ -7914,7 +7919,7 @@ function _fillCatColors() {
     const usedH = new Set(point.map(c => c.hex));
     const sub = colorful.filter(c => !usedH.has(c.hex)).slice(0, 2);
     const top3 = [...point, ...sub].slice(0, 3);
-    if (!top3.length) return '';
+    if (!top3.length) return emptyBlock('CN Colors 후보 없음');
 
     const chips = top3.map(co => `<div style="display:flex;flex-direction:column;align-items:center;gap:2px">
         <div onclick="openCompColorDetail('${co.hex}','${(co.brand||co.hex).replace(/'/g,"\\'")}',${co.freq},'${(co.brand||'').replace(/'/g,"\\'")}')"
@@ -7925,7 +7930,7 @@ function _fillCatColors() {
       </div>`).join('');
 
     return `<div style="display:flex;align-items:center;gap:6px;margin-top:2px;padding-top:8px;border-top:1px dashed rgba(255,255,255,0.08)">
-        <span style="font-family:var(--mono);font-size:9px;font-weight:700;padding:2px 8px;border-radius:10px;border:1px solid var(--border);color:var(--text2)">CN</span>
+        ${cnBadge}
         <span style="font-family:var(--mono);font-size:8px;color:var(--text4)">중국 마켓 기준 · 빈도순 3색</span>
       </div>
       <div style="display:flex;gap:4px;flex-wrap:wrap;align-items:flex-start">${chips}</div>`;
