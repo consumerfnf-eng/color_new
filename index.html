@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- BUILD_VERSION: DISC_NEARDUP_DIST30_v27 (2026-07-03) -->
+<!-- BUILD_VERSION: DISC_KEY_LMIN_028_v28 (2026-07-03) -->
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
@@ -9300,7 +9300,7 @@ function _selectDiscoveryPalette(classified){
     function classifyDisc(co){
       const [h,s,l] = rgbToHsl(co.hex);
       if (isTrueNeutral(s,l,h)) return 'basic';
-      if (s>=DISC_SAT_KEY && l>=0.20 && l<=0.80) return 'key';
+      if (s>=DISC_SAT_KEY && l>=0.28 && l<=0.80) return 'key';
       return 'sub'; // 진짜 무채색이 아니면(더스티 핑크·라벤더 등 저채도 파스텔 포함) SUB
     }
 
