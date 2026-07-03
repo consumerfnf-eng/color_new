@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- BUILD_VERSION: DISC_CN_MINI_NO_FORCE_FILL_v15 (2026-07-03) -->
+<!-- BUILD_VERSION: SERGIO_SEASON_COLOR_DIST_v16 (2026-07-03) -->
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
@@ -1301,6 +1301,19 @@ function enterBrandFromHome(brand) {
         <!-- KR / EU / GLOBAL -->
         <div id="spp-market-wrap">
           <div class="spp-empty">02 Market Analysis에서 데이터를 로드하면 GLOBAL / EU 컬러 팔레트가 생성됩니다.</div>
+        </div>
+
+        <!-- Season Color Distribution -->
+        <div class="spp-intersection-section" id="spp-season-dist-section">
+          <div onclick="spp_toggleSeasonPalette()" style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:10px 14px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;user-select:none;"
+            onmouseover="this.style.background='var(--bg3)'" onmouseout="this.style.background='var(--bg2)'">
+            <span id="spp-season-arrow" style="font-size:10px;color:var(--text3);transition:transform .2s">▶</span>
+            <span style="font-size:11px;font-weight:700;color:var(--text2);letter-spacing:0.04em">Season Color Distribution</span>
+            <span style="font-family:var(--mono);font-size:9px;color:var(--text3)">SERGIO TACCHINI · FW2025 · Style % by Color Group</span>
+          </div>
+          <div id="spp-season-body" style="display:none;margin-top:10px">
+            <!-- JS로 렌더 -->
+          </div>
         </div>
 
         <!-- Intersection -->
@@ -17707,6 +17720,91 @@ const MLB_SEASON_PALETTE = {
 };
 
 
+
+// ── SERGIO TACCHINI (ST) Season Color Distribution 데이터 ──
+// 출처: ST 시즌별 칼라팔레트 엑셀 · FW2025 칼라군별 팔레트 (총 73스타일)
+// SS2026/FW2026은 데이터 확보되는 대로 추가
+window.SEASON_PALETTE_BY_BRAND = window.SEASON_PALETTE_BY_BRAND || {};
+window.SEASON_PALETTE_BY_BRAND['SERGIO'] = {
+  'FW2025': {
+    total: 73,
+    groups: [
+      { name: 'Navy',           pct: 24.7, hex: '#2A3244' },  // NYS 19-4024 외 · 44 styles
+      { name: 'Brown',          pct: 19.7, hex: '#4A3527' },  // BRS/BRD 18-1033·19-1215 · 35 styles
+      { name: 'Grey',           pct: 11.8, hex: '#8F8F92' },  // MGD/MGS/GRD · 21 styles
+      { name: 'Black',          pct: 10.7, hex: '#26262A' },  // BKS 19-3911 · 19 styles
+      { name: 'White',          pct: 10.7, hex: '#EDF1FE' },  // WHS/OWS 11-4001 · 19 styles
+      { name: 'Ivory/Cream',    pct:  9.6, hex: '#F0E8D0' },  // CRM/IVS 11-0608 · 17 styles
+      { name: 'Khaki/Green',    pct:  3.9, hex: '#4A5A34' },  // KAS/GND 18-0430·19-5520 · 7 styles
+      { name: 'Pink',           pct:  3.4, hex: '#EEA0A6' },  // PKD/PKS/PKL 15-1717 · 6 styles
+      { name: 'Beige',          pct:  2.2, hex: '#C9A876' },  // BGD 15-1114 · 4 styles
+      { name: 'Red/Wine',       pct:  2.2, hex: '#4A1220' },  // BDD 19-1940 · 4 styles
+      { name: 'Blue',           pct:  0.6, hex: '#3850A0' },  // BLS 18-3949 · 1 style
+      { name: 'Yellow',         pct:  0.6, hex: '#FAE199' },  // YES 12-0824 · 1 style
+    ]
+  }
+};
+
+function spp_toggleSeasonPalette() {
+  const body = document.getElementById('spp-season-body');
+  const arrow = document.getElementById('spp-season-arrow');
+  if (!body) return;
+  const isOpen = body.style.display !== 'none';
+  body.style.display = isOpen ? 'none' : 'block';
+  if (arrow) arrow.style.transform = isOpen ? '' : 'rotate(90deg)';
+  if (!isOpen) spp_renderSeasonDist();
+}
+
+function spp_renderSeasonDist() {
+  const body = document.getElementById('spp-season-body');
+  if (!body) return;
+
+  function isLightHex(hex){
+    const r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16);
+    return (0.299*r + 0.587*g + 0.114*b) > 180;
+  }
+
+  const pal = window.SEASON_PALETTE_BY_BRAND['SERGIO'];
+  if (!pal) {
+    body.innerHTML = '<div style="font-family:var(--mono);font-size:10px;color:var(--text4);padding:14px 4px;text-align:center">SERGIO — Sales 데이터 미연결 · 분포 없음</div>';
+    return;
+  }
+
+  let html = '<div style="display:flex;flex-direction:column;gap:20px;padding:4px 0 8px">';
+  for (const [season, data] of Object.entries(pal)) {
+    const sorted = [...data.groups].sort((a,b) => b.pct - a.pct);
+    const total = sorted.reduce((s,g) => s + g.pct, 0) || 1;
+
+    const segments = sorted.map(g => {
+      const w = (g.pct / total * 100).toFixed(2);
+      const needsBorder = isLightHex(g.hex);
+      const textColor = isLightHex(g.hex) ? '#1a1a1a' : '#ffffff';
+      const showLabel = g.pct >= 5;
+      return `<div title="${g.name} · ${g.pct}%" style="flex:0 0 ${w}%;background:${g.hex};height:100%;display:flex;align-items:center;justify-content:center;overflow:hidden;${needsBorder ? 'border-left:1px solid rgba(0,0,0,0.08);border-right:1px solid rgba(0,0,0,0.08);' : ''}cursor:default;transition:flex .3s;position:relative">`
+        + (showLabel ? `<span style="font-family:var(--mono);font-size:8px;font-weight:700;color:${textColor};opacity:0.85;white-space:nowrap;padding:0 3px">${g.pct}%</span>` : '')
+        + `</div>`;
+    }).join('');
+
+    const legend = sorted.filter(g => g.pct >= 1).map(g =>
+      `<div style="display:flex;align-items:center;gap:4px;white-space:nowrap">
+        <div style="width:10px;height:10px;border-radius:2px;background:${g.hex};flex-shrink:0;${isLightHex(g.hex) ? 'border:1px solid rgba(0,0,0,0.15);' : ''}"></div>
+        <span style="font-family:var(--mono);font-size:8px;color:var(--text3)">${g.name}</span>
+        <span style="font-family:var(--mono);font-size:8px;color:var(--text2);font-weight:600">${g.pct}%</span>
+      </div>`).join('');
+
+    html += `
+      <div>
+        <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:8px">
+          <span style="font-family:var(--mono);font-size:10px;font-weight:700;color:var(--accent);letter-spacing:0.06em">${season}</span>
+          <span style="font-family:var(--mono);font-size:8px;color:var(--text4)">${data.total} styles total</span>
+        </div>
+        <div style="display:flex;height:40px;border-radius:8px;overflow:hidden;border:1px solid rgba(0,0,0,0.06)">${segments}</div>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px">${legend}</div>
+      </div>`;
+  }
+  html += '</div>';
+  body.innerHTML = html;
+}
 
 function toggleSeasonPalette() {
   const body = document.getElementById('season-palette-body');
