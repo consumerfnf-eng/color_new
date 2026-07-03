@@ -9067,9 +9067,9 @@ function _selectDiscoveryPalette(classified){
           if(picked.length>=total) break;
         }
       }
-      // 그래도 부족하면 다양성 기준 없이 전체 풀에서 채움
+      // 그래도 부족하면 다양성 기준 없이 채움 — 단, 색상 타입(swatchPool) 밖으로는 절대 안 나감
       if(picked.length < total){
-        for(const co of sorted){
+        for(const co of swatchPool){
           if(picked.length>=total) break;
           if(usedHex.has(co.hex)) continue;
           picked.push(co); usedHex.add(co.hex);
@@ -9078,18 +9078,39 @@ function _selectDiscoveryPalette(classified){
       return picked.slice(0, total);
     }
 
-    // BASIC 12 — 뉴트럴(흰/검/회/네이비)
-    const basicPoolAll = sorted.filter(co=>{ const[,s,l]=rgbToHsl(co.hex); return s<0.18||l>0.85||l<0.12; });
+    // ── BASIC/KEY/SUB 분류 기준 (Sergio 팔레트와 동일한 isTrueNeutral 로직) ──
+    // 명도/채도만으로 판정하면 네이비가 SUB로 새고 밝은 파스텔(핑크·연노랑)이 BASIC으로 잘못 들어감.
+    // → 진짜 무채색(화이트/블랙/그레이/아이보리/네이비)만 BASIC으로 인정.
+    const DISC_SAT_KEY = 0.50;
+    const DISC_SAT_SUB = 0.20;
+    const isTrueNeutral = (s, l, h) => {
+      if (l > 0.82) return true;                                  // White/Ivory/Cream
+      if (l < 0.12) return true;                                  // Black
+      if (s < 0.10) return true;                                  // Grey (무채색)
+      if (h >= 20 && h <= 65 && l >= 0.65 && s <= 0.28) return true; // Ivory/Ecru/Beige
+      if (h >= 210 && h <= 255 && l < 0.30 && s >= 0.15) return true; // Navy
+      return false;                                               // 그 외 유채색은 BASIC 아님
+    };
+    function classifyDisc(co){
+      const [h,s,l] = rgbToHsl(co.hex);
+      if (isTrueNeutral(s,l,h)) return 'basic';
+      if (s>=DISC_SAT_KEY && l>=0.20 && l<=0.80) return 'key';
+      if (s>=DISC_SAT_SUB) return 'sub';
+      return 'basic'; // 저채도 catch-all
+    }
+
+    // BASIC 12 — 진짜 무채색(화이트/블랙/그레이/아이보리/네이비)만
+    const basicPoolAll = sorted.filter(co=>classifyDisc(co)==='basic');
     const basic = pickByQuota(basicPoolAll, 12, 35);
     const basicSet = new Set(basic.map(c=>c.hex));
 
     // KEY 8 — 고채도/강한 포인트
-    const keyPoolAll = sorted.filter(co=>{ if(basicSet.has(co.hex))return false; const[,s,l]=rgbToHsl(co.hex); return s>=0.35&&l>=0.2&&l<=0.8; });
+    const keyPoolAll = sorted.filter(co=>!basicSet.has(co.hex) && classifyDisc(co)==='key');
     const key = pickByQuota(keyPoolAll, 8, 48);
     const keySet = new Set(key.map(c=>c.hex));
 
     // SUB 12 — 미디엄 채도 서브 컬러
-    const subPoolAll = sorted.filter(co=>!basicSet.has(co.hex)&&!keySet.has(co.hex));
+    const subPoolAll = sorted.filter(co=>!basicSet.has(co.hex)&&!keySet.has(co.hex) && classifyDisc(co)==='sub');
     const sub = pickByQuota(subPoolAll, 12, 35);
 
     return {point:key, sub, basic, key};
