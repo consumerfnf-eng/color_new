@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- BUILD_VERSION: DISC_CN_MINI_EMPTY_REASON_v13 (2026-07-03) -->
+<!-- BUILD_VERSION: DISC_CN_MINI_NO_FORCE_FILL_v15 (2026-07-03) -->
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
@@ -7913,12 +7913,31 @@ function _fillCatColors() {
     const colorful = merged.filter(c => !isBasicNeutral(c));
     if (!colorful.length) return emptyBlock(`CN Colors ${merged.length}개 있으나 전부 무채색(그레이·블랙·화이트)이라 제외됨`);
     colorful.sort((a, b) => b.freq - a.freq);
-    // 빈도순 상위 중 포인트 자격(고채도·중간명도) 1개 + 나머지 서브 2개
+    // 빈도순 상위 중 포인트 자격(고채도·중간명도) 1개 + 나머지 서브 2개 — 색거리(rgbDist) 다양성 체크 포함
     const isPoint = c => c._s >= 0.35 && c._l >= 0.30 && c._l <= 0.65;
     const point = colorful.filter(isPoint).slice(0, 1);
-    const usedH = new Set(point.map(c => c.hex));
-    const sub = colorful.filter(c => !usedH.has(c.hex)).slice(0, 2);
-    const top3 = [...point, ...sub].slice(0, 3);
+    const picked = [...point];
+    const pickedHex = new Set(picked.map(c => c.hex));
+    const restPool = colorful.filter(c => !pickedHex.has(c.hex));
+    const TOTAL_TARGET = 3;
+    // 1차: 색거리 70 이상(뚜렷이 다른 색)만
+    for (const c of restPool) {
+      if (picked.length >= TOTAL_TARGET) break;
+      if (pickedHex.has(c.hex)) continue;
+      const tooClose = picked.some(p => rgbDist(p.hex, c.hex) < 70);
+      if (tooClose) continue;
+      picked.push(c); pickedHex.add(c.hex);
+    }
+    // 2차: 부족하면 40으로 완화
+    for (const c of restPool) {
+      if (picked.length >= TOTAL_TARGET) break;
+      if (pickedHex.has(c.hex)) continue;
+      const tooClose = picked.some(p => rgbDist(p.hex, c.hex) < 40);
+      if (tooClose) continue;
+      picked.push(c); pickedHex.add(c.hex);
+    }
+    // ★ 무제한 보충 없음 — 색거리 40 이상인 다양한 색이 부족하면 3개를 억지로 채우지 않고 그만큼만 표시
+    const top3 = picked.slice(0, 3);
     if (!top3.length) return emptyBlock('CN Colors 후보 없음');
 
     const chips = top3.map(co => `<div style="display:flex;flex-direction:column;align-items:center;gap:2px">
