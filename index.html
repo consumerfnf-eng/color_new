@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- BUILD_VERSION: DISC_POPUP_HIDE_SCORES_v22 (2026-07-03) -->
+<!-- BUILD_VERSION: SEASON_CUTOFF_MAR_INCLUDED_v24 (2026-07-03) -->
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
@@ -5050,12 +5050,20 @@ async function fetchSheetsCsv(url, retry=0) {
 }
 
 // ── season 값 정규화 ──
-// 시트에 "2025-12", "2026-01" 같은 YYYY-MM 형식으로 들어오는 값은
-// 전부 27FW로 통일 처리 (일자별로 다른 시즌 취급하지 않음)
+// 시트에 "2025-12", "2026-01" 같은 YYYY-MM 형식으로 들어오는 값은 날짜 기준으로 분기:
+//  - 2026-03까지(포함) → 27FW
+//  - 2026-04부터(2026-04, 2026-05 등) → 28SS (미리 넣어둔 다음 시즌 데이터, 27FW엔 적용 안 함)
 function _normalizeSeasonValue(raw){
   const s = (raw || '').trim();
   if (!s) return s;
-  if (/^\d{4}-\d{2}$/.test(s)) return '27FW';
+  const m = s.match(/^(\d{4})-(\d{2})$/);
+  if (m) {
+    const year = parseInt(m[1], 10);
+    const month = parseInt(m[2], 10);
+    const CUTOFF_YEAR = 2026, CUTOFF_MONTH = 4; // 2026-04부터 28SS (2026-03까지는 27FW)
+    const isBeforeCutoff = (year < CUTOFF_YEAR) || (year === CUTOFF_YEAR && month < CUTOFF_MONTH);
+    return isBeforeCutoff ? '27FW' : '28SS';
+  }
   return s.toUpperCase();
 }
 
@@ -14669,7 +14677,7 @@ function handleUnifiedCompFile(input){
       const rawHex  = idxHex>=0 ? (p[idxHex]||'').trim() : '';
 
       // season 필터 — 활성 시즌이 있고 CSV 행에 시즌값이 있으면 일치하는 것만
-      // (2025-12 / 2026-01 같은 YYYY-MM 값은 _normalizeSeasonValue에서 27FW로 정규화됨)
+      // (YYYY-MM 값은 _normalizeSeasonValue에서 날짜 기준 27FW/28SS로 분기됨: 2026-03 전=27FW, 이후=28SS)
       if(_filterSeason && idxSeason>=0 && season && season.toUpperCase() !== _filterSeason) return;
 
       // 한 칸에 여러 HEX("#FF0000 | #FFFFFF" 등)가 있으면 각각 별도 Colors로 분리·카운트
