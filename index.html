@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- BUILD_VERSION: CATCOLOR_DISC_UNIFIED_PICK_v9 (2026-07-03) -->
+<!-- BUILD_VERSION: CATCOLOR_DISC_RGBDIST_v10 (2026-07-03) -->
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
@@ -7676,7 +7676,9 @@ function _fillCatColors() {
     let pointColors, subColors;
     if (_isDiscovery) {
       // ── DISCOVERY 전용: POINT/SUB를 따로 2개/4개씩 뽑지 않고, 전체 후보를 합쳐서
-      //    한 번에 6개를 Hue 다양성 기준으로 선발 (POINT끼리도 폴백에서 같은 계열이 강제로 들어가던 문제 방지) ──
+      //    한 번에 6개를 색거리(rgbDist) 다양성 기준으로 선발
+      //    (Hue 각도만 비교하면 레드·핑크처럼 명도/채도가 달라 눈으로는 뚜렷이 구분되는 색까지
+      //     "같은 계열"로 묶여서 하나가 통째로 밀려나는 문제가 있어 rgbDist로 교체) ──
       const combined = [];
       const seenC = new Set();
       [...poolPoint, ...poolSub].sort((a, b) => (b.count||1) - (a.count||1) || (b._s - a._s)).forEach(c => {
@@ -7686,18 +7688,18 @@ function _fillCatColors() {
       });
       const picked = [];
       const pickedHex = new Set();
-      // 1차: Hue 40도 이상 차이나는 것만
+      // 1차: 색거리 70 이상(뚜렷이 다른 색)만
       for (const c of combined) {
         if (picked.length >= 6) break;
-        const tooClose = picked.some(p => Math.min(Math.abs(p._h-c._h), 360-Math.abs(p._h-c._h)) < 40);
+        const tooClose = picked.some(p => rgbDist(p.hex, c.hex) < 70);
         if (tooClose) continue;
         picked.push(c); pickedHex.add(c.hex);
       }
-      // 2차: 40도로 못 채웠으면 20도로 완화
+      // 2차: 부족하면 40으로 완화
       for (const c of combined) {
         if (picked.length >= 6) break;
         if (pickedHex.has(c.hex)) continue;
-        const tooClose = picked.some(p => Math.min(Math.abs(p._h-c._h), 360-Math.abs(p._h-c._h)) < 20);
+        const tooClose = picked.some(p => rgbDist(p.hex, c.hex) < 40);
         if (tooClose) continue;
         picked.push(c); pickedHex.add(c.hex);
       }
