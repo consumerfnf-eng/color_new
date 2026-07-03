@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- BUILD_VERSION: DISC_INTERSECTION_COLOR_FAMILY_v3 (2026-07-03) -->
+<!-- BUILD_VERSION: DISC_INTERSECTION_INCLUDE_BASIC_v4 (2026-07-03) -->
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
@@ -9004,8 +9004,8 @@ function _renderDiscIntersection(){
   const PINNED_CATS = ['Red','Pink','Navy','Blue'];
 
   const _allChips = [
-    ...[...(kr.sub||[]), ...(kr.key||[])].filter(c=>c.hex && !_isNearWhite(c.hex) && _isChromaticEnough(c.hex)).map(c=>({...c, _mode:'kr'})),
-    ...[...(cn.sub||[]), ...(cn.key||[])].filter(c=>c.hex && !_isNearWhite(c.hex) && _isChromaticEnough(c.hex)).map(c=>({...c, _mode:'cn'})),
+    ...[...(kr.sub||[]), ...(kr.key||[]), ...(kr.basic||[])].filter(c=>c.hex && !_isNearWhite(c.hex) && _isChromaticEnough(c.hex)).map(c=>({...c, _mode:'kr'})),
+    ...[...(cn.sub||[]), ...(cn.key||[]), ...(cn.basic||[])].filter(c=>c.hex && !_isNearWhite(c.hex) && _isChromaticEnough(c.hex)).map(c=>({...c, _mode:'cn'})),
   ];
 
   const makeChipWithLabel = (c) => {
