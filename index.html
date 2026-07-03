@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- BUILD_VERSION: SERGIO_PICKORDER_ACTIVE_BEFORE_CLASSIC_v32 (2026-07-03) -->
+<!-- BUILD_VERSION: PALDM_SCORES_GRID_FIX_v39 (2026-07-03) -->
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
@@ -11231,7 +11231,7 @@ function openPalDetail(c){
       scEl.style.display = 'none';
       scEl.innerHTML = '';
     } else {
-    scEl.style.display = '';
+    scEl.style.display = 'grid';
     scEl.style.gridTemplateColumns = '1fr 1fr 1fr';
     if(c._isSales){
       // Sales-Based: 판매량 / 판매율 / 판매점수
@@ -17048,7 +17048,7 @@ window._marketBrandLabel  = window._marketBrandLabel  || {};
 // localStorage에 저장된 값 없을 때 자동 적용되는 기본 선택 브랜드
 window._defaultBrandSel = {
   SERGIO: [
-    'Adanola','Adenola','Adidas (court) (EU)','ALO YOGA','Aritzia',
+    'Adanola','Adenola','Adidas (court) (EU)','Alo','ALO YOGA','Aritzia',
     'brunello cucinelli','casablanca','celine','dior','Dior',
     'Lacoste (EU)','Lacoste (KR)',
     'loro piana','Loro Piana','louis vuitton','Lululemon',
@@ -18553,8 +18553,6 @@ function _sppPickLifestyle(pool, ls, n){
       if(s>=0.30&&s<=0.75) score+=0.25; else if(s<0.15) score-=0.15;
       // 명도가 낮은(딥톤) 컬러는 헤리티지 무드에 잘 맞으므로 Classic 보너스 강화
       if(l<0.40 && s>=0.30) score+=0.25;
-      // 채도가 매우 높으면서 밝은(형광/네온) 톤은 헤리티지·프리미엄 무드와 안 맞으므로 강한 패널티
-      if(s>0.75 && l>=0.50) score-=0.60;
       if(['burgundy','wine','bordeaux','forest','hunter','bottle','cobalt','indigo','heritage','deep','classic navy'].some(k=>cn.includes(k))) score+=0.40;
       if(['camel','cognac','mustard','tennis','court','vintage','retro','italian'].some(k=>cn.includes(k))) score+=0.22;
     }
@@ -18568,21 +18566,19 @@ function _sppBuildLifestylePalette(){
   const pointPool=[...pal.key], subPool=[...pal.sub], basicPool=[...pal.basic];
   const TOTAL=8, SUB_N=3;
   const athPointN=Math.round(SPP_LS_RATIO.athleisure.point*TOTAL), clsPointN=Math.round(SPP_LS_RATIO.classic.point*TOTAL), actPointN=Math.round(SPP_LS_RATIO.active.point*TOTAL);
-  // ★ 픽 순서: Athleisure → Active → Classic (Active가 비비드 컬러를 먼저 가져가야
-  //   네온/형광톤이 leftover로 Classic에 새지 않음 — 기존엔 Classic이 두 번째로 뽑아서 문제였음)
   const athPoint=_sppPickLifestyle(pointPool,'athleisure',athPointN);
   const athHexSet=new Set(athPoint.map(c=>c.hex.toUpperCase()));
-  const actPoint=_sppPickLifestyle(pointPool.filter(c=>!athHexSet.has(c.hex.toUpperCase())),'active',actPointN);
-  const actHexSet=new Set([...athHexSet,...actPoint.map(c=>c.hex.toUpperCase())]);
-  const clsPoint=_sppPickLifestyle(pointPool.filter(c=>!actHexSet.has(c.hex.toUpperCase())),'classic',clsPointN);
+  const clsPoint=_sppPickLifestyle(pointPool.filter(c=>!athHexSet.has(c.hex.toUpperCase())),'classic',clsPointN);
+  const clsHexSet=new Set([...athHexSet,...clsPoint.map(c=>c.hex.toUpperCase())]);
+  const actPoint=_sppPickLifestyle(pointPool.filter(c=>!clsHexSet.has(c.hex.toUpperCase())),'active',actPointN);
   const subUsed=new Set();
   const athSubArr=[], clsSubArr=[], actSubArr=[];
   const score1=(co)=>_sppPickLifestyle([co],'athleisure',1)[0]?.lsScore||0;
   const score2=(co)=>_sppPickLifestyle([co],'classic',1)[0]?.lsScore||0;
   const score3=(co)=>_sppPickLifestyle([co],'active',1)[0]?.lsScore||0;
   [...subPool].sort((a,b)=>score1(b)-score1(a)).forEach(co=>{ if(athSubArr.length<SUB_N&&!subUsed.has(co.hex.toUpperCase())){ athSubArr.push(co); subUsed.add(co.hex.toUpperCase()); } });
-  [...subPool].sort((a,b)=>score3(b)-score3(a)).forEach(co=>{ if(actSubArr.length<SUB_N&&!subUsed.has(co.hex.toUpperCase())){ actSubArr.push(co); subUsed.add(co.hex.toUpperCase()); } });
   [...subPool].sort((a,b)=>score2(b)-score2(a)).forEach(co=>{ if(clsSubArr.length<SUB_N&&!subUsed.has(co.hex.toUpperCase())){ clsSubArr.push(co); subUsed.add(co.hex.toUpperCase()); } });
+  [...subPool].sort((a,b)=>score3(b)-score3(a)).forEach(co=>{ if(actSubArr.length<SUB_N&&!subUsed.has(co.hex.toUpperCase())){ actSubArr.push(co); subUsed.add(co.hex.toUpperCase()); } });
   if(actSubArr.length<SUB_N){ const actUsed=new Set(actSubArr.map(c=>c.hex.toUpperCase())); const fallback=_sppPickLifestyle([...subPool,...pointPool].filter(c=>!actUsed.has(c.hex.toUpperCase())),'active',SUB_N-actSubArr.length); for(const co of fallback){ if(actSubArr.length>=SUB_N) break; actSubArr.push(co); actUsed.add(co.hex.toUpperCase()); } }
   _sppLifestylePalette = { active:{point:actPoint,sub:actSubArr,basic:basicPool}, athleisure:{point:athPoint,sub:athSubArr,basic:basicPool}, classic:{point:clsPoint,sub:clsSubArr,basic:basicPool} };
   // 원본 백업 — 새로 빌드될 때마다 갱신 (복구 기준점)
