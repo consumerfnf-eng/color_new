@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- BUILD_VERSION: SERGIO_SEASON_COLOR_DIST_v16 (2026-07-03) -->
+<!-- BUILD_VERSION: SERGIO_SEASON_DIST_BESTSELLER_v17 (2026-07-03) -->
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
@@ -17723,24 +17723,25 @@ const MLB_SEASON_PALETTE = {
 
 // ── SERGIO TACCHINI (ST) Season Color Distribution 데이터 ──
 // 출처: ST 시즌별 칼라팔레트 엑셀 · FW2025 칼라군별 팔레트 (총 73스타일)
+// 각 컬러군의 대표색은 SKU수가 아니라 판매율(입고비) 1위 컬러로 선정
 // SS2026/FW2026은 데이터 확보되는 대로 추가
 window.SEASON_PALETTE_BY_BRAND = window.SEASON_PALETTE_BY_BRAND || {};
 window.SEASON_PALETTE_BY_BRAND['SERGIO'] = {
   'FW2025': {
     total: 73,
     groups: [
-      { name: 'Navy',           pct: 24.7, hex: '#2A3244' },  // NYS 19-4024 외 · 44 styles
-      { name: 'Brown',          pct: 19.7, hex: '#4A3527' },  // BRS/BRD 18-1033·19-1215 · 35 styles
-      { name: 'Grey',           pct: 11.8, hex: '#8F8F92' },  // MGD/MGS/GRD · 21 styles
-      { name: 'Black',          pct: 10.7, hex: '#26262A' },  // BKS 19-3911 · 19 styles
-      { name: 'White',          pct: 10.7, hex: '#EDF1FE' },  // WHS/OWS 11-4001 · 19 styles
-      { name: 'Ivory/Cream',    pct:  9.6, hex: '#F0E8D0' },  // CRM/IVS 11-0608 · 17 styles
-      { name: 'Khaki/Green',    pct:  3.9, hex: '#4A5A34' },  // KAS/GND 18-0430·19-5520 · 7 styles
-      { name: 'Pink',           pct:  3.4, hex: '#EEA0A6' },  // PKD/PKS/PKL 15-1717 · 6 styles
-      { name: 'Beige',          pct:  2.2, hex: '#C9A876' },  // BGD 15-1114 · 4 styles
-      { name: 'Red/Wine',       pct:  2.2, hex: '#4A1220' },  // BDD 19-1940 · 4 styles
-      { name: 'Blue',           pct:  0.6, hex: '#3850A0' },  // BLS 18-3949 · 1 style
-      { name: 'Yellow',         pct:  0.6, hex: '#FAE199' },  // YES 12-0824 · 1 style
+      { name: 'Navy',           pct: 24.7, hex: '#2A3244', code: '19-4024 TCX' },  // NYS · 판매율 27.3%(군내 1위) · 44 styles
+      { name: 'Brown',          pct: 19.7, hex: '#7A4A2E', code: '18-1033 TCX' },  // BRS · 판매율 43.1%(군내 1위, D.Brown 24.7% 제침) · 35 styles
+      { name: 'Grey',           pct: 11.8, hex: '#6E6E72', code: '18-5210 TCX' },  // GRD · 판매율 40.0%(군내 1위, Melange 27.2% 제침) · 21 styles
+      { name: 'Black',          pct: 10.7, hex: '#26262A', code: '19-3911 TCX' },  // BKS · 19 styles
+      { name: 'White',          pct: 10.7, hex: '#EDF1FE', code: '11-4001 TCX' },  // WHS/OWS · 19 styles
+      { name: 'Ivory/Cream',    pct:  9.6, hex: '#F0E8D0', code: '11-0608 TCX' },  // IVS · 판매율 28.9%(군내 1위) · 17 styles
+      { name: 'Khaki/Green',    pct:  3.9, hex: '#676232', code: '18-0430 TCX' },  // KAS · 판매율 52.2%(군내 1위, D.Green 16.3% 제침) · 7 styles
+      { name: 'Pink',           pct:  3.4, hex: '#C1637A', code: '18-1634 TCX' },  // PKD · 판매율 40.6%(군내 1위, L.Pink 4.0% 제침) · 6 styles
+      { name: 'Beige',          pct:  2.2, hex: '#C9A876', code: '15-1114 TCX' },  // BGD · 4 styles
+      { name: 'Red/Wine',       pct:  2.2, hex: '#4A1220', code: '19-1940 TCX' },  // BDD · 4 styles
+      { name: 'Blue',           pct:  0.6, hex: '#3850A0', code: '18-3949 TCX' },  // BLS · 1 style
+      { name: 'Yellow',         pct:  0.6, hex: '#FAE199', code: '12-0824 TCX' },  // YES · 1 style
     ]
   }
 };
@@ -17780,13 +17781,13 @@ function spp_renderSeasonDist() {
       const needsBorder = isLightHex(g.hex);
       const textColor = isLightHex(g.hex) ? '#1a1a1a' : '#ffffff';
       const showLabel = g.pct >= 5;
-      return `<div title="${g.name} · ${g.pct}%" style="flex:0 0 ${w}%;background:${g.hex};height:100%;display:flex;align-items:center;justify-content:center;overflow:hidden;${needsBorder ? 'border-left:1px solid rgba(0,0,0,0.08);border-right:1px solid rgba(0,0,0,0.08);' : ''}cursor:default;transition:flex .3s;position:relative">`
+      return `<div title="${g.name}${g.code ? ' · '+g.code : ''} · ${g.pct}%" style="flex:0 0 ${w}%;background:${g.hex};height:100%;display:flex;align-items:center;justify-content:center;overflow:hidden;${needsBorder ? 'border-left:1px solid rgba(0,0,0,0.08);border-right:1px solid rgba(0,0,0,0.08);' : ''}cursor:default;transition:flex .3s;position:relative">`
         + (showLabel ? `<span style="font-family:var(--mono);font-size:8px;font-weight:700;color:${textColor};opacity:0.85;white-space:nowrap;padding:0 3px">${g.pct}%</span>` : '')
         + `</div>`;
     }).join('');
 
     const legend = sorted.filter(g => g.pct >= 1).map(g =>
-      `<div style="display:flex;align-items:center;gap:4px;white-space:nowrap">
+      `<div style="display:flex;align-items:center;gap:4px;white-space:nowrap" title="${g.code||''}">
         <div style="width:10px;height:10px;border-radius:2px;background:${g.hex};flex-shrink:0;${isLightHex(g.hex) ? 'border:1px solid rgba(0,0,0,0.15);' : ''}"></div>
         <span style="font-family:var(--mono);font-size:8px;color:var(--text3)">${g.name}</span>
         <span style="font-family:var(--mono);font-size:8px;color:var(--text2);font-weight:600">${g.pct}%</span>
