@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- BUILD_VERSION: TRENDPROP_NOBORDER_v30 (2026-07-03) -->
+<!-- BUILD_VERSION: SERGIO_CLASSIC_NEON_PENALTY_v31 (2026-07-03) -->
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
@@ -18553,6 +18553,8 @@ function _sppPickLifestyle(pool, ls, n){
       if(s>=0.30&&s<=0.75) score+=0.25; else if(s<0.15) score-=0.15;
       // 명도가 낮은(딥톤) 컬러는 헤리티지 무드에 잘 맞으므로 Classic 보너스 강화
       if(l<0.40 && s>=0.30) score+=0.25;
+      // 채도가 매우 높으면서 밝은(형광/네온) 톤은 헤리티지·프리미엄 무드와 안 맞으므로 강한 패널티
+      if(s>0.75 && l>=0.50) score-=0.60;
       if(['burgundy','wine','bordeaux','forest','hunter','bottle','cobalt','indigo','heritage','deep','classic navy'].some(k=>cn.includes(k))) score+=0.40;
       if(['camel','cognac','mustard','tennis','court','vintage','retro','italian'].some(k=>cn.includes(k))) score+=0.22;
     }
