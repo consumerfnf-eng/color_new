@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- BUILD_VERSION: DISC_INTERSECTION_INCLUDE_BASIC_v4 (2026-07-03) -->
+<!-- BUILD_VERSION: DISC_TRENDPROPOSAL_POOL_FIX_v5 (2026-07-03) -->
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
@@ -8955,6 +8955,12 @@ function _renderDiscoveryPalette(){
   // (scoredColors는 runScoring()을 수동 실행해야만 채워지므로 그 여부와 무관하게 항상 호출 —
   //  _selectDiscoveryPalette 내부에서 getTrendSourceColors()로 이미 로드된 데이터를 직접 사용)
   if(typeof selectFinalPalette==='function') selectFinalPalette();
+
+  // Category Curation의 "Trend Proposal" 매칭에 쓰이는 트렌드 풀 채우기
+  // (renderPalCrossView()가 DISCOVERY일 때 바로 return해버려서 window._trendKeyPool이 비어있었음)
+  if(typeof getTrendSourceColors==='function'){
+    window._trendKeyPool = getTrendSourceColors().filter(c=>c && c.hex && /^#[0-9A-Fa-f]{6}$/.test(c.hex));
+  }
 
   // 현재 활성 region 렌더
   discSetRegion(_discActiveRegion);
