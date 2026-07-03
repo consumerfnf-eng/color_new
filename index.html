@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- BUILD_VERSION: SERGIO_PICKORDER_ACTIVE_BEFORE_CLASSIC_v32 (2026-07-03) -->
+<!-- BUILD_VERSION: SERGIO_LS_BRAND_DIVERSITY_v33 (2026-07-03) -->
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
@@ -18532,7 +18532,7 @@ function _sppRenderSeasonalColors(){
 }
 
 // ── Category Curation (Lifestyle) ──
-function _sppPickLifestyle(pool, ls, n){
+function _sppPickLifestyle(pool, ls, n, maxPerBrand){
   if(!pool||!pool.length) return [];
   const scored=pool.map(co=>{
     const [h,s,l]=_sppRgbToHsl(co.hex);
@@ -18560,7 +18560,23 @@ function _sppPickLifestyle(pool, ls, n){
     }
     return {...co,lsScore:score};
   });
-  return scored.sort((a,b)=>b.lsScore-a.lsScore).slice(0,n);
+  const sorted = scored.sort((a,b)=>b.lsScore-a.lsScore);
+  if(!maxPerBrand || n<=1) return sorted.slice(0,n);
+  // ★ 브랜드 다양성 캡 — 점수가 높다고 한 브랜드가 슬롯을 독점하지 않도록 (예: Aritzia가 6개 다 차지)
+  const brandOf = co => ((co.brands && co.brands[0]) || co.name || '').toLowerCase().trim();
+  const picked=[]; const brandCount={};
+  for(const co of sorted){
+    if(picked.length>=n) break;
+    const b=brandOf(co);
+    if(b && (brandCount[b]||0)>=maxPerBrand) continue;
+    picked.push(co); if(b) brandCount[b]=(brandCount[b]||0)+1;
+  }
+  // 부족하면 브랜드 제한 없이 나머지로 채움
+  if(picked.length<n){
+    const used=new Set(picked.map(c=>c.hex));
+    for(const co of sorted){ if(picked.length>=n) break; if(used.has(co.hex)) continue; picked.push(co); used.add(co.hex); }
+  }
+  return picked;
 }
 function _sppBuildLifestylePalette(){
   const pal=_sppMarketPalettes.global||_sppMarketPalettes.kr||_sppMarketPalettes.eu;
@@ -18570,19 +18586,26 @@ function _sppBuildLifestylePalette(){
   const athPointN=Math.round(SPP_LS_RATIO.athleisure.point*TOTAL), clsPointN=Math.round(SPP_LS_RATIO.classic.point*TOTAL), actPointN=Math.round(SPP_LS_RATIO.active.point*TOTAL);
   // ★ 픽 순서: Athleisure → Active → Classic (Active가 비비드 컬러를 먼저 가져가야
   //   네온/형광톤이 leftover로 Classic에 새지 않음 — 기존엔 Classic이 두 번째로 뽑아서 문제였음)
-  const athPoint=_sppPickLifestyle(pointPool,'athleisure',athPointN);
+  const MAX_PER_BRAND_LS = 2; // 한 브랜드가 카드당 point/sub 슬롯을 독점하지 않도록
+  const athPoint=_sppPickLifestyle(pointPool,'athleisure',athPointN,MAX_PER_BRAND_LS);
   const athHexSet=new Set(athPoint.map(c=>c.hex.toUpperCase()));
-  const actPoint=_sppPickLifestyle(pointPool.filter(c=>!athHexSet.has(c.hex.toUpperCase())),'active',actPointN);
+  const actPoint=_sppPickLifestyle(pointPool.filter(c=>!athHexSet.has(c.hex.toUpperCase())),'active',actPointN,MAX_PER_BRAND_LS);
   const actHexSet=new Set([...athHexSet,...actPoint.map(c=>c.hex.toUpperCase())]);
-  const clsPoint=_sppPickLifestyle(pointPool.filter(c=>!actHexSet.has(c.hex.toUpperCase())),'classic',clsPointN);
+  const clsPoint=_sppPickLifestyle(pointPool.filter(c=>!actHexSet.has(c.hex.toUpperCase())),'classic',clsPointN,MAX_PER_BRAND_LS);
   const subUsed=new Set();
   const athSubArr=[], clsSubArr=[], actSubArr=[];
+  const subBrandOf = co => ((co.brands && co.brands[0]) || co.name || '').toLowerCase().trim();
   const score1=(co)=>_sppPickLifestyle([co],'athleisure',1)[0]?.lsScore||0;
   const score2=(co)=>_sppPickLifestyle([co],'classic',1)[0]?.lsScore||0;
   const score3=(co)=>_sppPickLifestyle([co],'active',1)[0]?.lsScore||0;
-  [...subPool].sort((a,b)=>score1(b)-score1(a)).forEach(co=>{ if(athSubArr.length<SUB_N&&!subUsed.has(co.hex.toUpperCase())){ athSubArr.push(co); subUsed.add(co.hex.toUpperCase()); } });
-  [...subPool].sort((a,b)=>score3(b)-score3(a)).forEach(co=>{ if(actSubArr.length<SUB_N&&!subUsed.has(co.hex.toUpperCase())){ actSubArr.push(co); subUsed.add(co.hex.toUpperCase()); } });
-  [...subPool].sort((a,b)=>score2(b)-score2(a)).forEach(co=>{ if(clsSubArr.length<SUB_N&&!subUsed.has(co.hex.toUpperCase())){ clsSubArr.push(co); subUsed.add(co.hex.toUpperCase()); } });
+  const _athBrandCnt={}, _actBrandCnt={}, _clsBrandCnt={};
+  [...subPool].sort((a,b)=>score1(b)-score1(a)).forEach(co=>{ const b=subBrandOf(co); if(athSubArr.length<SUB_N&&!subUsed.has(co.hex.toUpperCase())&&(!b||(_athBrandCnt[b]||0)<MAX_PER_BRAND_LS)){ athSubArr.push(co); subUsed.add(co.hex.toUpperCase()); if(b)_athBrandCnt[b]=(_athBrandCnt[b]||0)+1; } });
+  [...subPool].sort((a,b)=>score3(b)-score3(a)).forEach(co=>{ const b=subBrandOf(co); if(actSubArr.length<SUB_N&&!subUsed.has(co.hex.toUpperCase())&&(!b||(_actBrandCnt[b]||0)<MAX_PER_BRAND_LS)){ actSubArr.push(co); subUsed.add(co.hex.toUpperCase()); if(b)_actBrandCnt[b]=(_actBrandCnt[b]||0)+1; } });
+  [...subPool].sort((a,b)=>score2(b)-score2(a)).forEach(co=>{ const b=subBrandOf(co); if(clsSubArr.length<SUB_N&&!subUsed.has(co.hex.toUpperCase())&&(!b||(_clsBrandCnt[b]||0)<MAX_PER_BRAND_LS)){ clsSubArr.push(co); subUsed.add(co.hex.toUpperCase()); if(b)_clsBrandCnt[b]=(_clsBrandCnt[b]||0)+1; } });
+  // 브랜드 캡 때문에 SUB_N 못 채웠으면 브랜드 제한 없이 보충
+  if(athSubArr.length<SUB_N){ [...subPool].sort((a,b)=>score1(b)-score1(a)).forEach(co=>{ if(athSubArr.length<SUB_N&&!subUsed.has(co.hex.toUpperCase())){ athSubArr.push(co); subUsed.add(co.hex.toUpperCase()); } }); }
+  if(actSubArr.length<SUB_N){ [...subPool].sort((a,b)=>score3(b)-score3(a)).forEach(co=>{ if(actSubArr.length<SUB_N&&!subUsed.has(co.hex.toUpperCase())){ actSubArr.push(co); subUsed.add(co.hex.toUpperCase()); } }); }
+  if(clsSubArr.length<SUB_N){ [...subPool].sort((a,b)=>score2(b)-score2(a)).forEach(co=>{ if(clsSubArr.length<SUB_N&&!subUsed.has(co.hex.toUpperCase())){ clsSubArr.push(co); subUsed.add(co.hex.toUpperCase()); } }); }
   if(actSubArr.length<SUB_N){ const actUsed=new Set(actSubArr.map(c=>c.hex.toUpperCase())); const fallback=_sppPickLifestyle([...subPool,...pointPool].filter(c=>!actUsed.has(c.hex.toUpperCase())),'active',SUB_N-actSubArr.length); for(const co of fallback){ if(actSubArr.length>=SUB_N) break; actSubArr.push(co); actUsed.add(co.hex.toUpperCase()); } }
   _sppLifestylePalette = { active:{point:actPoint,sub:actSubArr,basic:basicPool}, athleisure:{point:athPoint,sub:athSubArr,basic:basicPool}, classic:{point:clsPoint,sub:clsSubArr,basic:basicPool} };
   // 원본 백업 — 새로 빌드될 때마다 갱신 (복구 기준점)
