@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- BUILD_VERSION: DISC_NEARDUP_CROSSGROUP_v26 (2026-07-03) -->
+<!-- BUILD_VERSION: DISC_NEARDUP_DIST30_v27 (2026-07-03) -->
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
@@ -9306,7 +9306,7 @@ function _selectDiscoveryPalette(classified){
 
     // 그룹 간 근접색 제외용 헬퍼 — 정확히 같은 hex뿐 아니라 색거리(rgbDist) 20 이내도 "이미 쓴 색"으로 취급
     // (Pantone 근사 라벨은 같아도 hex가 미세하게 달라 SUB/KEY에 같은 계열이 중복 등장하는 것 방지)
-    const NEAR_DUP_DIST = 20;
+    const NEAR_DUP_DIST = 30;
     const isNearAny = (co, list) => list.some(p => co.hex === p.hex || rgbDist(co.hex, p.hex) < NEAR_DUP_DIST);
 
     // BASIC 12 — 진짜 무채색(화이트/블랙/그레이/아이보리/네이비)만
