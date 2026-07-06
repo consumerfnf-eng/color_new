@@ -6938,12 +6938,12 @@ function renderPalCrossView(){
       // BASIC 기준:
       // 1) 극단 명도 (L<0.12 or L>0.92)
       // 2) 무채색 (S<0.15) — 어떤 명도든 무채색이면 BASIC
-      // 3) 고명도 저채도 (L>0.82, S<0.40) — 크림/오프화이트(near-white) 계열
+      // 3) 고명도 & 거의 무채색 (L>0.82, S<0.18) — 크림/오프화이트(near-white)만. 색조 뚜렷한 파스텔은 SUB로.
       // 4) 저명도 저채도 (L<0.25, S<0.35) — 네이비/차콜/딥뉴트럴(near-black) 계열
       // 선명한 유채색(S>=0.35, L 0.18~0.82)만 KEY/SUB로
       const isNeutral   = sat < 0.15;
-      const isVeryLight = light > 0.82 && sat < 0.40;
-      const isMidLight  = light > 0.72 && sat < 0.22;
+      const isVeryLight = light > 0.82 && sat < 0.18;   // 파스텔(색조 뚜렷)은 BASIC 제외 → SUB
+      const isMidLight  = light > 0.72 && sat < 0.15;   // 라이트 파스텔도 SUB로
       const isVeryDark  = light < 0.25 && sat < 0.35;
       // SERGIO: White/Grey/Black/Navy 계열만 Basic으로 분류
       const _isSergioBasic = (typeof _activeBrand !== 'undefined' && _activeBrand === 'SERGIO')
