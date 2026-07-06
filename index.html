@@ -18555,6 +18555,9 @@ function _sppPickLifestyle(pool, ls, n){
       if(l<0.40 && s>=0.30) score+=0.25;
       if(['burgundy','wine','bordeaux','forest','hunter','bottle','cobalt','indigo','heritage','deep','classic navy'].some(k=>cn.includes(k))) score+=0.40;
       if(['camel','cognac','mustard','tennis','court','vintage','retro','italian'].some(k=>cn.includes(k))) score+=0.22;
+      // 네온/형광(밝은 라임·차트루즈·네온옐로 등)은 헤리티지 무드와 상극 → 클래식에서 사실상 제외
+      const _isNeon = (s>=0.60 && l>=0.55) || (s>=0.55 && h>=55 && h<=100 && l>=0.42);
+      if(_isNeon) score-=100;
     }
     return {...co,lsScore:score};
   });
@@ -18580,8 +18583,8 @@ function _sppBuildLifestylePalette(){
   [...subPool].sort((a,b)=>score2(b)-score2(a)).forEach(co=>{ if(clsSubArr.length<SUB_N&&!subUsed.has(co.hex.toUpperCase())){ clsSubArr.push(co); subUsed.add(co.hex.toUpperCase()); } });
   [...subPool].sort((a,b)=>score3(b)-score3(a)).forEach(co=>{ if(actSubArr.length<SUB_N&&!subUsed.has(co.hex.toUpperCase())){ actSubArr.push(co); subUsed.add(co.hex.toUpperCase()); } });
   if(actSubArr.length<SUB_N){ const actUsed=new Set(actSubArr.map(c=>c.hex.toUpperCase())); const fallback=_sppPickLifestyle([...subPool,...pointPool].filter(c=>!actUsed.has(c.hex.toUpperCase())),'active',SUB_N-actSubArr.length); for(const co of fallback){ if(actSubArr.length>=SUB_N) break; actSubArr.push(co); actUsed.add(co.hex.toUpperCase()); } }
-  // COURT ACTIVE ↔ CLASSIC 포인트 컬러 스왑 (요청) — sub/basic은 그대로
-  _sppLifestylePalette = { active:{point:clsPoint,sub:actSubArr,basic:basicPool}, athleisure:{point:athPoint,sub:athSubArr,basic:basicPool}, classic:{point:actPoint,sub:clsSubArr,basic:basicPool} };
+  // 스왑 해제 — 각 카테고리는 자기 기준(active=비비드 / classic=딥·헤리티지)대로 표시
+  _sppLifestylePalette = { active:{point:actPoint,sub:actSubArr,basic:basicPool}, athleisure:{point:athPoint,sub:athSubArr,basic:basicPool}, classic:{point:clsPoint,sub:clsSubArr,basic:basicPool} };
   // 원본 백업 — 새로 빌드될 때마다 갱신 (복구 기준점)
   _sppLifestylePaletteOriginal = JSON.parse(JSON.stringify(_sppLifestylePalette));
 }
