@@ -9281,12 +9281,12 @@ function _selectDiscoveryPalette(classified){
       if (l >= 0.82 && s < 0.12) return true;
       // 딥 다크 — 아주 어두우면 채도 무관 BASIC
       if (l < 0.15) return true;
-      // 어둡고 탁한 다크 앵커(차콜/다크브라운/딥뉴트럴) → BASIC
-      if (l < 0.32 && s < 0.32) return true;
+      // 어둡고 탁한 다크 앵커(차콜/다크브라운/딥뉴트럴)만 BASIC — 어두워도 채도 있는 유채색(올리브 등)은 SUB로
+      if (l < 0.32 && s < 0.18) return true;
       // 화이트/아이보리/크림 (아주 밝은 것만) → BASIC
       if (l >= 0.88 && s < 0.35) return true;
-      // 네이비 → BASIC
-      if (h >= 205 && h <= 255 && l < 0.35 && s >= 0.15) return true;
+      // 네이비(어둡고 탁한 블루)만 BASIC — 선명한 블루(Classic Blue 등)는 제외
+      if (h >= 205 && h <= 255 && l < 0.35 && s >= 0.15 && s < 0.60) return true;
       // 그 외(더스티 그레이지·베이지·모브 등 중간·밝은 탁한 색)는 BASIC 아님 → SUB
       return false;
     };
