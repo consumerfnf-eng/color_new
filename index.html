@@ -18455,25 +18455,31 @@ function _sppIntersectionChipHtml(co){
 function _sppRenderIntersection(){
   const wrap=document.getElementById('spp-intersection-groups'); if(!wrap) return;
   if(!_sppMarketPalettes.kr&&!_sppMarketPalettes.eu&&!_sppMarketPalettes.global){ wrap.innerHTML='<div class="spp-empty">02 Market Analysis 데이터를 로드하면 GLOBAL/EU 공통 컬러가 표시됩니다.</div>'; return; }
-  const allChips=_sppGetAllMarketChips(), groups=_sppFindCrossMarketGroups(allChips);
-  const allItems = groups.flatMap(g=>g.items);
-  // 한 컬러가 여러 카테고리 조건을 동시에 만족할 수 있으므로, 정의 순서상 첫 번째로 매칭되는 카테고리에만 할당 (중복 방지)
-  const assigned = new Set();
-  const catGroups=SPP_INTERSECTION_CATS.map(cat=>{
-    const items=allItems.filter(c=>{
-      const key = c.hex.toUpperCase()+'_'+c._market;
-      if(assigned.has(key)) return false;
-      if(!_sppIntersectionCatMatch(c.hex,cat)) return false;
-      assigned.add(key);
-      return true;
-    });
-    return {...cat,items,isPinned:SPP_INTERSECTION_PINNED.includes(cat.label)};
-  }).filter(g=>g.isPinned||g.items.length>0);
-  if(!catGroups.length){ wrap.innerHTML='<div class="spp-empty">KR/EU/GLOBAL 간 공통 컬러가 없습니다.</div>'; return; }
+  // 무채색/니어화이트 제외한 모든 마켓 색을 정의 순서상 첫 매칭 "계열(family)"에 배정 (한 색 = 한 계열)
+  const allChips=_sppGetAllMarketChips().filter(c=>c.hex && !_sppIsNearWhiteOrAchromatic(c.hex));
+  const bucket=SPP_INTERSECTION_CATS.map(()=>[]);
+  allChips.forEach(c=>{
+    for(let i=0;i<SPP_INTERSECTION_CATS.length;i++){
+      if(_sppIntersectionCatMatch(c.hex, SPP_INTERSECTION_CATS[i])){ bucket[i].push(c); break; }
+    }
+  });
+  const mkOrder={eu:0, global:1, kr:2};
+  const catGroups=SPP_INTERSECTION_CATS.map((cat,i)=>{
+    // 같은 마켓 안에서 거의 같은 색(rgbDist<18)은 하나로 병합
+    const items=[];
+    for(const c of bucket[i]){
+      if(!items.some(x=>x._market===c._market && _sppRgbDist(x.hex,c.hex)<18)) items.push(c);
+    }
+    items.sort((a,b)=>(mkOrder[a._market]-mkOrder[b._market])||((b.total||b.freq||0)-(a.total||a.freq||0)));
+    const markets=new Set(items.map(c=>c._market));
+    // ★ 같은 계열이 2개 마켓 이상에 있을 때만 교집합으로 인정 — 한 마켓뿐이면 누락(제외)
+    const show = markets.size>=2 ? items.slice(0,12) : [];
+    return {...cat, items:show, isPinned:SPP_INTERSECTION_PINNED.includes(cat.label)};
+  }).filter(g=>g.items.length>0);
+  if(!catGroups.length){ wrap.innerHTML='<div class="spp-empty">GLOBAL/EU 공통 컬러 계열이 없습니다.</div>'; return; }
   wrap.innerHTML=`<div class="spp-intersection-groups-row">${catGroups.map(g=>{
-    const hasData=g.items.length>0;
-    const chipsHtml=hasData?`<div class="spp-intersection-chips">${g.items.map(_sppIntersectionChipHtml).join('')}</div>`:'<div class="spp-intersection-empty">No data this session</div>';
-    return `<div class="spp-intersection-group ${hasData?'has-data':''}"><div class="spp-intersection-group-hd"><div class="spp-intersection-group-dot" style="background:${g.color}"></div><span class="spp-intersection-group-label">${g.label.toUpperCase()}</span>${g.isPinned?'<span class="spp-intersection-group-pinned">★ fixed</span>':''}</div>${chipsHtml}</div>`;
+    const chipsHtml=`<div class="spp-intersection-chips">${g.items.map(_sppIntersectionChipHtml).join('')}</div>`;
+    return `<div class="spp-intersection-group has-data"><div class="spp-intersection-group-hd"><div class="spp-intersection-group-dot" style="background:${g.color}"></div><span class="spp-intersection-group-label">${g.label.toUpperCase()}</span>${g.isPinned?'<span class="spp-intersection-group-pinned">★ fixed</span>':''}</div>${chipsHtml}</div>`;
   }).join('')}</div>`;
 }
 
