@@ -18225,7 +18225,7 @@ function _sppBuildMarketPalette(rows){
       const [hh]=_sppRgbToHsl(co.hex); if(isTrueNeutral(sat, light, hh)) cat = 'basic';
       else if(sat>=SPP_SAT_POINT&&light>=0.20&&light<=0.80) cat = 'key';
       else if(sat>=SPP_SAT_SUB) cat = 'sub';
-      else cat = 'basic';
+      else cat = 'sub';   // 채도 낮은 유색(틸 등)도 basic이 아니라 sub로 — basic은 블랙/그레이/화이트/아이보리/네이비만
       if(code) window._sppCatCache[code] = cat;
     }
     raw[cat].push({...co, marketCat:cat});
@@ -18431,7 +18431,7 @@ function _sppFindCrossMarketGroups(chips){
     if(_sppRgbDist(a.hex,b.hex) < SPP_INTERSECTION_DIST) return true;
     const [h1,s1,l1] = _sppRgbToHsl(a.hex), [h2,s2,l2] = _sppRgbToHsl(b.hex);
     let hueDiff = Math.abs(h1-h2); if(hueDiff>180) hueDiff = 360-hueDiff;
-    return hueDiff <= 12 && Math.abs(s1-s2) <= 0.30 && Math.abs(l1-l2) <= 0.30;
+    return hueDiff <= 12 && Math.abs(s1-s2) <= 0.45 && Math.abs(l1-l2) <= 0.30;
   };
   chips.forEach(c=>{
     if(_sppIsNearWhiteOrAchromatic(c.hex)) return;
