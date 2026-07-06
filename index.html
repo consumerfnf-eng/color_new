@@ -9275,13 +9275,20 @@ function _selectDiscoveryPalette(classified){
     // → 진짜 무채색(화이트/블랙/그레이/아이보리/네이비)만 BASIC으로 인정.
     const DISC_SAT_KEY = 0.50;
     const isTrueNeutral = (s, l, h) => {
-      if (l >= 0.85 && s < 0.35) return true;                      // 매우 밝으면(85%+) 채도 35%까지 화이트/아이보리/크림 허용
-      if (l > 0.78 && s < 0.20) return true;                       // White/Ivory/Cream (밝고 채도도 낮아야)
-      if (l < 0.12 && s < 0.15) return true;                       // Black (어둡고 채도도 낮아야)
-      if (s < 0.10) return true;                                  // Grey (무채색)
-      if (h >= 15 && h <= 70 && l >= 0.60 && s <= 0.35) return true; // Ivory/Ecru/Beige
-      if (h >= 210 && h <= 255 && l < 0.30 && s >= 0.15) return true; // Navy
-      return false;                                               // 그 외 유채색은 BASIC 아님
+      // 순수 무채색(화이트/그레이/블랙) — 채도 거의 0
+      if (s < 0.04) return true;
+      // 아주 밝은 니어화이트 그레이/아이보리 (밝고 채도도 낮은 것만)
+      if (l >= 0.82 && s < 0.12) return true;
+      // 딥 다크 — 아주 어두우면 채도 무관 BASIC
+      if (l < 0.15) return true;
+      // 어둡고 탁한 다크 앵커(차콜/다크브라운/딥뉴트럴) → BASIC
+      if (l < 0.32 && s < 0.32) return true;
+      // 화이트/아이보리/크림 (아주 밝은 것만) → BASIC
+      if (l >= 0.88 && s < 0.35) return true;
+      // 네이비 → BASIC
+      if (h >= 205 && h <= 255 && l < 0.35 && s >= 0.15) return true;
+      // 그 외(더스티 그레이지·베이지·모브 등 중간·밝은 탁한 색)는 BASIC 아님 → SUB
+      return false;
     };
     function classifyDisc(co){
       const [h,s,l] = rgbToHsl(co.hex);
