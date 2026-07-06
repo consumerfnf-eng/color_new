@@ -9523,10 +9523,9 @@ function buildLifestylePalette(){
   const activeSub = actSubArr;
 
   lifestylePalette={
-    // COURT ACTIVE ↔ CLASSIC 포인트 컬러 스왑 (요청) — sub/basic은 그대로
-    active:     { point:clsPoint,    sub:activeSub, basic:basicPool },
+    active:     { point:activePoint, sub:activeSub, basic:basicPool },
     athleisure: { point:athPoint,    sub:athSub,    basic:basicPool },
-    classic:    { point:activePoint, sub:clsSub,    basic:basicPool },
+    classic:    { point:clsPoint,    sub:clsSub,    basic:basicPool },
   };
 }
 
@@ -18200,8 +18199,9 @@ function _sppBuildMarketPalette(rows){
   //   - 채도가 매우 낮아야 함(s<0.14) — 단, 베이지/아이보리처럼 살짝 웜톤인 경우 명도가 높으면 채도 살짝 허용(s<0.20 && l>0.75)
   //   - 극단 명도(매우 어둡거나 밝음)라도 채도가 있으면(녹색·레드 계열) BASIC 아님
   const isTrueNeutral = (s, l, h) => {
-    // White: 명도 높음 (화이트/아이보리/크림 포함)
-    if(l > 0.82) return true;
+    // White/Ivory/Cream: 거의 화이트(l>0.88)는 전부 basic, 0.82~0.88은 저채도만 basic (색조 뚜렷한 라이트 파스텔은 SUB로)
+    if(l > 0.88) return true;
+    if(l > 0.82 && s < 0.18) return true;
     // Black: 명도 매우 낮음
     if(l < 0.12) return true;
     // Grey: 채도 거의 없음 (무채색) — 어떤 Hue든 채도 낮으면 Grey
@@ -18574,7 +18574,8 @@ function _sppBuildLifestylePalette(){
   [...subPool].sort((a,b)=>score2(b)-score2(a)).forEach(co=>{ if(clsSubArr.length<SUB_N&&!subUsed.has(co.hex.toUpperCase())){ clsSubArr.push(co); subUsed.add(co.hex.toUpperCase()); } });
   [...subPool].sort((a,b)=>score3(b)-score3(a)).forEach(co=>{ if(actSubArr.length<SUB_N&&!subUsed.has(co.hex.toUpperCase())){ actSubArr.push(co); subUsed.add(co.hex.toUpperCase()); } });
   if(actSubArr.length<SUB_N){ const actUsed=new Set(actSubArr.map(c=>c.hex.toUpperCase())); const fallback=_sppPickLifestyle([...subPool,...pointPool].filter(c=>!actUsed.has(c.hex.toUpperCase())),'active',SUB_N-actSubArr.length); for(const co of fallback){ if(actSubArr.length>=SUB_N) break; actSubArr.push(co); actUsed.add(co.hex.toUpperCase()); } }
-  _sppLifestylePalette = { active:{point:actPoint,sub:actSubArr,basic:basicPool}, athleisure:{point:athPoint,sub:athSubArr,basic:basicPool}, classic:{point:clsPoint,sub:clsSubArr,basic:basicPool} };
+  // COURT ACTIVE ↔ CLASSIC 포인트 컬러 스왑 (요청) — sub/basic은 그대로
+  _sppLifestylePalette = { active:{point:clsPoint,sub:actSubArr,basic:basicPool}, athleisure:{point:athPoint,sub:athSubArr,basic:basicPool}, classic:{point:actPoint,sub:clsSubArr,basic:basicPool} };
   // 원본 백업 — 새로 빌드될 때마다 갱신 (복구 기준점)
   _sppLifestylePaletteOriginal = JSON.parse(JSON.stringify(_sppLifestylePalette));
 }
