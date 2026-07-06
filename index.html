@@ -18115,9 +18115,19 @@ function _sppPickDiverse(arr, n, minDist, maxPerBrand){
 function _sppDedupSimilar(arr, minDist){
   minDist = minDist || 45;
   const out=[];
+  // 각 색의 대표 코드(팬톤/TCX, 없으면 근사값) — 캐시해서 1회만 계산
+  const codeOf = c => {
+    if(c._dedupCode!==undefined) return c._dedupCode;
+    let code = (c.pantone||c.tcxCode||c.finalCode||'');
+    if(!code){ code = (typeof _sppPantoneApprox==='function'?_sppPantoneApprox(c.hex):'')||''; }
+    c._dedupCode = code.replace(/\s*TCX\s*$/i,'').trim();
+    return c._dedupCode;
+  };
   for(const co of arr){
     if(!co.hex) continue;
-    const near = out.find(u=>_sppRgbDist(u.hex,co.hex) < minDist);
+    const cc = codeOf(co);
+    // 같은 팬톤 코드거나(hex가 좀 떨어져 있어도) 색 거리 이내면 하나로 병합
+    const near = out.find(u=> (cc && codeOf(u)===cc) || _sppRgbDist(u.hex,co.hex) < minDist);
     if(near){
       // 유사색 흡수 — 브랜드 목록 병합 (한 색을 공유한 브랜드 모두 표시되도록)
       if(!near.brands) near.brands=[];
@@ -18153,7 +18163,10 @@ function _sppGetFilteredRows(source){
 // ── 트렌드 풀 (index.html 기존 트렌드 색 재사용) ──
 function _sppGetTrendPool(){
   const src = window.getTrendSourceColors ? window.getTrendSourceColors() : [];
-  return [...src].sort((a,b)=>(b.freq||1)-(a.freq||1)).slice(0, SPP_TREND_POOL_TOP_N);
+  // 마켓(comp) 전용 색은 '트렌드'가 아니므로 매칭 풀에서 제외 — trend 배지/매칭은 실제 트렌드 소스(newsletter/wgsn/peclers/pdf)만.
+  // 단, 트렌드 소스에도 함께 있는 색(sources에 comp 외 다른 것도 있음)은 유지.
+  const trendOnly = src.filter(c => !c.sources || !c.sources.length || c.sources.some(s => s !== 'comp'));
+  return trendOnly.sort((a,b)=>(b.freq||1)-(a.freq||1)).slice(0, SPP_TREND_POOL_TOP_N);
 }
 
 // ── rows 집계 + 트렌드 보너스 ──
@@ -19162,9 +19175,9 @@ function openSppSwatchPopover(regIdx){
     // trend 출처 추출 — 매칭된 트렌드 색의 sources 사용. pdf/article/generic 트렌드는 'Trend PDF'로.
     const _tsrc=new Set();
     (co._trendMatches||[]).forEach(m=>(m.sources||[]).forEach(s=>_tsrc.add((s||'').toLowerCase())));
-    const _tMap={wgsn:'WGSN',peclers:'Peclers',newsletter:'Newsletter',newsletter_csv:'Newsletter',pdf:'Trend PDF','pdf-img':'Trend PDF',article:'Trend PDF',trend:'Trend PDF'};
+    const _tMap={wgsn:'WGSN',peclers:'Peclers',newsletter:'Newsletter',newsletter_csv:'Newsletter',pdf:'Trend PDF','pdf-img':'Trend PDF','trend-pdf':'Trend PDF',article:'Trend',trend:'Trend'};
     const _tSeen=new Set(); let _tLabels=[];
-    ['newsletter','newsletter_csv','wgsn','peclers','pdf','pdf-img','article','trend'].forEach(k=>{
+    ['newsletter','newsletter_csv','wgsn','peclers','pdf','pdf-img','trend-pdf','article','trend'].forEach(k=>{
       if(_tsrc.has(k)){ const lbl=_tMap[k]; if(!_tSeen.has(lbl)){ _tSeen.add(lbl); _tLabels.push(lbl); } }
     });
     if(co.trendMatch && !_tLabels.length){
@@ -19172,7 +19185,7 @@ function openSppSwatchPopover(regIdx){
       if(_near(typeof newsletterColors!=='undefined'?newsletterColors:[])) _tLabels.push('Newsletter');
       if(_near(typeof wgsnColors!=='undefined'?wgsnColors:[])) _tLabels.push('WGSN');
       if(_near(typeof peclersColors!=='undefined'?peclersColors:[])) _tLabels.push('Peclers');
-      if(!_tLabels.length) _tLabels.push('Trend PDF');   // 그래도 못 찾으면 최소한 표기
+      if(!_tLabels.length) _tLabels.push('Trend');   // 그래도 못 찾으면 일반 'Trend'
     }
     html += `<div style="display:flex;align-items:center;gap:8px;padding:5px 8px;background:var(--bg2);border-radius:6px;flex-wrap:wrap">
       <span style="padding:2px 10px;border-radius:20px;font-family:var(--mono);font-size:9px;font-weight:600;color:var(--gold);border:1px solid var(--gold);background:rgba(232,192,96,0.08);white-space:nowrap">Competitor</span>
