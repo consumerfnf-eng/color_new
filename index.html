@@ -155,6 +155,10 @@ html,body{background:#FFFFFF;color:var(--text);font-family:var(--sans);height:10
 .log-box{background:#FFFFFF;border:1px solid var(--border);border-radius:var(--radius);padding:12px;height:160px;overflow-y:auto;font-family:var(--mono);font-size:11px;line-height:1.8}
 .log-ok{color:var(--teal)}.log-err{color:var(--red)}.log-run{color:var(--blue)}.log-info{color:var(--text3)}
 
+/* ── Palette 디테일 팝업 스코어(TREND/MLB/TOTAL) 가로 3열 정렬 고정 ── */
+#paldm-scores{display:grid !important;grid-template-columns:1fr 1fr 1fr !important;gap:8px !important}
+#paldm-scores>div{grid-column:auto !important;width:auto !important}
+
 /* ── 스코어 테이블 ── */
 .score-tbl{width:100%;border-collapse:collapse;font-size:11px}
 .score-tbl th{text-align:left;padding:6px 10px;font-size:9px;letter-spacing:0.08em;text-transform:uppercase;color:var(--text3);border-bottom:1px solid var(--border);font-weight:600;font-family:var(--mono)}
