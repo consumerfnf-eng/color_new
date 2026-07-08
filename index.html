@@ -1307,6 +1307,22 @@ function enterBrandFromHome(brand) {
           <div class="spp-empty">02 Market Analysis에서 데이터를 로드하면 GLOBAL / EU 컬러 팔레트가 생성됩니다.</div>
         </div>
 
+        <!-- ★ Sales-Based (SERGIO TACCHINI 실판매 데이터 · MLB 스타일) -->
+        <div id="spp-sales-section" class="spp-market-section" style="margin-bottom:20px">
+          <div class="spp-trend-market-box" style="background:rgba(232,192,96,0.05);border:1px solid rgba(232,192,96,0.2)">
+            <div class="spp-trend-market-hd">
+              <span class="spp-trend-market-flame">📊 Sales-Based</span>
+              <span class="spp-trend-market-title">SERGIO TACCHINI</span>
+              <span class="spp-trend-market-sub">25FW Sales Qty × Sell-Through</span>
+              <span class="spp-trend-market-cnt" id="spp-sales-cnt">0</span>
+            </div>
+            <div class="spp-trend-market-desc">FW2025 실판매 수량 · 판매율(입고비) 기준 · 클릭 시 상세</div>
+            <div class="spp-cat-row"><div class="spp-cat-label">SUB <span class="cnt" id="spp-sales-sub-cnt">0</span></div><div class="spp-chip-row" id="spp-sales-sub"></div></div>
+            <div class="spp-cat-row"><div class="spp-cat-label">KEY <span class="cnt" id="spp-sales-key-cnt">0</span></div><div class="spp-chip-row" id="spp-sales-key"></div></div>
+            <div class="spp-cat-row" style="margin-bottom:0"><div class="spp-cat-label">BASIC <span class="cnt" id="spp-sales-basic-cnt">0</span></div><div class="spp-chip-row" id="spp-sales-basic"></div></div>
+          </div>
+        </div>
+
         <!-- Season Color Distribution -->
         <div class="spp-intersection-section" id="spp-season-dist-section">
           <div onclick="spp_toggleSeasonPalette()" style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:10px 14px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;user-select:none;"
@@ -1441,6 +1457,7 @@ function enterBrandFromHome(brand) {
           <button onclick="closeSppSwatchPopover()" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:20px;padding:0 4px;line-height:1;flex-shrink:0">×</button>
         </div>
         <div id="spp-pop-label" style="font-size:9px;font-family:var(--mono);color:var(--text3);margin-bottom:14px"></div>
+        <div id="spp-pop-scores" style="display:none;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:14px"></div>
         <div id="spp-pop-evidence"></div>
         <div id="spp-pop-name" style="display:none">—</div>
         <div id="spp-pop-material-section" style="display:none"></div>
@@ -19164,10 +19181,46 @@ function openSppSwatchPopover(regIdx){
   const swEl=document.getElementById('spp-pop-sw'); if(swEl){swEl.style.background=hex;}
   const codeEl=document.getElementById('spp-pop-code'); if(codeEl) codeEl.textContent=(co.pantone||(co.tcxCode?co.tcxCode+' TCX':'')||_sppPantoneApprox(hex)||hex).replace(/ TCX$/i,'');
   const hexEl=document.getElementById('spp-pop-hex');  if(hexEl)  hexEl.textContent=hex;
-  const labelEl=document.getElementById('spp-pop-label'); if(labelEl) labelEl.textContent=(co._marketKey||'').toUpperCase()+' · '+(co._catKey||'').toUpperCase();
+  const labelEl=document.getElementById('spp-pop-label'); if(labelEl) labelEl.textContent=co._isSales?('SALES · '+(co.grp||'')+' · '+(co._catKey||'').toUpperCase()):((co._marketKey||'').toUpperCase()+' · '+(co._catKey||'').toUpperCase());
+  // 판매 스코어 박스 (Sales-Based 칩일 때만) — 판매수량 / 판매율 / 판매점수
+  const scEl=document.getElementById('spp-pop-scores');
+  if(scEl){
+    if(co._isSales){
+      const _q=co.qty||0, _r=co.rate||0, _s=Math.round((co.score||0)*100);
+      scEl.style.display='grid';
+      scEl.innerHTML=[
+        {label:'판매수량', val:_q>0?_q.toLocaleString()+'개':'<span style="font-size:10px;color:var(--teal)">신규</span>', color:'var(--gold)'},
+        {label:'판매율',   val:_r>0?(_r*100).toFixed(1)+'%':'<span style="font-size:10px;color:var(--teal)">신규</span>', color:'var(--gold)'},
+        {label:'판매점수', val:_s||'—', color:'var(--text)'},
+      ].map(s=>`<div style="background:var(--bg3);border-radius:8px;padding:10px;text-align:center"><div style="font-family:var(--mono);font-size:9px;color:var(--text3);margin-bottom:4px">${s.label}</div><div style="font-size:15px;font-weight:700;color:${s.color}">${s.val}</div></div>`).join('');
+    } else { scEl.style.display='none'; scEl.innerHTML=''; }
+  }
   // SOURCE · BRAND (MLB 스타일) — Competitor 배지 + 출처 브랜드 목록 + 수집 빈도
   const evEl=document.getElementById('spp-pop-evidence');
   if(evEl){
+    if(co._isSales){
+      // Sales-Based 전용 근거 블록 (SERGIO TACCHINI 실판매)
+      const _ptxt = co.pantone?(co.pantone+' TCX'):'';
+      const _ctxt = co.coloro?('COLORO '+co.coloro):'';
+      evEl.innerHTML = `<div style="border-top:1px solid var(--border);margin-top:4px;padding-top:12px">
+        <div style="font-size:9px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text3);margin-bottom:10px">Source · Data</div>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <div style="display:flex;align-items:center;gap:8px;padding:5px 8px;background:var(--bg2);border-radius:6px;flex-wrap:wrap">
+            <span style="padding:2px 10px;border-radius:20px;font-family:var(--mono);font-size:9px;font-weight:600;color:var(--gold);border:1px solid var(--gold);background:rgba(232,192,96,0.08);white-space:nowrap">Sales-Based</span>
+            <span style="font-family:var(--mono);font-size:8px;color:var(--text4)">SERGIO TACCHINI · FW2025 실판매</span>
+          </div>
+          <div style="padding:6px 8px;background:rgba(232,192,96,0.06);border:1px solid rgba(232,192,96,0.2);border-radius:6px">
+            <div style="display:flex;flex-wrap:wrap;gap:4px">
+              <span style="font-family:var(--mono);font-size:9px;color:var(--text2);background:var(--bg2);border:1px solid var(--border2);border-radius:4px;padding:2px 7px">${co.code||''} · ${co.name||''}</span>
+              <span style="font-family:var(--mono);font-size:9px;color:var(--text2);background:var(--bg2);border:1px solid var(--border2);border-radius:4px;padding:2px 7px">칼라군 ${co.grp||'—'}</span>
+              ${co.sku?`<span style="font-family:var(--mono);font-size:9px;color:var(--text2);background:var(--bg2);border:1px solid var(--border2);border-radius:4px;padding:2px 7px">SKU ${co.sku}개</span>`:''}
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;font-family:var(--mono);font-size:9px;color:var(--text3);padding:3px 0">
+            ${_ptxt?`<span style="color:var(--blue)">${_ptxt}</span>`:''}${_ctxt?`<span style="color:var(--accent)">${_ctxt}</span>`:''}
+          </div>
+        </div></div>`;
+    } else {
     const brands=(co.brands&&co.brands.length)?co.brands:[];
     let html = '<div style="border-top:1px solid var(--border);margin-top:4px;padding-top:12px">';
     html += '<div style="font-size:9px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text3);margin-bottom:10px">Source · Brand</div>';
@@ -19205,6 +19258,7 @@ function openSppSwatchPopover(regIdx){
     </div>`;
     html += '</div></div>';
     evEl.innerHTML = html;
+    }
   }
   // 소재별 추천 Colors (MLB와 동일 로직 재사용)
   const matSection = document.getElementById('spp-pop-material-section');
@@ -19314,4 +19368,103 @@ document.addEventListener('DOMContentLoaded', function(){
   _spp_syncActive();
 });
 // selectBrand 내부에 _spp_syncActive 이미 직접 추가됨 (래핑 불필요)
+</script>
+<script>
+/* ══════════════════════════════════════════════════════════════
+   SERGIO TACCHINI — Sales-Based 팔레트 (FW2025 실판매 데이터)
+   출처: ST 시즌별 칼라팔레트 엑셀
+     · 판매율(입고비)·SKU수 = FW2025 칼라팔레트 시트
+     · 판매수량 = BD(원천) 누적판매수량 색상별 합산
+   ══════════════════════════════════════════════════════════════ */
+const ST_SALES_FW2025=[
+  {code:"NYS",name:"NAVY",grp:"네이비",hex:"#2A3244",pantone:"19-4024",coloro:"122-22-10",qty:2526,rate:0.2733,sku:38,score:0.7093},
+  {code:"BRS",name:"BROWN",grp:"브라운",hex:"#704F37",pantone:"18-1033",coloro:"025-35-14",qty:1538,rate:0.4314,sku:14,score:0.5379},
+  {code:"IVS",name:"IVORY",grp:"아이보리/크림",hex:"#F0EDE5",pantone:"11-0608",coloro:"032-90-05",qty:1068,rate:0.2887,sku:16,score:0.3692},
+  {code:"BRD",name:"D.BROWN",grp:"브라운",hex:"#543B35",pantone:"19-1215",coloro:"020-25-10",qty:925,rate:0.2474,sku:21,score:0.3187},
+  {code:"WHS",name:"OFF.WHITE",grp:"화이트",hex:"#F2EFE6",pantone:"11-4001",coloro:"036-90-02",qty:845,rate:0.1429,sku:15,score:0.2579},
+  {code:"BKS",name:"BLACK",grp:"블랙",hex:"#26262A",pantone:"19-3911",coloro:"139-18-00",qty:767,rate:0.1613,sku:19,score:0.2467},
+  {code:"BDD",name:"D.BURGUNDY",grp:"버건디",hex:"#7C2439",pantone:"19-1940",coloro:"002-30-28",qty:662,rate:0.3785,sku:4,score:0.3086},
+  {code:"MGS",name:"MELANGE",grp:"그레이",hex:"#8D8E92",pantone:"16-3917",coloro:"139-18-00",qty:550,rate:0.2719,sku:12,score:0.2394},
+  {code:"GRD",name:"D.GREY",grp:"그레이",hex:"#5C5658",pantone:"18-5210",coloro:"147-36-01",qty:436,rate:0.3998,sku:7,score:0.2635},
+  {code:"GND",name:"D.GREEN",grp:"카키/그린",hex:"#12403C",pantone:"19-5220",coloro:"085-30-17",qty:403,rate:0.1634,sku:5,score:0.1611},
+  {code:"OWS",name:"OFF. WHITE 2",grp:"화이트",hex:"#E9E4D8",pantone:"",coloro:"036-90-02",qty:382,rate:0.2324,sku:4,score:0.1837},
+  {code:"KAS",name:"KHAKI",grp:"카키/그린",hex:"#676232",pantone:"18-0430",coloro:"044-36-13",qty:191,rate:0.5219,sku:2,score:0.2541},
+  {code:"PKD",name:"D.PINK",grp:"핑크",hex:"#B35A66",pantone:"18-1634",coloro:"002-54-17",qty:134,rate:0.4061,sku:2,score:0.1943},
+  {code:"PKL",name:"L.PINK",grp:"핑크",hex:"#F0C0C4",pantone:"",coloro:"002-69-19",qty:87,rate:0.0396,sku:3,score:0.0365},
+  {code:"MGD",name:"D. MELANGE",grp:"그레이",hex:"#4E545B",pantone:"19-4215",coloro:"146-09-03",qty:78,rate:0.2484,sku:2,score:0.1179},
+  {code:"INL",name:"L.INDIGO",grp:"네이비",hex:"#91A5BE",pantone:"16-4016",coloro:"120-63-12",qty:59,rate:0.0915,sku:3,score:0.0506},
+  {code:"PKS",name:"PINK",grp:"핑크",hex:"#C57F88",pantone:"",coloro:"003-56-21",qty:50,rate:0.1267,sku:1,score:0.0626},
+  {code:"BGD",name:"D.BEIGE",grp:"베이지",hex:"#AE997D",pantone:"15-1114",coloro:"032-64-10",qty:48,rate:0.0678,sku:4,score:0.0385},
+  {code:"CRM",name:"CREAM",grp:"아이보리/크림",hex:"#D7D0C0",pantone:"12-0105",coloro:"027-85-10",qty:45,rate:0.05,sku:1,score:0.0307},
+  {code:"IND",name:"D.INDIGO",grp:"네이비",hex:"#5A789A",pantone:"17-4029",coloro:"120-45-17",qty:43,rate:0.1215,sku:3,score:0.0588},
+  {code:"YES",name:"YELLOW",grp:"옐로우",hex:"#E9CF63",pantone:"",coloro:"038-86-20",qty:27,rate:0.043,sku:1,score:0.0236},
+  {code:"BLS",name:"BLUE",grp:"블루",hex:"#35548A",pantone:"",coloro:"125-32-36",qty:18,rate:0.028,sku:1,score:0.0155}
+];
+
+// HEX → HSL
+function _stSalesHsl(hex){
+  const h=(hex||'#888888').replace('#','');
+  const r=parseInt(h.substr(0,2),16)/255,g=parseInt(h.substr(2,2),16)/255,b=parseInt(h.substr(4,2),16)/255;
+  const mx=Math.max(r,g,b),mn=Math.min(r,g,b),l=(mx+mn)/2;let hh=0,s=0;
+  if(mx!==mn){const d=mx-mn;s=l>0.5?d/(2-mx-mn):d/(mx+mn);
+    if(mx===r)hh=((g-b)/d+(g<b?6:0));else if(mx===g)hh=(b-r)/d+2;else hh=(r-g)/d+4;hh*=60;}
+  return [hh,s,l];
+}
+// SUB / KEY / BASIC 분류 — 앱 _sppBuildMarketPalette isTrueNeutral 기준과 동일
+function _stSalesCat(hex){
+  const a=_stSalesHsl(hex),h=a[0],s=a[1],l=a[2];
+  const neutral=(l>0.88)||(l>0.65&&s<0.18)||(l<0.12)||(s<0.10)||
+    (h>=20&&h<=65&&l>=0.65&&s<=0.28)||(h>=210&&h<=255&&l<0.30&&s>=0.15&&s<0.52);
+  if(neutral)return 'basic';
+  if(s>=0.45)return 'key';
+  return 'sub';
+}
+// 판매 칩 HTML (spp-chip 스타일 재사용, ×freq 자리에 판매수량 표시)
+function _stSalesChipHtml(d,catKey){
+  const code=d.pantone?(d.pantone+' TCX'):(d.coloro?('COLORO '+d.coloro):'');
+  const reg=(typeof _sppRegisterChip==='function')
+    ? _sppRegisterChip(Object.assign({},d,{_marketKey:'sales',_catKey:catKey,_isSales:true}))
+    : -1;
+  const qtyTxt=(d.qty||0).toLocaleString();
+  const rateTxt=((d.rate||0)*100).toFixed(1);
+  return '<div class="spp-chip" onclick="openSppSwatchPopover('+reg+')" title="'+(d.name||'')+' \u00b7 '+(d.code||'')+'\n\ud310\ub9e4 '+qtyTxt+'\uac1c \u00b7 \ud310\ub9e4\uc728 '+rateTxt+'%">'
+    +'<div style="position:relative"><div class="spp-chip-sw" style="background:'+d.hex+'"></div></div>'
+    +'<div class="spp-chip-freq">'+qtyTxt+'</div>'
+    +'<div class="spp-chip-name">'+(d.name||'')+'</div>'
+    +'<div class="spp-chip-code">'+code+'</div>'
+    +'</div>';
+}
+function _spp_renderSalesBased(){
+  const secSub=document.getElementById('spp-sales-sub');
+  const secKey=document.getElementById('spp-sales-key');
+  const secBasic=document.getElementById('spp-sales-basic');
+  if(!secSub||!secKey||!secBasic)return;
+  const buckets={sub:[],key:[],basic:[]};
+  ST_SALES_FW2025.forEach(function(d){ buckets[_stSalesCat(d.hex)].push(d); });
+  ['sub','key','basic'].forEach(function(k){ buckets[k].sort(function(a,b){return (b.qty||0)-(a.qty||0);}); });
+  secSub.innerHTML  =buckets.sub.length  ?buckets.sub.map(function(d){return _stSalesChipHtml(d,'sub');}).join('')    :'<div class="spp-empty">SUB 컬러 없음</div>';
+  secKey.innerHTML  =buckets.key.length  ?buckets.key.map(function(d){return _stSalesChipHtml(d,'key');}).join('')    :'<div class="spp-empty">KEY 컬러 없음</div>';
+  secBasic.innerHTML=buckets.basic.length?buckets.basic.map(function(d){return _stSalesChipHtml(d,'basic');}).join(''):'<div class="spp-empty">BASIC 컬러 없음</div>';
+  const set=function(id,n){var e=document.getElementById(id);if(e)e.textContent=n;};
+  set('spp-sales-sub-cnt',buckets.sub.length);
+  set('spp-sales-key-cnt',buckets.key.length);
+  set('spp-sales-basic-cnt',buckets.basic.length);
+  set('spp-sales-cnt',ST_SALES_FW2025.length+'개');
+}
+// ── 훅: SERGIO 팔레트 렌더/활성화 시 Sales-Based도 함께 렌더 ──
+(function(){
+  var _origRPP=window._spp_renderPaletteProposal;
+  if(typeof _origRPP==='function'){
+    window._spp_renderPaletteProposal=function(){ var r=_origRPP.apply(this,arguments); try{_spp_renderSalesBased();}catch(e){} return r; };
+  }
+  var _origSync=window._spp_syncActive;
+  if(typeof _origSync==='function'){
+    window._spp_syncActive=function(){ var r=_origSync.apply(this,arguments);
+      try{ if(typeof _activeBrand!=='undefined'&&_activeBrand==='SERGIO')_spp_renderSalesBased(); }catch(e){}
+      return r; };
+  }
+})();
+document.addEventListener('DOMContentLoaded',function(){
+  try{ if(typeof _activeBrand!=='undefined'&&_activeBrand==='SERGIO')_spp_renderSalesBased(); }catch(e){}
+});
 </script>
