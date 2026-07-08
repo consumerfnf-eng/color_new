@@ -19411,12 +19411,16 @@ function _stSalesHsl(hex){
   return [hh,s,l];
 }
 // SUB / KEY / BASIC 분류 — 앱 _sppBuildMarketPalette isTrueNeutral 기준과 동일
-function _stSalesCat(hex){
+function _stSalesCat(d){
+  const hex=(typeof d==='string')?d:((d&&d.hex)||'#888888');
+  const grp=(d&&typeof d==='object')?(d.grp||''):'';
   const a=_stSalesHsl(hex),h=a[0],s=a[1],l=a[2];
-  const neutral=(l>0.88)||(l>0.65&&s<0.18)||(l<0.12)||(s<0.10)||
-    (h>=20&&h<=65&&l>=0.65&&s<=0.28)||(h>=210&&h<=255&&l<0.30&&s>=0.15&&s<0.52);
+  // 유채색 칼라군(핑크·옐로우·블루·버건디·레드·카키/그린·브라운)은 BASIC(무채색 줄)에서 제외
+  const isChroma=['핑크','옐로우','블루','버건디','레드','카키','그린','브라운'].some(function(g){return grp.indexOf(g)>=0;});
+  const neutral=!isChroma&&((l>0.88)||(l>0.65&&s<0.18)||(l<0.12)||(s<0.10)||
+    (h>=20&&h<=65&&l>=0.65&&s<=0.28)||(h>=210&&h<=255&&l<0.30&&s>=0.15&&s<0.52));
   if(neutral)return 'basic';
-  if(s>=0.45)return 'key';
+  if(s>=0.45&&l<=0.80)return 'key';   // 선명하고 너무 밝지 않은 색만 KEY(포인트)
   return 'sub';
 }
 // 판매 칩 HTML (spp-chip 스타일 재사용, ×freq 자리에 판매수량 표시)
@@ -19442,7 +19446,7 @@ function _spp_renderSalesBased(){
   const secBasic=document.getElementById('spp-sales-basic');
   if(!secSub||!secKey||!secBasic)return;
   const buckets={sub:[],key:[],basic:[]};
-  ST_SALES_FW2025.forEach(function(d){ buckets[_stSalesCat(d.hex)].push(d); });
+  ST_SALES_FW2025.forEach(function(d){ buckets[_stSalesCat(d)].push(d); });
   ['sub','key','basic'].forEach(function(k){ buckets[k].sort(function(a,b){return (b.qty||0)-(a.qty||0);}); });
   secSub.innerHTML  =buckets.sub.length  ?buckets.sub.map(function(d){return _stSalesChipHtml(d,'sub');}).join('')    :'<div class="spp-empty">SUB 컬러 없음</div>';
   secKey.innerHTML  =buckets.key.length  ?buckets.key.map(function(d){return _stSalesChipHtml(d,'key');}).join('')    :'<div class="spp-empty">KEY 컬러 없음</div>';
