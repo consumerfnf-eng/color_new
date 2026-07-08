@@ -19381,24 +19381,24 @@ const ST_SALES_FW2025=[
   {code:"BRS",name:"BROWN",grp:"브라운",hex:"#704F37",pantone:"18-1033",coloro:"025-35-14",qty:1538,rate:0.4314,sku:14,score:0.5379},
   {code:"IVS",name:"IVORY",grp:"아이보리/크림",hex:"#F0EDE5",pantone:"11-0608",coloro:"032-90-05",qty:1068,rate:0.2887,sku:16,score:0.3692},
   {code:"BRD",name:"D.BROWN",grp:"브라운",hex:"#543B35",pantone:"19-1215",coloro:"020-25-10",qty:925,rate:0.2474,sku:21,score:0.3187},
-  {code:"WHS",name:"OFF.WHITE",grp:"화이트",hex:"#F2EFE6",pantone:"11-4001",coloro:"036-90-02",qty:845,rate:0.1429,sku:15,score:0.2579},
+  {code:"WHS",name:"OFF.WHITE",grp:"화이트",hex:"#EDF1FE",pantone:"11-4001",coloro:"036-90-02",qty:845,rate:0.1429,sku:15,score:0.2579},
   {code:"BKS",name:"BLACK",grp:"블랙",hex:"#26262A",pantone:"19-3911",coloro:"139-18-00",qty:767,rate:0.1613,sku:19,score:0.2467},
   {code:"BDD",name:"D.BURGUNDY",grp:"버건디",hex:"#7C2439",pantone:"19-1940",coloro:"002-30-28",qty:662,rate:0.3785,sku:4,score:0.3086},
   {code:"MGS",name:"MELANGE",grp:"그레이",hex:"#8D8E92",pantone:"16-3917",coloro:"139-18-00",qty:550,rate:0.2719,sku:12,score:0.2394},
   {code:"GRD",name:"D.GREY",grp:"그레이",hex:"#5C5658",pantone:"18-5210",coloro:"147-36-01",qty:436,rate:0.3998,sku:7,score:0.2635},
   {code:"GND",name:"D.GREEN",grp:"카키/그린",hex:"#12403C",pantone:"19-5220",coloro:"085-30-17",qty:403,rate:0.1634,sku:5,score:0.1611},
-  {code:"OWS",name:"OFF. WHITE 2",grp:"화이트",hex:"#E9E4D8",pantone:"",coloro:"036-90-02",qty:382,rate:0.2324,sku:4,score:0.1837},
+  {code:"OWS",name:"OFF. WHITE 2",grp:"화이트",hex:"#F2F0EB",pantone:"11-0602",coloro:"036-90-02",qty:382,rate:0.2324,sku:4,score:0.1837},
   {code:"KAS",name:"KHAKI",grp:"카키/그린",hex:"#676232",pantone:"18-0430",coloro:"044-36-13",qty:191,rate:0.5219,sku:2,score:0.2541},
   {code:"PKD",name:"D.PINK",grp:"핑크",hex:"#B35A66",pantone:"18-1634",coloro:"002-54-17",qty:134,rate:0.4061,sku:2,score:0.1943},
-  {code:"PKL",name:"L.PINK",grp:"핑크",hex:"#F0C0C4",pantone:"",coloro:"002-69-19",qty:87,rate:0.0396,sku:3,score:0.0365},
+  {code:"PKL",name:"L.PINK",grp:"핑크",hex:"#F7D1D1",pantone:"12-1706",coloro:"002-69-19",qty:87,rate:0.0396,sku:3,score:0.0365},
   {code:"MGD",name:"D. MELANGE",grp:"그레이",hex:"#4E545B",pantone:"19-4215",coloro:"146-09-03",qty:78,rate:0.2484,sku:2,score:0.1179},
   {code:"INL",name:"L.INDIGO",grp:"네이비",hex:"#91A5BE",pantone:"16-4016",coloro:"120-63-12",qty:59,rate:0.0915,sku:3,score:0.0506},
-  {code:"PKS",name:"PINK",grp:"핑크",hex:"#C57F88",pantone:"",coloro:"003-56-21",qty:50,rate:0.1267,sku:1,score:0.0626},
+  {code:"PKS",name:"PINK",grp:"핑크",hex:"#DE98AB",pantone:"15-1912",coloro:"003-56-21",qty:50,rate:0.1267,sku:1,score:0.0626},
   {code:"BGD",name:"D.BEIGE",grp:"베이지",hex:"#AE997D",pantone:"15-1114",coloro:"032-64-10",qty:48,rate:0.0678,sku:4,score:0.0385},
   {code:"CRM",name:"CREAM",grp:"아이보리/크림",hex:"#D7D0C0",pantone:"12-0105",coloro:"027-85-10",qty:45,rate:0.05,sku:1,score:0.0307},
   {code:"IND",name:"D.INDIGO",grp:"네이비",hex:"#5A789A",pantone:"17-4029",coloro:"120-45-17",qty:43,rate:0.1215,sku:3,score:0.0588},
-  {code:"YES",name:"YELLOW",grp:"옐로우",hex:"#E9CF63",pantone:"",coloro:"038-86-20",qty:27,rate:0.043,sku:1,score:0.0236},
-  {code:"BLS",name:"BLUE",grp:"블루",hex:"#35548A",pantone:"",coloro:"125-32-36",qty:18,rate:0.028,sku:1,score:0.0155}
+  {code:"YES",name:"YELLOW",grp:"옐로우",hex:"#FFD662",pantone:"13-0850",coloro:"038-86-20",qty:27,rate:0.043,sku:1,score:0.0236},
+  {code:"BLS",name:"BLUE",grp:"블루",hex:"#0F4C81",pantone:"19-4052",coloro:"125-32-36",qty:18,rate:0.028,sku:1,score:0.0155}
 ];
 
 // HEX → HSL
@@ -19421,14 +19421,16 @@ function _stSalesCat(hex){
 }
 // 판매 칩 HTML (spp-chip 스타일 재사용, ×freq 자리에 판매수량 표시)
 function _stSalesChipHtml(d,catKey){
+  // swatch 색은 라벨 Pantone TCX의 실제 색으로 강제 일치 (팬톤칩과 동일)
+  const swHex=((typeof PANTONE_TCX_MAP!=='undefined'&&d.pantone&&PANTONE_TCX_MAP[d.pantone])||d.hex);
   const code=d.pantone?(d.pantone+' TCX'):(d.coloro?('COLORO '+d.coloro):'');
   const reg=(typeof _sppRegisterChip==='function')
-    ? _sppRegisterChip(Object.assign({},d,{_marketKey:'sales',_catKey:catKey,_isSales:true}))
+    ? _sppRegisterChip(Object.assign({},d,{hex:swHex,_marketKey:'sales',_catKey:catKey,_isSales:true}))
     : -1;
   const qtyTxt=(d.qty||0).toLocaleString();
   const rateTxt=((d.rate||0)*100).toFixed(1);
   return '<div class="spp-chip" onclick="openSppSwatchPopover('+reg+')" title="'+(d.name||'')+' \u00b7 '+(d.code||'')+'\n\ud310\ub9e4 '+qtyTxt+'\uac1c \u00b7 \ud310\ub9e4\uc728 '+rateTxt+'%">'
-    +'<div style="position:relative"><div class="spp-chip-sw" style="background:'+d.hex+'"></div></div>'
+    +'<div style="position:relative"><div class="spp-chip-sw" style="background:'+swHex+'"></div></div>'
     +'<div class="spp-chip-freq">'+qtyTxt+'</div>'
     +'<div class="spp-chip-name">'+(d.name||'')+'</div>'
     +'<div class="spp-chip-code">'+code+'</div>'
