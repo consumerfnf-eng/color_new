@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- BUILD_VERSION: DISC_INTERSECTION_REGION_AGNOSTIC_v45 (2026-09-07) -->
+<!-- BUILD_VERSION: DISC_MARKET_BRAND_WHITELIST_v46 (2026-09-07) -->
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
@@ -17132,13 +17132,18 @@ window.getTrendSourceColors = getTrendSourceColors;
 window.renderMarketCsvBrands = function(brands, season) {
   var box = document.getElementById('market-csv-brands');
   if (!box) return;
-  // 가용 브랜드 목록 저장 (전체 선택용) — 호출 인자가 있으면 갱신
+  // 가용 브랜드 목록 저장 (전체 선택용) — 호출 인자가 있으면 갱신 (원본 그대로 저장, 필터는 렌더 시점에 적용)
   if (brands && brands.length) {
     window._marketCsvBrands = [...new Set(brands.filter(Boolean))].sort(function(a,b){ return a.localeCompare(b); });
     window._marketCsvSeason = season || '';
     window._marketCsvBrands.forEach(function(b){ window._marketBrandLabel[window._brandKeyNorm(b)] = b; });
   }
   var list = window._marketCsvBrands || [];
+  // DISCOVERY일 때만 새 12개 브랜드 화이트리스트로 체크리스트 제한 (매 렌더마다 현재 브랜드 기준으로 재적용)
+  if (typeof _activeBrand !== 'undefined' && _activeBrand === 'DISCOVERY') {
+    var _allowedKeys = new Set((window._defaultBrandSel.DISCOVERY || []).map(window._brandKeyNorm));
+    list = list.filter(function(b){ return _allowedKeys.has(window._brandKeyNorm(b)); });
+  }
   if (!list.length) { box.style.display = 'none'; return; }
 
   var sel = window._curMarketSel();
@@ -17182,7 +17187,12 @@ window.toggleMarketBrand = function(brandRaw){
 };
 window.marketSelectAll = function(){
   var sel = window._curMarketSel();
-  (window._marketCsvBrands||[]).forEach(function(b){ sel.add(window._brandKeyNorm(b)); });
+  var pool = window._marketCsvBrands || [];
+  if (typeof _activeBrand !== 'undefined' && _activeBrand === 'DISCOVERY') {
+    var _allowedKeys = new Set((window._defaultBrandSel.DISCOVERY || []).map(window._brandKeyNorm));
+    pool = pool.filter(function(b){ return _allowedKeys.has(window._brandKeyNorm(b)); });
+  }
+  pool.forEach(function(b){ sel.add(window._brandKeyNorm(b)); });
   window.renderMarketCsvBrands();
   _persistMarketSel();
   if (typeof renderCompBrandPage === 'function') renderCompBrandPage();
