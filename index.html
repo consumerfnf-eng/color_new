@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- BUILD_VERSION: DISC_SEASON_DIST_REALCOLOR_DONUT_v51 (2026-09-07) -->
+<!-- BUILD_VERSION: DISC_SEASON_DIST_CLICK_DETAIL_v52 (2026-09-07) -->
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
@@ -9153,8 +9153,9 @@ function _discBuildSeasonDist(){
     });
     const sortedHex = Object.entries(hexCount).sort((a,b)=>b[1]-a[1]);
     const hexTotal = sortedHex.reduce((s,[,c])=>s+c, 0);
-    const topColors = sortedHex.slice(0,7).map(([hex,count])=>({hex,count}));
-    return { ...g, monthsWithData, ...agg, topColors, hexTotal };
+    const allColors = sortedHex.map(([hex,count])=>({hex,count}));
+    const topColors = allColors.slice(0,7);
+    return { ...g, monthsWithData, ...agg, topColors, allColors, hexTotal };
   });
 
   return { byMonth, byGroup };
@@ -9198,8 +9199,8 @@ function _discRenderSeasonDistDonut(label, total, note, topColors, hexTotal){
     </div>`;
   }).join('');
 
-  return `<div style="display:flex;flex-direction:column;align-items:center;gap:6px;min-width:104px">
-    <div style="font-family:var(--mono);font-size:9px;color:var(--text2);text-align:center;font-weight:700">${label}</div>
+  return `<div onclick="_discOpenSeasonDetail('${label}')" style="display:flex;flex-direction:column;align-items:center;gap:6px;min-width:104px;cursor:pointer" title="클릭하면 이 구간 컬러 전체 목록을 볼 수 있어요">
+    <div style="font-family:var(--mono);font-size:9px;color:var(--text2);text-align:center;font-weight:700">${label} <span style="color:var(--text4);font-weight:400">▸</span></div>
     <svg width="${SIZE}" height="${SIZE}" viewBox="0 0 ${SIZE} ${SIZE}">
       <circle cx="${CX}" cy="${CY}" r="${R}" fill="none" stroke="var(--bg3)" stroke-width="${STROKE}"></circle>
       ${arcs}
@@ -9211,6 +9212,45 @@ function _discRenderSeasonDistDonut(label, total, note, topColors, hexTotal){
   </div>`;
 }
 
+// 도넛 클릭 시 그 구간의 전체 컬러 목록(hex·Pantone 근사·빈도·%)을 모달로 보여줌
+window._discSeasonDistData = window._discSeasonDistData || {};
+function _discOpenSeasonDetail(groupLabel){
+  const g = window._discSeasonDistData[groupLabel];
+  if(!g || !g.allColors || !g.allColors.length) return;
+
+  let modal = document.getElementById('disc-season-detail-modal');
+  if(!modal){
+    modal = document.createElement('div');
+    modal.id = 'disc-season-detail-modal';
+    modal.style.cssText = 'display:none;position:fixed;inset:0;z-index:9995;background:rgba(0,0,0,0.5);align-items:center;justify-content:center;';
+    modal.innerHTML = '<div id="disc-season-detail-card" style="background:var(--bg2);border-radius:12px;padding:22px;width:420px;max-height:78vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.4)"></div>';
+    modal.onclick = (e)=>{ if(e.target===modal) modal.style.display='none'; };
+    document.body.appendChild(modal);
+  }
+  const rows = g.allColors.map(c=>{
+    const pct = Math.round(c.count/g.hexTotal*100);
+    const pt = (typeof pantoneApprox==='function' ? (pantoneApprox(c.hex)||'') : '');
+    return `<div style="display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid var(--border)">
+      <div style="width:28px;height:28px;border-radius:6px;background:${c.hex};border:1px solid rgba(255,255,255,0.15);flex-shrink:0"></div>
+      <div style="flex:1;min-width:0">
+        <div style="font-family:var(--mono);font-size:10px;color:var(--text)">${c.hex}</div>
+        <div style="font-family:var(--mono);font-size:8px;color:var(--text4)">${pt}</div>
+      </div>
+      <div style="font-family:var(--mono);font-size:10px;color:var(--text2);font-weight:700">${pct}%</div>
+      <div style="font-family:var(--mono);font-size:8px;color:var(--text4)">×${c.count}</div>
+    </div>`;
+  }).join('');
+  document.getElementById('disc-season-detail-card').innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+      <span style="font-family:var(--sans);font-size:15px;font-weight:700;color:var(--text)">${groupLabel} — 전체 컬러</span>
+      <span onclick="document.getElementById('disc-season-detail-modal').style.display='none'" style="cursor:pointer;color:var(--text4);font-size:16px;padding:2px 6px">×</span>
+    </div>
+    <div style="font-family:var(--mono);font-size:8px;color:var(--text4);margin-bottom:12px">${g.monthsWithData.map(m=>m+'월').join('·')} 기준 · 총 ${g.hexTotal}건 · 컬러 ${g.allColors.length}종 · 빈도순</div>
+    <div>${rows}</div>
+  `;
+  modal.style.display = 'flex';
+}
+
 function _discRenderSeasonDist(){
   const body = document.getElementById('disc-season-dist-body');
   if(!body) return;
@@ -9220,7 +9260,8 @@ function _discRenderSeasonDist(){
     body.innerHTML = '<div class="spp-empty">02 Market Analysis에 월별(YYYY-MM) season 데이터가 없습니다. 시트의 season 컬럼이 2025-12, 2026-01 같은 월 단위 값인지 확인해주세요.</div>';
     return;
   }
-  const legend = `<div style="font-family:var(--mono);font-size:8px;color:var(--text3);margin-bottom:14px">각 조각 = 실제 컬러 1개(빈도 비율만큼 크기) · 회색 = 상위 7색 외 나머지</div>`;
+  const legend = `<div style="font-family:var(--mono);font-size:8px;color:var(--text3);margin-bottom:14px">각 조각 = 실제 컬러 1개(빈도 비율만큼 크기) · 회색 = 상위 7색 외 나머지 · 도넛 클릭하면 전체 목록 보기</div>`;
+  byGroup.forEach(g=>{ window._discSeasonDistData[g.label] = g; });
   const donuts = byGroup.map(g=>{
     const note = g.monthsWithData.length ? `${g.monthsWithData.map(m=>m+'월').join('·')} 기준` : '데이터 없음';
     return _discRenderSeasonDistDonut(g.label, g.total, g.total ? note : null, g.topColors, g.hexTotal);
