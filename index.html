@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- BUILD_VERSION: DISC_SEASON_DIST_CLICK_DETAIL_v52 (2026-09-07) -->
+<!-- BUILD_VERSION: DISC_SEASON_DIST_NEARMERGE_v53 (2026-09-07) -->
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
@@ -9143,6 +9143,20 @@ function _discBuildSeasonDist(){
   });
 
   // 구간(FALL/PRE-WINTER/WINTER)별 집계 — 있는 달만 합산
+  // ★ 정확히 같은 hex끼리만 세면 실제 데이터엔 완전 동일 hex가 거의 없어서 전부 빈도 1로 나옴.
+  //   → 색거리(rgbDist)가 가까우면 같은 색으로 묶어서 집계 (대표색 = 그룹 내 최다빈도 hex)
+  const NEAR_MERGE_DIST = 22;
+  function _mergeNearColors(hexCountRaw){
+    const entries = Object.entries(hexCountRaw).sort((a,b)=>b[1]-a[1]); // 빈도 높은 순으로 먼저 대표색 선점
+    const buckets = []; // {rep, count, members:[{hex,count}]}
+    entries.forEach(([hex,count])=>{
+      let bucket = buckets.find(b => rgbDist(b.rep, hex) < NEAR_MERGE_DIST);
+      if(bucket){ bucket.count += count; bucket.members.push({hex,count}); }
+      else buckets.push({ rep:hex, count, members:[{hex,count}] });
+    });
+    return buckets.sort((a,b)=>b.count-a.count).map(b=>({ hex:b.rep, count:b.count, members:b.members }));
+  }
+
   const byGroup = DISC_SEASON_GROUPS.map(g=>{
     const monthsWithData = g.months.filter(m=>byMonth[m] && byMonth[m].total>0);
     const agg = { sub:0, key:0, basic:0, total:0 };
@@ -9151,9 +9165,8 @@ function _discBuildSeasonDist(){
       agg.sub+=byMonth[m].sub; agg.key+=byMonth[m].key; agg.basic+=byMonth[m].basic; agg.total+=byMonth[m].total;
       Object.entries(byMonth[m].hexCount).forEach(([hex,c])=>{ hexCount[hex]=(hexCount[hex]||0)+c; });
     });
-    const sortedHex = Object.entries(hexCount).sort((a,b)=>b[1]-a[1]);
-    const hexTotal = sortedHex.reduce((s,[,c])=>s+c, 0);
-    const allColors = sortedHex.map(([hex,count])=>({hex,count}));
+    const allColors = _mergeNearColors(hexCount);
+    const hexTotal = allColors.reduce((s,c)=>s+c.count, 0);
     const topColors = allColors.slice(0,7);
     return { ...g, monthsWithData, ...agg, topColors, allColors, hexTotal };
   });
@@ -9230,11 +9243,12 @@ function _discOpenSeasonDetail(groupLabel){
   const rows = g.allColors.map(c=>{
     const pct = Math.round(c.count/g.hexTotal*100);
     const pt = (typeof pantoneApprox==='function' ? (pantoneApprox(c.hex)||'') : '');
+    const mergedNote = (c.members && c.members.length>1) ? ` · 유사색 ${c.members.length}개 병합` : '';
     return `<div style="display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid var(--border)">
       <div style="width:28px;height:28px;border-radius:6px;background:${c.hex};border:1px solid rgba(255,255,255,0.15);flex-shrink:0"></div>
       <div style="flex:1;min-width:0">
         <div style="font-family:var(--mono);font-size:10px;color:var(--text)">${c.hex}</div>
-        <div style="font-family:var(--mono);font-size:8px;color:var(--text4)">${pt}</div>
+        <div style="font-family:var(--mono);font-size:8px;color:var(--text4)">${pt}${mergedNote}</div>
       </div>
       <div style="font-family:var(--mono);font-size:10px;color:var(--text2);font-weight:700">${pct}%</div>
       <div style="font-family:var(--mono);font-size:8px;color:var(--text4)">×${c.count}</div>
