@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- BUILD_VERSION: DISC_COLORWAY_NOCODE_v122 (2026-09-08) -->
+<!-- BUILD_VERSION: DISC_OVERLAY_v200 (2026-09-16) — DISCOVERY 27FW 한정 탭 순서/Trend 레이아웃 + Trend-Matched Proposal -->
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
@@ -20263,4 +20263,3030 @@ function _spp_renderSalesBased(){
 document.addEventListener('DOMContentLoaded',function(){
   try{ if(typeof _activeBrand!=='undefined'&&_activeBrand==='SERGIO')_spp_renderSalesBased(); }catch(e){}
 });
+</script>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     DISCOVERY 27FW 전용 탭 순서 · Trend 레이아웃 (런타임 적용/복구)
+     ─────────────────────────────────────────────────────────────
+     · 다른 브랜드(MLB/SERGIO/DUVETICA)와 다른 시즌은 원본 그대로 유지
+     · DOM을 삭제하지 않고 이동/숨김만 하므로 언제든 원상 복구됨
+     ═══════════════════════════════════════════════════════════════ -->
+<script>
+(function(){
+  'use strict';
+  var SCOPE_BRAND = 'DISCOVERY';
+  var SCOPE_SEASON = '27FW';
+
+  var _applied = false;   // 현재 재배치가 적용된 상태인가
+  var _cwRestore = [];    // 04 Colorway 숨김 복구용
+  var _cache = null;      // 원본 위치/내용 백업
+
+  function _inScope(){
+    try{
+      return (typeof _activeBrand  !== 'undefined' && _activeBrand  === SCOPE_BRAND)
+          && (typeof _activeSeason !== 'undefined' && _activeSeason === SCOPE_SEASON);
+    }catch(e){ return false; }
+  }
+
+  function _card(id){ var e = document.getElementById(id); return e ? e.closest('.card') : null; }
+
+  function _els(){
+    var nav = document.querySelector('nav.tabs');
+    return {
+      nav:        nav,
+      tabComp:    nav ? nav.querySelector('button.tab[onclick*="competitor"]') : null,
+      tabTrend:   nav ? nav.querySelector('button.tab[onclick*="\'trend\'"]')   : null,
+      twoCol:     document.querySelector('#tab-trend .two-col'),
+      scroll:     document.querySelector('#tab-trend .tab-scroll'),
+      newsCard:   _card('news-zone'),
+      wgsnCard:   _card('wgsn-zone'),
+      pecCard:    _card('peclers-swatch-grid'),
+      collCard:   _card('trend-preview'),
+      trendLog:   document.getElementById('trend-log'),
+      collectBtn: document.getElementById('collect-all-btn'),
+      navTrend:   document.querySelector('#tab-trend .step-nav'),
+      navComp:    document.querySelector('#tab-competitor .step-nav'),
+      navPal:     document.querySelector('#tab-palette .step-nav')
+    };
+  }
+
+  // 노드의 현재 위치(부모 + 다음 형제)를 기억해 두었다가 그대로 되돌리기 위한 헬퍼
+  function _pos(node){ return node ? { node: node, parent: node.parentNode, next: node.nextSibling } : null; }
+  function _restore(p){ if(p && p.parent) p.parent.insertBefore(p.node, p.next); }
+
+  var BTN_SEC = 'font-size:12px;padding:8px 20px;background:#FFFFFF;color:#1A1714;border:1px solid rgba(0,0,0,0.2);';
+  var BTN_PRI = 'font-size:12px;padding:8px 20px;background:#A07840;color:#fff;border:none;font-weight:700;';
+
+  function _apply(){
+    if(_applied) return;
+    var e = _els();
+    if(!e.nav || !e.twoCol || !e.wgsnCard || !e.pecCard || !e.collCard) return;  // DOM 미준비 → 다음 기회에
+
+    _cache = {
+      tabComp:    _pos(e.tabComp),
+      tabTrend:   _pos(e.tabTrend),
+      tabCompNum: e.tabComp ? e.tabComp.querySelector('.tab-num').textContent : null,
+      tabTrendNum:e.tabTrend? e.tabTrend.querySelector('.tab-num').textContent : null,
+      newsCard:   _pos(e.newsCard),
+      newsDisp:   e.newsCard ? e.newsCard.style.display : '',
+      wgsnCard:   _pos(e.wgsnCard),
+      pecCard:    _pos(e.pecCard),
+      collCard:   _pos(e.collCard),
+      trendLog:   _pos(e.trendLog),
+      collectBtn: _pos(e.collectBtn),
+      navTrendHTML: e.navTrend ? e.navTrend.innerHTML : null,
+      navCompHTML:  e.navComp  ? e.navComp.innerHTML  : null,
+      navPalHTML:   e.navPal   ? e.navPal.innerHTML   : null
+    };
+
+    // ── 1) 탭 순서: Market(01) → Trend(02) ──
+    if(e.tabComp && e.tabTrend){
+      e.nav.insertBefore(e.tabComp, e.tabTrend);
+      e.tabComp.querySelector('.tab-num').textContent  = '01';
+      e.tabTrend.querySelector('.tab-num').textContent = '02';
+    }
+
+    // ── 2) Trend 페이지: Newsletter 숨김 · 좌 WGSN / 우 Peclers ──
+    if(e.newsCard) e.newsCard.style.display = 'none';
+
+    // ── 04 Colorway → 04 Palette Review 로 전환 ──
+    //  새 탭 구조를 만드는 대신 기존 colorway 탭을 빌려 쓴다.
+    //  (switchTab / 활성화 처리 등 원본 로직을 그대로 재사용)
+    _cwRestore = [];
+    var cwBtn = e.nav.querySelector('button.tab[onclick*="colorway"]');
+    if(cwBtn){
+      _cwRestore.push({ el: cwBtn, html: cwBtn.innerHTML });
+      cwBtn.innerHTML = '<span class="tab-num">04</span>Palette Review';
+    }
+    var cwPane = document.getElementById('tab-colorway');
+    if(cwPane){
+      Array.prototype.slice.call(cwPane.children).forEach(function(ch){
+        if(ch.id === 'disc-review-wrap') return;
+        _cwRestore.push({ el: ch, disp: ch.style.display });
+        ch.style.display = 'none';
+      });
+      if(!document.getElementById('disc-review-wrap')){
+        var rw = document.createElement('div');
+        rw.id = 'disc-review-wrap';
+        rw.className = 'tab-scroll';
+        cwPane.appendChild(rw);
+      } else {
+        document.getElementById('disc-review-wrap').style.display = '';
+      }
+    }
+    var colL = e.twoCol.children[0], colR = e.twoCol.children[1];
+    if(colL && colR){
+      colL.appendChild(e.wgsnCard);   // 좌측 상단 = WGSN
+      colR.appendChild(e.pecCard);    // 우측 상단 = Peclers
+      // Collected Trend Colors 는 2단 아래 전체폭으로
+      if(e.trendLog)   e.scroll.appendChild(e.trendLog);
+      if(e.collectBtn) e.scroll.appendChild(e.collectBtn);
+      e.scroll.appendChild(e.collCard);
+    }
+
+    // ── 3) STEP 내비게이션 번호 재작성 ──
+    if(e.navTrend){
+      e.navTrend.innerHTML =
+        '<button class="btn btn-sec" onclick="switchTabByName(\'competitor\')" style="'+BTN_SEC+'">&#8592; 01 Market Analysis</button>'
+      + '<div class="step-nav-info">STEP <strong>02</strong> / 03 &nbsp;&middot;&nbsp; Trend Collection Done · Proceed to next step</div>'
+      + '<button class="btn btn-primary" onclick="switchTabByName(\'palette\')" style="'+BTN_PRI+'">03 Palette Proposal &#8594;</button>';
+    }
+    if(e.navComp){
+      var runBtn = e.navComp.querySelector('#collect-all-btn-comp');
+      var runHTML = runBtn ? runBtn.outerHTML : '';
+      e.navComp.innerHTML =
+        '<div style="flex:1"></div>'
+      + '<div class="step-nav-info">STEP <strong>01</strong> / 03 &nbsp;&middot;&nbsp; Market Analysis → Trend Collection</div>'
+      + '<div style="display:flex;align-items:center;gap:10px">'
+      +   runHTML
+      +   '<button class="btn btn-primary" onclick="switchTabByName(\'trend\')" style="'+BTN_PRI+'">02 Trend Collection &#8594;</button>'
+      + '</div>';
+    }
+    if(e.navPal){
+      var backPal = e.navPal.querySelector('button');
+      if(backPal){
+        backPal.setAttribute('onclick', "switchTabByName('trend')");
+        backPal.innerHTML = '&#8592; 02 Trend Collection';
+      }
+      var fwd = e.navPal.querySelector('button[onclick*="colorway"]');
+      if(fwd){
+        _cwRestore.push({ el: fwd, html: fwd.innerHTML });
+        fwd.innerHTML = '04 Palette Review &#8594;';
+      }
+      var infoPal = e.navPal.querySelector('.step-nav-info');
+      if(infoPal){
+        _cwRestore.push({ el: infoPal, html: infoPal.innerHTML });
+        infoPal.innerHTML = 'STEP <strong>03</strong> / 04 &nbsp;&middot;&nbsp; Proposal → Review';
+      }
+    }
+
+    _applied = true;
+  }
+
+  function _revert(){
+    if(!_applied || !_cache) return;
+    var e = _els();
+
+    if(_cache.tabComp)  _restore(_cache.tabComp);
+    if(_cache.tabTrend) _restore(_cache.tabTrend);
+    if(e.tabComp  && _cache.tabCompNum)  e.tabComp.querySelector('.tab-num').textContent  = _cache.tabCompNum;
+    if(e.tabTrend && _cache.tabTrendNum) e.tabTrend.querySelector('.tab-num').textContent = _cache.tabTrendNum;
+
+    if(e.newsCard) e.newsCard.style.display = _cache.newsDisp || '';
+    _restore(_cache.newsCard);
+    _restore(_cache.wgsnCard);
+    _restore(_cache.pecCard);
+    _restore(_cache.trendLog);
+    _restore(_cache.collectBtn);
+    _restore(_cache.collCard);
+
+    _cwRestore.forEach(function(r){
+      if(r.html !== undefined) r.el.innerHTML = r.html;
+      else r.el.style.display = r.disp || '';
+    });
+    _cwRestore = [];
+
+    if(e.navTrend && _cache.navTrendHTML !== null) e.navTrend.innerHTML = _cache.navTrendHTML;
+    if(e.navComp  && _cache.navCompHTML  !== null) e.navComp.innerHTML  = _cache.navCompHTML;
+    if(e.navPal   && _cache.navPalHTML   !== null) e.navPal.innerHTML   = _cache.navPalHTML;
+
+    _applied = false;
+    _cache = null;
+  }
+
+  function sync(){
+    try{ if(_inScope()) _apply(); else _revert(); }catch(err){ console.warn('[disc-layout] sync 오류:', err); }
+    try{ if(typeof _purgeNewsletter === 'function') _purgeNewsletter(); }catch(err){}
+    try{ if(typeof _dcpRender === 'function') _dcpRender(); }catch(err){}
+    try{ if(typeof _gapRender === 'function') _gapRender(); }catch(err){}
+    try{ if(typeof _ccRender === 'function') _ccRender(); }catch(err){}
+    try{ if(typeof _discOrderSections === 'function') _discOrderSections(); }catch(err){}
+    try{ if(typeof _cnmRender === 'function') _cnmRender(); }catch(err){}
+    try{ if(typeof _hidSync === 'function') _hidSync(); }catch(err){}
+  }
+  window._discSyncLayout = sync;
+  window._discLayoutInScope = _inScope;
+
+  // ── 브랜드/시즌이 바뀌는 지점마다 동기화 ──
+  ['pickSeason','selectBrand','enterBrandFromHome','loadSeasonData','showHomeScreen'].forEach(function(fn){
+    var orig = window[fn];
+    if(typeof orig !== 'function') return;
+    window[fn] = function(){
+      var r = orig.apply(this, arguments);
+      try{
+        sync();
+        // DISCOVERY 27FW 는 Market(01)이 첫 화면
+        if(fn === 'pickSeason' && _inScope() && typeof switchTabByName === 'function') switchTabByName('competitor');
+      }catch(e){}
+      return r;
+    };
+  });
+
+  // ── 트렌드 매칭 풀: DISCOVERY 27FW 에서만 newsletter 전용 색 제외 (WGSN + Peclers 만 사용) ──
+  //    다른 브랜드/시즌에서는 원본 그대로 newsletter 포함
+  var _origGTSC = window.getTrendSourceColors;
+  if(typeof _origGTSC === 'function'){
+    window.getTrendSourceColors = function(){
+      var out = _origGTSC.apply(this, arguments);
+      if(!_inScope() || !Array.isArray(out)) return out;
+      return out.filter(function(c){
+        var src = (c && c.sources) || [];
+        // 출처가 newsletter 뿐인 색만 제외 (wgsn/peclers/comp 에도 있으면 유지)
+        return !(src.length > 0 && src.every(function(x){ return x === 'newsletter'; }));
+      });
+    };
+  }
+
+  // 위에서 못 잡은 경로(직접 _activeSeason 변경 등) 대비 가벼운 폴백 감시
+  var _last = null;
+  setInterval(function(){
+    var now = _inScope();
+    if(now !== _last){ _last = now; sync(); }
+  }, 500);
+
+
+  // ══════════════════════════════════════════════════════════════
+  //  Trend-Matched Proposal (DISCOVERY 27FW 전용)
+  //  ────────────────────────────────────────────────────────────
+  //  1) 마켓 컬러(compData GL+KR)를 빈도순 정렬 → BASIC/SUB/KEY 분류
+  //  2) 각 마켓 컬러에 대해 WGSN·Peclers 풀에서 최근접 색 탐색
+  //  3) rgbDist ≤ 30 인 것만 채택하고, 화면에는 매칭된 WGSN/Peclers
+  //     컬러칩 자체를 제안으로 표시 (마켓 hex는 근거로만 표기)
+  //  ※ 매칭 실패한 마켓 컬러는 제외
+  // ══════════════════════════════════════════════════════════════
+  var TM_DIST   = 30;                                   // 매칭 임계값 (엄격)
+  var TM_CAPS   = { sub: 18, key: 8, basic: 18 };        // 그룹별 표시 상한
+  var TM_BASIC_IVORY_N   = 3;   // BASIC 안 아이보리 목표 수 (부족하면 채우고, 넘치면 자름)
+  var TM_BASIC_BROWN_MIN = 4;   // BASIC 안에서 최소한 확보할 브라운 계열 수
+  var TM_MINDIST = { sub: 35, key: 48, basic: 35 };      // 그룹별 유사색 배제 거리 (03 pickByQuota 기준)
+  var TM_COLORO_MAX_DE = 8;                             // 이보다 멀면 COLORO 근사 코드를 표시하지 않음
+  var TM_CLUSTER_DE = 7;                                // 마켓 근접색 병합 거리 (Lab ΔE76)
+
+  // sRGB → CIE Lab. RGB 유클리드 거리는 어두운 영역에서 값이 작게 나와
+  // 같은 임계값이라도 블랙 근처를 과도하게 빨아들인다(실데이터에서 406색 병합 관측).
+  // Lab 은 사람 눈의 민감도에 맞춰 어두운 쪽 차이를 더 크게 잡아준다.
+  var _labCache = {};
+  function _tmLab(hex){
+    if(_labCache[hex]) return _labCache[hex];
+    var c = [parseInt(hex.slice(1,3),16), parseInt(hex.slice(3,5),16), parseInt(hex.slice(5,7),16)]
+      .map(function(v){ v /= 255; return v > 0.04045 ? Math.pow((v+0.055)/1.055, 2.4) : v/12.92; });
+    var X = (c[0]*0.4124 + c[1]*0.3576 + c[2]*0.1805) / 0.95047,
+        Y = (c[0]*0.2126 + c[1]*0.7152 + c[2]*0.0722),
+        Z = (c[0]*0.0193 + c[1]*0.1192 + c[2]*0.9505) / 1.08883;
+    function f(t){ return t > 0.008856 ? Math.pow(t, 1/3) : (7.787*t + 16/116); }
+    var fx = f(X), fy = f(Y), fz = f(Z);
+    return (_labCache[hex] = [116*fy - 16, 500*(fx-fy), 200*(fy-fz)]);
+  }
+  function _tmDeltaE(a, b){
+    var p = _tmLab(a), q = _tmLab(b);
+    return Math.sqrt(Math.pow(p[0]-q[0],2) + Math.pow(p[1]-q[1],2) + Math.pow(p[2]-q[2],2));
+  }
+  var TM_SECT_ID = 'disc-trend-matched';
+  var _tmSortMode = 'family';   // 'family' = 계열별 묶음(기본) / 'freq' = 빈도순
+  // 색상환 순서 — 계열별 보기에서 줄이 정돈돼 보이도록 고정 순서를 쓴다
+  var TM_FAMILY_ORDER = ['neutral','red','pink','purple','blue','teal','green','yellow','orange'];
+  var TM_FAMILY_LABEL = { neutral:'뉴트럴', red:'레드', pink:'핑크', purple:'퍼플·라일락', blue:'블루·네이비',
+                          teal:'틸·민트', green:'그린', yellow:'옐로우·머스타드', orange:'브라운·베이지·오렌지' };
+  window._tmSetSort = function(mode){
+    _tmSortMode = mode;
+    _tmRender();
+    try{ _discOrderSections(); }catch(e){}
+  };
+  var _tmIndex = {};      // { 트렌드hex: 매칭 아이템 } — 상세 팝업 근거 표시용
+
+  // 제안 칩 클릭 → 매칭 근거(마켓 컬러·브랜드)를 함께 실어서 상세 팝업 열기
+  window._tmOpenDetail = function(hex, name){
+    var it = _tmIndex[String(hex).toUpperCase()];
+    var payload = { hex: hex, name: name || hex };
+    if(it){
+      // 팝업은 자체 기준(rgbDist < 22)으로 '비슷한 색' 브랜드를 넓게 모은다.
+      // 칩의 좁은 목록을 억지로 넘기면 팝업이 자기 목록과 합쳐 버려 의미가 없으므로,
+      // 클러스터에 실제로 포함된 브랜드만 넘기고 나머지는 팝업 판단에 맡긴다.
+      payload.compBrands = (it.brands || []).slice();
+      payload.freq = it.mkFreq;
+    }
+    if(typeof window.openPalDetail === 'function') window.openPalDetail(payload);
+    if(it) _tmInjectEvidence(it);
+  };
+
+  // SOURCE 블록 맨 위에 "매칭된 마켓 컬러" 한 줄 끼워 넣기
+  function _tmInjectEvidence(it){
+    var srcEl = document.getElementById('paldm-sources');
+    if(!srcEl) return;
+    var swatches = it.mkHexes.map(function(h){
+      return '<span title="' + h + '" style="width:14px;height:14px;border-radius:3px;background:' + h
+           + ';border:1px solid var(--border2);display:inline-block;vertical-align:middle"></span>';
+    }).join(' ');
+    var box = document.createElement('div');
+    box.style.cssText = 'padding:6px 8px;background:var(--bg3);border-radius:6px;margin-bottom:8px';
+    box.innerHTML = ''
+      + '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">'
+      +   '<span style="padding:2px 10px;border-radius:20px;font-family:var(--mono);font-size:9px;font-weight:600;color:var(--gold);border:1px solid var(--gold)">Market Match</span>'
+      +   swatches
+      +   '<span style="font-family:var(--mono);font-size:9px;color:var(--text3)">'
+      +     it.mkHexes.join(' · ') + ' · ΔRGB ' + _tmDistLabel(it) + ' · 마켓 빈도 ' + it.mkFreq
+      +   '</span>'
+      + '</div>';
+    srcEl.insertBefore(box, srcEl.firstChild);
+  }
+
+  // 'TCX' 접미사를 벗겨 순수 코드만 남긴다 (원본 데이터에 이미 붙어 있는 경우가 있어
+  //  표시할 때 다시 붙이면 'Pantone 18-3919 TCX TCX' 처럼 중복된다)
+  function _tmPantoneCode(v){
+    return String(v || '').replace(/\s*TCX\s*/gi, '').trim();
+  }
+  // Pantone TCX 는 '19-4203'(2-4자리), COLORO 는 '115-52-06'(3-2-2) 형식이다.
+  // WGSN 원본에 COLORO 형식 코드가 Pantone 자리에 섞여 들어온 행이 있어 형식으로 판별한다.
+  function _tmCodeLabel(code){
+    var c = _tmPantoneCode(code);
+    if(!c) return '';
+    if(/^\d{2}-\d{4}$/.test(c))        return 'Pantone ' + c + ' TCX';
+    if(/^\d{3}-\d{2}-\d{2}$/.test(c)) return 'COLORO ' + c;
+    return c;
+  }
+
+  // ── WGSN + Peclers 컬러 풀 (hex 기준 중복 병합, 출처 누적) ──
+  function _tmTrendPool(){
+    var out = [], seen = {};
+    function add(arr, srcLabel){
+      (arr || []).forEach(function(c){
+        if(!c || !c.hex) return;
+        var h = String(c.hex).toUpperCase();
+        if(!/^#[0-9A-F]{6}$/.test(h)) return;
+        if(h === '#888888') return;                      // 미매핑 플레이스홀더
+        if(seen[h]){
+          if(seen[h].sources.indexOf(srcLabel) < 0) seen[h].sources.push(srcLabel);
+          return;
+        }
+        seen[h] = {
+          hex: h,
+          name: c.name || c.code || h,
+          pantone: _tmPantoneCode(c.pantone || c.tcxCode || ''),
+          sources: [srcLabel],
+          file: c.fileName || ''
+        };
+        out.push(seen[h]);
+      });
+    }
+    add(typeof wgsnColors    !== 'undefined' ? wgsnColors    : [], 'WGSN');
+    add(typeof peclersColors !== 'undefined' ? peclersColors : [], 'Peclers');
+    return out;
+  }
+
+  // ── 마켓 컬러 풀 (GL + KR, 브랜드 체크·품목 필터 반영, hex 기준 빈도 합산) ──
+  function _tmMarketPool(){
+    var compAll = (typeof compData !== 'undefined' && compData) ? compData : [];
+    var sel = (typeof window._curMarketSel === 'function') ? window._curMarketSel() : null;
+    var bkn = window._brandKeyNorm || function(s){ return (s||'').toLowerCase().replace(/[\s._\-]+/g,'').trim(); };
+    function brandsOf(co){
+      var o = [];
+      if(co.brand) o.push(co.brand);
+      if(Array.isArray(co.brands)) o.push.apply(o, co.brands);
+      if(Array.isArray(co.compBrands)) o.push.apply(o, co.compBrands);
+      return o.filter(Boolean);
+    }
+    var byHex = {}, out = [];
+    compAll.forEach(function(co){
+      if(!co || !co.hex) return;
+      var src = (co.source || '');
+      if(src.indexOf('gl') < 0 && src.indexOf('kr') < 0) return;         // GLOBAL + KOREA 마켓만
+      if(sel && sel.size > 0){
+        var bs = brandsOf(co);
+        if(!bs.length || !bs.some(function(b){ return sel.has(bkn(b)); })) return;
+      }
+      if(typeof _passesCategoryFilter === 'function' && !_passesCategoryFilter(co)) return;
+      var h = String(co.hex).toUpperCase();
+      if(!/^#[0-9A-F]{6}$/.test(h)) return;
+      var f = co.freq || 1;
+      if(byHex[h]){
+        byHex[h].freq += f;
+        brandsOf(co).forEach(function(b){ if(byHex[h].brands.indexOf(b) < 0) byHex[h].brands.push(b); });
+      } else {
+        byHex[h] = { hex: h, name: co.name || h, freq: f, brands: brandsOf(co) };
+        out.push(byHex[h]);
+      }
+    });
+    out.sort(function(a,b){ return b.freq - a.freq; });
+    return _tmCluster(out);                                              // 근접색 병합 후 빈도순 재정렬
+  }
+
+  // ── 근접 마켓 컬러 병합 ────────────────────────────────────────
+  //  같은 제품 색이 촬영 조건 때문에 hex 가 조금씩 갈리는 경우가 많다
+  //  (예: Vuori 블루 #0278C6 / #0278C2 / #037CC7 …).
+  //  hex 단위로 세면 빈도가 잘게 쪼개져 실제 인기와 순위가 어긋나므로,
+  //  단일 연결(single-linkage)로 묶어 빈도를 합산한 뒤 순위를 매긴다.
+  //  대표색은 클러스터에서 빈도가 가장 높은 멤버(실재하는 색)를 쓴다.
+  function _tmCluster(list){
+    if(typeof rgbDist !== 'function' || list.length < 2) return list;
+    var clusters = [];
+    list.forEach(function(co){                                           // list 는 이미 빈도 내림차순
+      // 대표색(=클러스터 최고 빈도 색) 기준으로만, Lab ΔE 로 판정한다.
+      // 멤버 아무거나와 가까우면 편입하는 단일 연결 방식은 A-B-C 사슬로
+      // 클러스터가 무한정 번져(실데이터에서 53색·ΔRGB 101까지 관측) 사용하지 않는다.
+      var bestI = -1, bestD = TM_CLUSTER_DE;
+      for(var i = 0; i < clusters.length; i++){
+        var dd = _tmDeltaE(clusters[i].hex, co.hex);
+        if(dd < bestD){ bestD = dd; bestI = i; }                          // 가장 가까운 대표색에 붙임
+      }
+      if(bestI >= 0){
+        clusters[bestI].members.push(co);
+        clusters[bestI].freq += co.freq;
+        (co.brands || []).forEach(function(b){
+          if(clusters[bestI].brands.indexOf(b) < 0) clusters[bestI].brands.push(b);
+        });
+        return;
+      }
+      clusters.push({
+        hex: co.hex,                                                     // 첫 멤버 = 최고 빈도 → 대표색
+        name: co.name,
+        freq: co.freq,
+        brands: (co.brands || []).slice(),
+        members: [co]
+      });
+    });
+    clusters.forEach(function(c){
+      c.memberHexes = c.members.map(function(m){ return m.hex; });
+      c.memberInfo  = c.members.map(function(m){
+        return { hex: m.hex, freq: m.freq || 1, brands: (m.brands || []).slice() };
+      });
+    });
+    return clusters.sort(function(a,b){ return b.freq - a.freq; });      // 합산 빈도로 재정렬
+  }
+
+  // ── BASIC/KEY/SUB 분류 — 03 팔레트의 classifyDisc 와 동일 기준 ──
+  // ── BASIC / KEY / SUB 분류 — Lab LCh 기준 ──────────────────────
+  //  RGB 채도만으로는 상충하는 요구를 못 맞춘다:
+  //   · GUST #626879 는 Chroma 10.4 인데 BASIC (블루그레이)
+  //   · 페일세이지 #C8D5CF 는 Chroma 5.7 인데 SUB (초록기)
+  //  채도가 낮아도 '뉴트럴로 읽히는 색상대'(베이지·카키쪽 warm,
+  //  블루그레이·네이비쪽 cool)는 BASIC, 그 밖의 색상대는 옅어도 SUB.
+  var TM_BASIC_C     = 5;     // 이보다 낮으면 색상 불문 무채 (#C1C2BD C*2.7 같은 옅은 그레이지 포함)
+  var TM_NEUTRAL_C   = 15;    // 뉴트럴 색상대에서 BASIC 으로 볼 상한
+  var TM_DARK_L      = 30;    // 이보다 어두우면 (저채도 한정) BASIC
+  var TM_DARK_C      = 20;
+  var TM_KEY_C       = 36;    // KEY 판정 채도 하한 (Lab C*) — 37.8(#0086BB)·36.1(#EC9ABE) 포함
+  var TM_KEY_L       = [25, 80];
+  var TM_WARM_H      = [40, 110];    // 베이지·아이보리·크림·카키 (H105 대 크림까지 포함)
+  var TM_COOL_H      = [230, 310];   // 블루그레이·네이비·차콜
+  var TM_COOL_MAX_L  = 70;    // 쿨 뉴트럴은 이보다 밝으면 파우더블루로 읽혀 SUB
+                              //  (#708497 L54 = 슬레이트 → BASIC / #ADBED3 L76 = 파우더블루 → SUB)
+
+  function _tmLCh(hex){
+    var l = _tmLab(hex);
+    var C = Math.sqrt(l[1]*l[1] + l[2]*l[2]);
+    var H = Math.atan2(l[2], l[1]) * 180 / Math.PI;
+    if(H < 0) H += 360;
+    return { L: l[0], C: C, H: H };
+  }
+  function _tmChroma(hex){ return _tmLCh(hex).C / 100; }   // 기존 호출부 호환용
+  function _tmClassify(hex){
+    var a = _tmLCh(hex);
+    if(a.C < TM_BASIC_C) return 'basic';                                   // 순수 무채
+    var warmH = (a.H >= TM_WARM_H[0] && a.H <= TM_WARM_H[1]);
+    var coolH = (a.H >= TM_COOL_H[0] && a.H <= TM_COOL_H[1]);
+    // 어두운 저채도라도 색상이 뉴트럴대일 때만 BASIC.
+    // 색상 조건이 없으면 다크 포레스트·딥 틸·다크 플럼까지 전부 빨아들인다.
+    if(a.L < TM_DARK_L && a.C < TM_DARK_C && (warmH || coolH)) return 'basic';
+    var cool = coolH && a.L < TM_COOL_MAX_L;
+    if(a.C < TM_NEUTRAL_C && (warmH || cool)) return 'basic';              // 뉴트럴로 읽히는 색상대
+    if(a.C >= TM_KEY_C && a.L >= TM_KEY_L[0] && a.L <= TM_KEY_L[1]) return 'key';
+    return 'sub';
+  }
+
+  // ── 매칭 실행 ──
+  function _tmBuild(){
+    var market = _tmMarketPool();
+    var trend  = _tmTrendPool();
+    var buckets = { sub: [], key: [], basic: [] };
+    var totals  = { scanned: market.length, matched: 0, trendPool: trend.length, raw: {}, families: {} };
+    if(!market.length || !trend.length || typeof rgbDist !== 'function') return { buckets: buckets, totals: totals };
+
+    var usedTrend = {};
+    _tmIndex = {};
+    market.forEach(function(mc){
+      var best = null, bd = Infinity;
+      for(var i = 0; i < trend.length; i++){
+        var d = rgbDist(mc.hex, trend[i].hex);
+        if(d < bd){ bd = d; best = trend[i]; }
+      }
+      if(!best || bd > TM_DIST) return;                                  // 매칭 실패 → 제외
+      totals.matched++;
+      if(usedTrend[best.hex]){                                           // 같은 트렌드 칩 중복 → 빈도·브랜드 합산
+        var ex = usedTrend[best.hex];
+        var nr = _tmNearMembers(mc, best.hex);
+        ex.mkFreq += nr.freq;
+        nr.hexes.forEach(function(h){ if(ex.mkHexes.indexOf(h) < 0) ex.mkHexes.push(h); });
+        nr.brands.forEach(function(b){ if(ex.brands.indexOf(b) < 0) ex.brands.push(b); });
+        _tmSetDistRange(ex);
+        return;
+      }
+      // 클러스터는 '순위 매기기'용으로 빈도를 합치지만, 근거로 내세우는 멤버는
+      // 트렌드 색과 실제로 TM_DIST 안에 있는 것만 인정한다.
+      // (대표색이 30 떨어져 있으면 멤버는 최대 50까지 벌어질 수 있어 ΔRGB 표기가 임계값을 넘었음)
+      var near = _tmNearMembers(mc, best.hex);
+      var item = {
+        trend: best,
+        dist: Math.round(bd),
+        mkHex: mc.hex,
+        mkHexes: near.hexes,
+        mkName: mc.name,
+        mkFreq: near.freq,
+        brands: near.brands
+      };
+      _tmSetDistRange(item);
+      usedTrend[best.hex] = item;
+      _tmIndex[best.hex] = item;                                        // 상세 팝업에서 근거 조회용
+      // 분류는 '화면에 나가는 색' 기준이어야 한다.
+      // 마켓 컬러로 분류하면 ΔRGB 30 차이만큼 엇갈려서,
+      // 페일 뉴트럴이 SUB 로 올라가는 문제가 생긴다.
+      buckets[_tmClassify(best.hex)].push(item);
+    });
+
+    var rawAll = {};
+    ['sub','key','basic'].forEach(function(k){
+      buckets[k].sort(function(a,b){ return b.mkFreq - a.mkFreq; });
+      totals.raw[k] = buckets[k].length;
+      rawAll[k] = buckets[k].slice();                      // 캡 적용 전 전체 — 보완 후보 계산용
+      buckets[k] = _tmPick(buckets[k], TM_CAPS[k], TM_MINDIST[k]);
+      if(k === 'basic') buckets[k] = _tmEnforceBasicMix(buckets[k], rawAll[k], TM_CAPS[k]);
+      totals.families[k] = _tmFamilyCount(buckets[k]);
+      // 선발은 계열 라운드로빈으로 하되, 출력 순서는 다시 빈도순으로 —
+      // 라운드로빈 순서 그대로 내보내면 106 → 1 → 77 처럼 들쭉날쭉해 읽기 어렵다
+      buckets[k].sort(function(a,b){ return b.mkFreq - a.mkFreq; });
+    });
+    var out = { buckets: buckets, raw: rawAll, totals: totals };
+    _tmLastBuild = out;
+    return out;
+  }
+  var _tmLastBuild = null;
+
+  // 클러스터 멤버 중 트렌드 색과 TM_DIST 이내인 것만 추려 hex·빈도·브랜드 반환
+  function _tmNearMembers(mc, trendHex){
+    var info = mc.memberInfo || [{ hex: mc.hex, freq: mc.freq, brands: mc.brands || [] }];
+    var hexes = [], brands = [], freq = 0;
+    info.forEach(function(m){
+      if(rgbDist(m.hex, trendHex) > TM_DIST) return;
+      hexes.push(m.hex);
+      freq += m.freq;
+      (m.brands || []).forEach(function(b){ if(brands.indexOf(b) < 0) brands.push(b); });
+    });
+    if(!hexes.length){ hexes = [mc.hex]; freq = mc.freq; brands = (mc.brands || []).slice(); }
+    return { hexes: hexes, freq: freq, brands: brands };
+  }
+
+  // 멤버 hex 전체와 트렌드 색의 거리 → 최소·최대·평균
+  function _tmSetDistRange(item){
+    if(typeof rgbDist !== 'function') return;
+    var ds = item.mkHexes.map(function(h){ return rgbDist(h, item.trend.hex); });
+    item.distMin = Math.round(Math.min.apply(null, ds));
+    item.distMax = Math.round(Math.max.apply(null, ds));
+    item.dist    = Math.round(ds.reduce(function(a,b){ return a+b; }, 0) / ds.length);
+  }
+  function _tmDistLabel(item){
+    return (item.distMin != null && item.distMax != null && item.distMin !== item.distMax)
+      ? (item.distMin + '~' + item.distMax + ' (평균 ' + item.dist + ')')
+      : String(item.dist);
+  }
+
+  // ── Hue 계열 판정 — Lab LCh 기준 ──────────────────────────────
+  //  HSL 색상각은 밝은 색에서 틀어진다. 코랄 #EBA491 은 HSL 13°(레드) 인데
+  //  Lab 으로는 40°(오렌지)라 실제 눈에 보이는 계열과 맞다.
+  //  구간은 패션 컬러 용례에 맞춰 잡았다 — 베이지·타페·브라운은 Lab 상
+  //  옐로우 영역(70~95°)에 들어오므로 오렌지 구간에 합쳐 '브라운·오렌지'로 본다.
+  var TM_FAM_NEUTRAL_C = 10.5;   // DWS·SAD(C*10.5~10.6 다크브라운)는 색으로, MGS(C*10.0 그레이멜란지)는 무채로
+  function _tmFamily(hex){
+    var a = _tmLCh(hex);
+    if(a.C < TM_FAM_NEUTRAL_C || a.L < 12 || a.L > 95) return 'neutral';
+    var H = a.H;
+    if(H >= 320 || H < 25) return (a.L >= 62) ? 'pink' : 'red';   // 밝으면 핑크, 어두우면 레드
+    if(H < 95)  return 'orange';   // 브라운·베이지·카키·코랄
+    if(H < 125) return 'yellow';   // 옐로우·머스타드
+    if(H < 165) return 'green';
+    if(H < 200) return 'teal';
+    if(H < 288) return 'blue';     // 네이비 포함
+    return 'purple';               // 라일락·페리윙클
+  }
+  function _tmFamilyCount(list){
+    var seen = {}, n = 0;
+    list.forEach(function(it){ var f = _tmFamily(it.trend.hex); if(!seen[f]){ seen[f] = 1; n++; } });
+    return n;
+  }
+
+  // BASIC 안의 톤 균형 — 아이보리류가 자리를 먹고 브라운이 밀리는 걸 막는다.
+  //  아이보리: L* 82 이상(아이보리·크림·오프화이트·근백색)
+  //  브라운  : Lab H 30~95° · L* 20~75 · C* 5 이상(베이지~다크브라운·카키 포함)
+  //  아이보리: 밝고(L* 80+) 따뜻한 기가 실제로 있는 색.
+  //  L* 만 보면 순백(#EDEDED C*0.0)·라이트그레이(#D8D6D5 C*0.9)까지 아이보리로 세어져
+  //  화면에는 크림이 하나뿐인데 상한 3이 이미 찼다고 판단하는 문제가 있었다.
+  function _tmIsIvory(hex){
+    var a = _tmLCh(hex);
+    return a.L >= 80 && a.C >= 3 && a.H >= TM_WARM_H[0] && a.H <= TM_WARM_H[1];   // 분류 색상대와 동일
+  }
+  function _tmIsBrown(hex){
+    var a = _tmLCh(hex);
+    return a.H >= 30 && a.H <= 95 && a.L >= 20 && a.L <= 75 && a.C >= 5;
+  }
+  function _tmEnforceBasicMix(picked, pool, cap){
+    var inPick = {};
+    picked.forEach(function(it){ inPick[it.trend.hex] = 1; });
+    var rest = pool.filter(function(it){ return !inPick[it.trend.hex]; });   // 빈도순 유지
+
+    function countOf(fn){ return picked.filter(function(it){ return fn(it.trend.hex); }).length; }
+
+    // 초과분 잘라내기 — 빈도 낮은 것부터
+    function trimTo(fn, n){
+      var hit = picked.filter(function(it){ return fn(it.trend.hex); });
+      if(hit.length <= n) return;
+      hit.slice(n).forEach(function(it){
+        var i = picked.indexOf(it);
+        if(i >= 0) picked.splice(i, 1);
+        delete inPick[it.trend.hex];
+      });
+    }
+    // 부족분 채우기 — 빈도 높은 후보부터, 자리가 없으면 '보호 대상이 아닌' 색을 내보낸다
+    function fillTo(fn, n, protectFns){
+      var have = countOf(fn);
+      if(have >= n) return;
+      var cands = rest.filter(function(it){ return !inPick[it.trend.hex] && fn(it.trend.hex); });
+      for(var i = 0; i < cands.length && have < n; i++){
+        if(picked.length >= cap){
+          var victim = -1;
+          for(var k = picked.length - 1; k >= 0; k--){
+            var h = picked[k].trend.hex;
+            var isProtected = protectFns.some(function(p){ return p(h); });
+            if(!isProtected){ victim = k; break; }
+          }
+          if(victim < 0) break;
+          delete inPick[picked[victim].trend.hex];
+          picked.splice(victim, 1);
+        }
+        picked.push(cands[i]); inPick[cands[i].trend.hex] = 1; have++;
+      }
+    }
+
+    trimTo(_tmIsIvory, TM_BASIC_IVORY_N);                       // 아이보리 3개까지만
+    fillTo(_tmIsIvory, TM_BASIC_IVORY_N, [_tmIsBrown]);         // 부족하면 3개까지 채움 (브라운은 보호)
+    fillTo(_tmIsBrown, TM_BASIC_BROWN_MIN, [_tmIsIvory, _tmIsBrown]);
+
+    // 자리가 남으면 빈도순으로 마저 채움
+    for(var i = 0; i < rest.length && picked.length < cap; i++){
+      if(inPick[rest[i].trend.hex]) continue;
+      picked.push(rest[i]); inPick[rest[i].trend.hex] = 1;
+    }
+    return picked;
+  }
+
+  // ── 계열 라운드로빈 + 색거리 필터로 cap 개수만큼 선발 ──
+  //  1) 계열별로 나눈 뒤 빈도 높은 계열부터 한 개씩 돌아가며 뽑음 (계열 독식 방지)
+  //  2) 이미 뽑힌 색과 rgbDist 가 minDist 미만이면 건너뜀 (유사색 중복 방지)
+  //  3) 부족하면 minDist 를 절반으로 완화, 그래도 부족하면 빈도순으로 채움
+  function _tmPick(items, cap, minDist){
+    if(items.length <= cap) return items;
+    var fams = {}, order = [];
+    items.forEach(function(it){
+      var f = _tmFamily(it.trend.hex);
+      if(!fams[f]){ fams[f] = []; order.push(f); }   // items 가 이미 빈도순이라 등장 순서 = 계열 우선순위
+      fams[f].push(it);
+    });
+
+    var picked = [], usedHex = {};
+    function tryTake(it, dist){
+      if(usedHex[it.trend.hex]) return false;
+      if(picked.length >= cap) return false;
+      if(dist > 0){
+        for(var i = 0; i < picked.length; i++){
+          if(rgbDist(picked[i].trend.hex, it.trend.hex) < dist) return false;
+        }
+      }
+      picked.push(it); usedHex[it.trend.hex] = 1; return true;
+    }
+    // 1·2단계: 계열 라운드로빈 (색거리 기준 → 완화 기준)
+    [minDist, minDist * 0.5].forEach(function(dist){
+      var moved = true;
+      while(picked.length < cap && moved){
+        moved = false;
+        for(var oi = 0; oi < order.length; oi++){
+          if(picked.length >= cap) break;
+          var pool = fams[order[oi]];
+          for(var pi = 0; pi < pool.length; pi++){
+            if(usedHex[pool[pi].trend.hex]) continue;
+            if(tryTake(pool[pi], dist)){ moved = true; break; }
+          }
+        }
+      }
+    });
+    // 3단계: 그래도 부족하면 빈도순으로 채움
+    for(var i = 0; i < items.length && picked.length < cap; i++) tryTake(items[i], 0);
+    return picked;
+  }
+
+  // ── 동일 톤 브랜드 집계 ──────────────────────────────────────
+  //  팝업 Competitor 블록은 rgbDist < 22 로 훨씬 넓게 잡는다. 그 기준을 그대로 쓰면
+  //  밝은 뉴트럴(#C8D5CF 등) 주변에 온갖 오프화이트·라이트그레이가 들어와
+  //  데이터에 있는 브랜드가 전부 잡힌다(실제로 14개 전원 관측). 뉴트럴에서는
+  //  브랜드 수가 신호가 아니라 노이즈가 되므로, 여기서는 Lab ΔE 로 좁게 판정한다.
+  //  → 칩과 팝업의 브랜드 수는 의도적으로 다르다. 팝업은 '비슷한 색' 참고용,
+  //    칩은 '같은 톤을 실제로 쓰는 브랜드'용.
+  var TM_NEAR_BRAND_DE = 5;
+  function _tmNearBrands(hex){
+    if(typeof compData === 'undefined' || !Array.isArray(compData)) return [];
+    var sel = (typeof window._curMarketSel === 'function') ? window._curMarketSel() : null;
+    var bkn = window._brandKeyNorm || function(x){ return (x||'').toLowerCase().replace(/[\s._\-]+/g,'').trim(); };
+    var cnt = {}, out = [];
+    for(var i = 0; i < compData.length; i++){
+      var cd = compData[i];
+      if(!cd || !cd.hex || !cd.brand) continue;
+      if(!/^#[0-9A-Fa-f]{6}$/.test(cd.hex)) continue;
+      if(_tmDeltaE(hex, String(cd.hex).toUpperCase()) >= TM_NEAR_BRAND_DE) continue;
+      if(sel && sel.size > 0 && !sel.has(bkn(cd.brand))) continue;
+      // 빈도(_tmMarketPool)와 같은 모집단이 되도록 품목 필터도 동일 적용.
+      // 안 걸면 품목을 Outerwear 로 바꿨을 때 빈도는 줄고 분자는 그대로여서 어긋난다.
+      if(typeof _passesCategoryFilter === 'function' && !_passesCategoryFilter(cd)) continue;
+      if(!cnt[cd.brand]){ cnt[cd.brand] = 0; out.push(cd.brand); }
+      cnt[cd.brand] += (cd.freq || 1);
+    }
+    out.sort(function(a,b){ return cnt[b] - cnt[a]; });      // 많이 쓴 브랜드부터
+    out._counts = cnt;
+    return out;
+  }
+
+  // 칩 이름 줄 — 이름이 그냥 코드(18-1250 TCX / 064-75-05)면 아래 코드 줄과 중복이라 비운다.
+  //  ELIXIR·GUST 처럼 실제 컬러명이 있을 때만 표시. 빈 경우도 자리는 유지해 높이를 맞춘다.
+  function _tmDisplayName(t){
+    var n = String(t.name || '').trim();
+    if(!n) return '';
+    var bare = n.replace(/\s*TCX\s*/gi, '').trim();
+    if(/^\d{2}-\d{4}$/.test(bare)) return '';          // Pantone 코드
+    if(/^\d{3}-\d{2}-\d{2}$/.test(bare)) return '';    // COLORO 코드
+    if(/^#[0-9A-Fa-f]{6}$/.test(bare)) return '';       // hex
+    return n;
+  }
+
+  // 칩 코드 줄 — 원본 데이터의 코드가 1순위.
+  //  없으면 팝업과 같은 경로(hexToColoro)의 Pantone 매핑을 쓰되 '≈' 로 근사임을 밝힌다.
+  //  (팝업은 이미 이 값을 쓰고 있어, 칩만 비워두면 같은 색인데 한쪽만 코드가 없다)
+  //  둘 다 없으면 빈 줄을 넣어 칩 높이를 맞춘다.
+  function _tmCodeLineHtml(t){
+    var code = _tmCodeLabel(t.pantone);
+    if(code) return '<div class="dcp-code">' + code + '</div>';
+    var cc = (window.hexToColoro && window.hexToColoro(t.hex)) || null;
+    if(cc && cc.pantone){
+      var pc = _tmPantoneCode(cc.pantone);
+      if(pc) return '<div class="dcp-code" title="원본 데이터에 코드가 없어 HEX 기반 근사 매핑">Pantone ≈ ' + pc + ' TCX</div>';
+    }
+    if(cc && cc.coloro) return '<div class="dcp-code" title="HEX 기반 근사 매핑">COLORO ≈ ' + cc.coloro + '</div>';
+    return '<div class="dcp-code">&nbsp;</div>';       // 자리만 유지
+  }
+
+
+  // ══════════════════════════════════════════════════════════════
+  //  데이터 오버레이 — 세일즈 / 중국
+  //  ────────────────────────────────────────────────────────────
+  //  Trend-Matched 칩 아래에 비슷한 색의 실판매 컬러(25FW)나
+  //  중국 마켓 컬러를 덧붙여, "작년에 이 색을 썼고 이만큼 팔렸다"를
+  //  칩에서 바로 보여준다. 칩을 클릭하면 상세가 뜬다.
+  // ══════════════════════════════════════════════════════════════
+  var OV_DE = 12;                 // 비슷한 색으로 볼 Lab ΔE
+                                  //  16 으로 올렸더니 ΔE 12~16 구간(같은 계열이지만 확실히 다른 색)까지
+                                  //  붙어 근거로 쓰기 어려웠다. 세일즈 RED(#AB2C3A)는 제안색과
+                                  //  ΔE 15.4 로 실제로 다른 색이라 빠지는 게 맞다.
+  var _ovOn = { sales: false, cn: false };
+
+  window._ovToggle = function(kind){
+    _ovOn[kind] = !_ovOn[kind];
+    _tmRender();
+    try{ _discOrderSections(); }catch(e){}
+  };
+
+  // 중국 패널 — KEY 줄 오른쪽 빈 공간에 China Market 결과를 그대로 띄운다
+  function _ovCnPanel(){
+    if(!_ovOn.cn) return '';
+    var r = (typeof _cnmBuild === 'function') ? _cnmBuild() : null;
+    if(!r || !r.items.length){
+      return '<div class="spp-empty" style="font-size:10px">중국 마켓 매칭 결과 없음</div>';
+    }
+    var g = { key: [], sub: [], basic: [] };
+    r.items.forEach(function(it){ g[_tmClassify(it.trend.hex)].push(it); });
+    var rows = [['SUB','var(--blue)', g.sub.concat(g.basic)], ['KEY','#A090F0', g.key]];
+    return ''
+      + '<div style="flex:1 1 380px;min-width:380px;border:1px solid var(--border);border-radius:8px;'
+      +   'padding:12px 14px;background:rgba(80,140,200,0.04)">'
+      +   '<div style="display:flex;align-items:baseline;gap:8px;margin-bottom:10px">'
+      +     '<span style="font-family:var(--mono);font-size:10px;font-weight:700;color:#5B8FC9;letter-spacing:0.1em">CN CHINA</span>'
+      +     '<span style="font-family:var(--mono);font-size:9px;color:var(--text4)">중국 마켓 '
+      +       r.scanned + '색 → 매칭 ' + r.items.length + '색 · 상위 ' + CNM_MAX + '</span>'
+      +     '<button onclick="_ovToggle(\'cn\')" style="margin-left:auto;font-family:var(--mono);font-size:10px;'
+      +       'padding:2px 8px;border-radius:4px;cursor:pointer;border:1px solid var(--border);'
+      +       'background:transparent;color:var(--text3)">닫기</button>'
+      +   '</div>'
+      +   rows.map(function(row){
+            var list = row[2].slice(0, CNM_MAX);
+            if(!list.length) return '';
+            return '<div style="margin-bottom:12px">'
+              + '<div style="font-family:var(--mono);font-size:9px;font-weight:700;color:' + row[1]
+              +   ';letter-spacing:0.1em;margin-bottom:6px">' + row[0] + ' <span style="color:var(--text3);font-weight:400">'
+              +   list.length + '색</span></div>'
+              + '<div style="display:flex;gap:10px;flex-wrap:wrap">' + list.map(_cnmChip).join('') + '</div>'
+              + '</div>';
+          }).join('')
+      + '</div>';
+  }
+
+  // 세일즈 풀 — 블랙·화이트만 제외하고 그레이는 남긴다
+  function _ovSalesPool(){
+    var d = window.DISC_SALES_DATA;
+    if(!d) return [];
+    var out = [];
+    ['key','sub','basic'].forEach(function(g){
+      (d[g] || []).forEach(function(c){
+        if(!c || !c.hex) return;
+        var a = _tmLCh(c.hex);
+        if(a.L >= 90 && a.C < 8) return;      // 화이트·오프화이트
+        if(a.L <= 16 && a.C < 8) return;      // 블랙
+        out.push({
+          hex: String(c.hex).toUpperCase(), group: g, code: c.code || '',
+          name: c.group || '', sell: c.sell_rate, rev: c.rev_share, score: c.saleScore
+        });
+      });
+    });
+    return out;
+  }
+  function _ovCnPool(){
+    if(typeof cnMarketData === 'undefined' || !Array.isArray(cnMarketData)) return [];
+    return cnMarketData.filter(function(c){ return c && c.hex; }).map(function(c){
+      return { hex: String(c.hex).toUpperCase(), freq: c.freq || 1, brands: c.brands || [] };
+    });
+  }
+  var _ovCache = {};
+  function _ovPool(kind){
+    if(!_ovCache[kind] || _ovCache[kind].t !== _tmLastBuild){
+      _ovCache[kind] = { t: _tmLastBuild, list: (kind === 'sales' ? _ovSalesPool() : _ovCnPool()) };
+    }
+    return _ovCache[kind].list;
+  }
+  // 트렌드 칩 하나에 가장 가까운 항목
+  function _ovMatch(kind, hex){
+    var pool = _ovPool(kind), best = null, bd = OV_DE;
+    for(var i = 0; i < pool.length; i++){
+      var dd = _tmDeltaE(hex, pool[i].hex);
+      if(dd < bd){ bd = dd; best = pool[i]; }
+    }
+    return best ? { item: best, de: Math.round(bd * 10) / 10 } : null;
+  }
+
+  var _ovIndex = {};
+
+  // 세일즈 색 ↔ 칩 1:1 배정.
+  //  칩마다 따로 최근접을 찾으면 같은 색(예: 그레이 53.5%)이 여러 칩에 중복으로 붙는다.
+  //  풀의 각 색을 '가장 가까운 칩' 한 곳에만 주고, 칩이 겹치면 더 가까운 색이 차지한다.
+  var _ovAssign = {};
+  function _ovAssignMap(kind){
+    var key = kind;
+    if(_ovAssign[key] && _ovAssign[key].t === _tmLastBuild) return _ovAssign[key].map;
+    var chips = [];
+    if(_tmLastBuild && _tmLastBuild.buckets){
+      ['key','sub','basic'].forEach(function(k){
+        (_tmLastBuild.buckets[k] || []).forEach(function(it){ chips.push(it.trend.hex); });
+      });
+    }
+    var map = {};
+    _ovPool(kind).forEach(function(item){
+      var best = null, bd = OV_DE;
+      chips.forEach(function(c){
+        var dd = _tmDeltaE(c, item.hex);
+        if(dd < bd){ bd = dd; best = c; }
+      });
+      if(!best) return;
+      if(!map[best] || bd < map[best].de) map[best] = { item: item, de: Math.round(bd * 10) / 10 };
+    });
+    _ovAssign[key] = { t: _tmLastBuild, map: map };
+    return map;
+  }
+
+  function _ovStrip(hex){
+    var html = '';
+    ['sales'].forEach(function(kind){
+      if(!_ovOn[kind]) return;
+      var m = _ovAssignMap(kind)[hex];
+      if(!m) return;
+      var key = kind + '|' + hex;
+      _ovIndex[key] = m;
+      var label = (kind === 'sales')
+        ? (m.item.sell != null ? m.item.sell + '%' : '판매')
+        : ('×' + m.item.freq);
+      html += '<div onclick="event.stopPropagation();_ovOpen(event,\'' + kind + '\',\'' + hex + '\')"'
+        + ' title="' + (kind === 'sales' ? '25FW 실판매' : '중국 마켓') + ' ' + m.item.hex + ' · ΔE ' + m.de + '"'
+        + ' style="margin-top:4px;cursor:pointer;border:1px solid var(--border);border-radius:4px;overflow:hidden">'
+        +   '<div style="height:30px;background:' + m.item.hex + ';display:flex;align-items:flex-end;'
+        +     'justify-content:center;padding-bottom:2px">'
+        +     '<span style="font-family:var(--mono);font-size:9px;font-weight:800;color:'
+        +       _dcpTextOn(String(m.item.hex).slice(1)) + '">' + (kind === 'sales' ? 'S' : 'CN') + '</span>'
+        +   '</div>'
+        +   '<div style="font-family:var(--mono);font-size:9px;color:var(--text3);text-align:center;'
+        +     'padding:3px 2px;background:var(--surface);white-space:nowrap;overflow:hidden">' + label + '</div>'
+        + '</div>';
+    });
+    return html;
+  }
+
+  window._ovOpen = function(evt, kind, hex){
+    var m = _ovIndex[kind + '|' + hex];
+    if(!m) return;
+    var pop = _ccEnsurePop();
+    var it = m.item;
+    var rows = (kind === 'sales')
+      ? [['컬러코드', it.code || '-'], ['계열', it.name || '-'], ['그룹', (it.group || '').toUpperCase()],
+         ['판매율', it.sell != null ? it.sell + '%' : '-'],
+         ['매출비중', it.rev != null ? (it.rev * 100).toFixed(2) + '%' : '-'],
+         ['판매점수', it.score != null ? it.score : '-']]
+      : [['마켓 빈도', '×' + it.freq], ['브랜드', (it.brands || []).slice(0, 4).join(', ') || '-']];
+    pop.innerHTML = ''
+      + '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">'
+      +   '<span style="width:22px;height:22px;border-radius:4px;background:' + it.hex + ';border:1px solid var(--border2)"></span>'
+      +   '<span style="font-family:var(--mono);font-size:11px;color:var(--text)">' + it.hex + '</span>'
+      +   '<span style="font-family:var(--mono);font-size:9px;color:var(--text3)">'
+      +     (kind === 'sales' ? '25FW 실판매' : '중국 마켓') + '</span>'
+      + '</div>'
+      + '<div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;font-family:var(--mono);font-size:9px;color:var(--text4)">'
+      +   '<span style="width:12px;height:12px;border-radius:2px;background:' + hex + ';border:1px solid var(--border)"></span>'
+      +   '제안색 ' + hex + ' 와 Lab ΔE ' + m.de
+      + '</div>'
+      + rows.map(function(r){
+          return '<div style="display:flex;justify-content:space-between;gap:14px;font-family:var(--mono);font-size:10px;padding:3px 0">'
+            + '<span style="color:var(--text4)">' + r[0] + '</span><span style="color:var(--text2)">' + r[1] + '</span></div>';
+        }).join('');
+    pop.style.display = 'block';
+    var r = evt.currentTarget.getBoundingClientRect();
+    var top = r.bottom + 6, left = r.left;
+    if(left + 210 > window.innerWidth - 8) left = window.innerWidth - 218;
+    if(top + pop.offsetHeight > window.innerHeight - 8) top = Math.max(8, r.top - pop.offsetHeight - 6);
+    pop.style.top = top + 'px'; pop.style.left = left + 'px';
+    document.getElementById('cc-move-ov').style.display = 'block';
+  };
+
+  // 섹션 하단 우측 데이터 토글
+  function _ovTabs(){
+    var cnt = { sales: _ovPool('sales').length, cn: _ovPool('cn').length };
+    return '<div style="display:flex;justify-content:flex-start;gap:6px;margin:-6px 0 14px">'
+      + [['sales','세일즈 25FW'], ['cn','중국 마켓']].map(function(t){
+          var on = _ovOn[t[0]];
+          return '<button onclick="_ovToggle(\'' + t[0] + '\')" style="font-family:var(--mono);font-size:10px;'
+            + 'padding:5px 12px;border-radius:4px;cursor:pointer;'
+            + 'border:1px solid ' + (on ? 'var(--gold)' : 'var(--border)') + ';'
+            + 'background:' + (on ? 'rgba(160,120,64,0.16)' : 'transparent') + ';'
+            + 'color:' + (on ? 'var(--gold)' : 'var(--text3)') + ';font-weight:' + (on ? '700' : '400') + '">'
+            + (on ? '● ' : '○ ') + t[1] + ' ' + cnt[t[0]] + '색</button>';
+        }).join('')
+      + '</div>';
+  }
+
+  // ── 칩 렌더 — 27FW Color Palette(dcp) 와 동일한 형태 ──
+  //  구성: 출처태그 → 컬러명 → [COLORO 코드 | 색면 | HEX] 카드.
+  //  빈도·ΔRGB·브랜드 같은 수치는 칩에서 빼고 클릭 시 팝업에서 본다.
+  function _tmChip(it, isKey){
+    var t  = it.trend;
+    var codeLine = _tmCodeLineHtml(t);
+    var src = (t.sources && t.sources.length) ? t.sources.join('·') : '';
+    var nameEsc = String(t.name || t.hex).replace(/'/g, "\\'").replace(/</g, '&lt;');
+    return ''
+      + '<div class="dcp-chip" style="cursor:pointer" onclick="_tmOpenDetail(\'' + t.hex + '\',\'' + nameEsc + '\')"'
+      +   ' title="' + (t.name || '') + ' ' + t.hex + ' · 마켓 빈도 ' + it.mkFreq + ' · ΔRGB ' + _tmDistLabel(it) + '">'
+      +   '<div class="dcp-name" style="font-size:10px;font-weight:700;color:var(--text3);letter-spacing:0.04em">' + (src || '&nbsp;') + '</div>'
+      +   '<div class="dcp-card">'
+      +     codeLine
+      +     '<div class="dcp-fill" style="background:' + t.hex + '">'
+      +       (isKey ? '<span style="font-family:var(--mono);font-size:8px;font-weight:800;color:' + _dcpTextOn(t.hex.slice(1)) + '">KEY</span>' : '')
+      +     '</div>'
+      +     '<div class="dcp-hex">' + t.hex + '</div>'
+      +   '</div>'
+      +   _ovStrip(t.hex)
+      + '</div>';
+  }
+
+  function _tmSortTabs(){
+    return [['family','계열별'], ['freq','빈도순']].map(function(t){
+      var on = (_tmSortMode === t[0]);
+      return '<button onclick="_tmSetSort(\'' + t[0] + '\')" style="font-family:var(--mono);font-size:10px;'
+        + 'padding:4px 11px;border-radius:4px;cursor:pointer;'
+        + 'border:1px solid ' + (on ? 'var(--gold)' : 'var(--border)') + ';'
+        + 'background:' + (on ? 'rgba(160,120,64,0.16)' : 'transparent') + ';'
+        + 'color:' + (on ? 'var(--gold)' : 'var(--text3)') + ';font-weight:' + (on ? '700' : '400') + '">'
+        + t[1] + '</button>';
+    }).join('');
+  }
+
+  function _tmRow(label, color, items, cap, rawCnt, famCnt){
+    var shown = items;                                   // 선발은 _tmPick 에서 이미 끝남
+    var cnt = shown.length
+      ? (shown.length + (rawCnt && rawCnt > shown.length ? ' / ' + rawCnt : '') + '개'
+         + (famCnt ? ' · ' + famCnt + '계열' : ''))
+      : '';
+    var isKey = (label === 'KEY');
+    var body;
+    if(!shown.length){
+      body = '<div class="spp-empty" style="font-size:10px">매칭된 트렌드 컬러 없음</div>';
+    } else if(_tmSortMode === 'family'){
+      // 계열별로 묶고, 계열 안에서는 밝은 색 → 어두운 색 순
+      var byFam = {};
+      shown.forEach(function(it){
+        var f = _tmFamily(it.trend.hex);
+        (byFam[f] = byFam[f] || []).push(it);
+      });
+      var blocks = TM_FAMILY_ORDER.filter(function(f){ return byFam[f]; }).map(function(f){
+        byFam[f].sort(function(a,b){ return _tmLCh(b.trend.hex).L - _tmLCh(a.trend.hex).L; });
+        return '<div style="display:flex;gap:5px" title="' + (TM_FAMILY_LABEL[f] || f) + ' ' + byFam[f].length + '색">'
+          + byFam[f].map(function(it){ return _tmChip(it, isKey); }).join('') + '</div>';
+      });
+      body = '<div class="dcp-mood-row" style="justify-content:flex-start;flex-wrap:wrap;gap:12px">' + blocks.join('') + '</div>';
+    } else {
+      body = '<div class="dcp-mood-row" style="' + 'justify-content:flex-start;flex-wrap:wrap' + ';gap:5px">'
+        + shown.map(function(it){ return _tmChip(it, isKey); }).join('') + '</div>';
+    }
+    return ''
+      + '<div style="margin-bottom:20px">'
+      +   '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">'
+      +     '<span style="font-family:var(--mono);font-size:9px;font-weight:700;color:' + color + ';letter-spacing:0.1em;text-transform:uppercase">' + label + '</span>'
+      +     '<span style="font-family:var(--mono);font-size:9px;color:var(--text3)">' + cnt + '</span>'
+      +   '</div>'
+      +   body
+      + '</div>';
+  }
+
+  function _tmSection(){
+    var wrap = document.getElementById('disc-palette-wrap');
+    if(!wrap) return null;
+    var sect = document.getElementById(TM_SECT_ID);
+    if(!sect){
+      sect = document.createElement('div');
+      sect.id = TM_SECT_ID;
+      sect.className = 'dcp-scope';
+      sect.style.marginBottom = '32px';
+      sect.style.paddingBottom = '24px';
+      sect.style.borderBottom = '1px solid var(--border)';
+    }
+    if(!sect.parentNode) wrap.insertBefore(sect, wrap.firstChild);
+    return sect;
+  }
+
+  function _tmRender(){
+    try { _tmRenderInner(); }
+    catch(err){
+      console.error('[trend-matched] 렌더 실패:', err);
+      var es = document.getElementById(TM_SECT_ID);
+      if(!es){ es = _tmSection(); }
+      if(es){
+        es.style.display = 'block';
+        es.innerHTML = '<div class="spp-empty" style="color:var(--warn)">Trend-Matched 렌더 오류: '
+          + (err && err.message ? err.message : String(err)) + '</div>';
+      }
+    }
+  }
+  function _tmRenderInner(){
+    var sect = document.getElementById(TM_SECT_ID);
+    if(!_inScope()){ if(sect) sect.style.display = 'none'; return; }
+    sect = _tmSection();
+    if(!sect) return;
+    sect.style.display = 'block';
+
+    try{ _purgeNewsletter(); }catch(e){}
+    var r = _tmBuild(), b = r.buckets, t = r.totals;
+    var matchedTotal = b.sub.length + b.key.length + b.basic.length;
+
+    sect.innerHTML = ''
+      + '<div class="spp-trend-market-hd" style="margin-bottom:6px">'
+      +   '<span class="spp-trend-market-flame" style="color:var(--gold)">◈ TREND-MATCHED</span>'
+      +   '<span class="spp-trend-market-title">Trend-Matched Proposal</span>'
+      +   '<span class="spp-trend-market-sub">마켓 빈도 상위 컬러 중 WGSN·Peclers와 일치하는 색만 제안 · 칩은 WGSN/Peclers 원본 컬러</span>'
+      +   '<span style="margin-left:auto;display:flex;gap:4px">' + _tmSortTabs() + '</span>'
+      + '</div>'
+      + '<div style="font-family:var(--mono);font-size:9px;color:var(--text4);margin-bottom:14px">'
+      +   '마켓 ' + t.scanned + '색 · 트렌드 풀 ' + t.trendPool + '색 · 매칭 임계 ΔRGB ≤ ' + TM_DIST
+      +   ' · 채택 ' + matchedTotal + '색 · 계열 다양성 + 유사색 배제 · BASIC 아이보리 ' + TM_BASIC_IVORY_N + '개/브라운≥' + TM_BASIC_BROWN_MIN
+      +   ' · 분류 Lab 기준 BASIC C*<' + TM_BASIC_C + ' (뉴트럴 색상대 C*<' + TM_NEUTRAL_C + ', 쿨은 L<' + TM_COOL_MAX_L + ') / KEY C*≥' + TM_KEY_C + ' · 마켓 근접색 병합 Lab ΔE < ' + TM_CLUSTER_DE + ' · 브랜드 집계 Lab ΔE < ' + TM_NEAR_BRAND_DE
+      + '</div>'
+      + _ovTabs()
+      + (t.trendPool === 0
+          ? '<div class="spp-empty">02 Trend Collection에서 WGSN 또는 Peclers 데이터를 먼저 로드하세요.</div>'
+          : (t.scanned === 0
+              ? '<div class="spp-empty">01 Market Analysis 데이터를 먼저 로드하세요.</div>'
+              : (_ovOn.cn
+                  // 중국 패널이 켜지면 SUB·KEY 를 왼쪽 열로 묶고 패널을 오른쪽에 나란히 둔다
+                  // (SUB 가 두 줄로 내려가도 패널과 겹치지 않는다)
+                  ? '<div style="display:flex;gap:20px;align-items:flex-start;flex-wrap:wrap">'
+                    +   '<div style="flex:1 1 520px;min-width:0">'
+                    +     _tmRow('SUB', 'var(--blue)', b.sub, TM_CAPS.sub, t.raw.sub, t.families.sub)
+                    +     _tmRow('KEY', '#A090F0', b.key, TM_CAPS.key, t.raw.key, t.families.key)
+                    +   '</div>'
+                    +   _ovCnPanel()
+                    + '</div>'
+                  : _tmRow('SUB', 'var(--blue)', b.sub, TM_CAPS.sub, t.raw.sub, t.families.sub)
+                    + _tmRow('KEY', '#A090F0', b.key, TM_CAPS.key, t.raw.key, t.families.key))
+              + _tmRow('BASIC', 'var(--gold)', b.basic, TM_CAPS.basic, t.raw.basic, t.families.basic)));
+  }
+  window._discRenderTrendMatched = _tmRender;
+
+
+  // ══════════════════════════════════════════════════════════════
+  //  Newsletter 차단 (DISCOVERY 27FW 전용)
+  //  ────────────────────────────────────────────────────────────
+  //  Trend 화면에서 Newsletter 카드를 숨겨도, 시즌 자동 로드
+  //  (autoLoadAllSheets)가 Newsletter 시트를 계속 읽어 들여서
+  //  collectedColors / scoredColors 에 source:'newsletter' 가 남고
+  //  컬러 상세 팝업의 Trend 뱃지에 'Newsletter ×N' 으로 뜬다.
+  //  → 유입 자체를 막고, 이미 들어온 흔적도 지운다.
+  //  ※ 다른 브랜드·시즌에서는 원본 그대로 Newsletter 사용
+  // ══════════════════════════════════════════════════════════════
+  var NEWS_KEYS = ['newsletter', 'newsletter_csv'];
+  function _isNewsKey(k){ return NEWS_KEYS.indexOf(String(k||'').toLowerCase()) >= 0; }
+
+  // 1) 유입 차단 — 스코프 안에서는 Newsletter 항목을 아예 적용하지 않음
+  var _origApplyNews = window._applyNewsletterEntries;
+  if(typeof _origApplyNews === 'function'){
+    window._applyNewsletterEntries = function(){
+      if(_inScope()) return;                    // DISCOVERY 27FW → 무시
+      return _origApplyNews.apply(this, arguments);
+    };
+  }
+
+  // 2) 이미 들어온 Newsletter 흔적 제거
+  function _purgeNewsletter(){
+    if(!_inScope()) return;
+    try{
+      if(typeof newsletterColors !== 'undefined') newsletterColors.length = 0;
+    }catch(e){}
+
+    function scrub(list){
+      if(typeof list === 'undefined' || !Array.isArray(list)) return;
+      var keep = [];
+      list.forEach(function(c){
+        if(!c) return;
+        var srcs = Array.isArray(c.sources) ? c.sources.slice() : [];
+        var single = c.source;
+        var restSrcs = srcs.filter(function(s){ return !_isNewsKey(s); });
+
+        // 출처가 Newsletter 뿐이면 통째로 제외
+        var onlyNews = (srcs.length > 0 && restSrcs.length === 0)
+                    || (srcs.length === 0 && _isNewsKey(single));
+        if(onlyNews) return;
+
+        if(srcs.length !== restSrcs.length) c.sources = restSrcs;
+        if(_isNewsKey(single)) c.source = restSrcs[0] || c.source;
+        if(c.srcFreq){
+          NEWS_KEYS.forEach(function(k){ if(k in c.srcFreq) delete c.srcFreq[k]; });
+        }
+        keep.push(c);
+      });
+      if(keep.length !== list.length){
+        list.length = 0;
+        keep.forEach(function(c){ list.push(c); });
+      }
+    }
+
+    try{ scrub(typeof collectedColors !== 'undefined' ? collectedColors : null); }catch(e){}
+    try{ scrub(typeof scoredColors    !== 'undefined' ? scoredColors    : null); }catch(e){}
+  }
+  window._discPurgeNewsletter = _purgeNewsletter;
+
+  // 3) 시즌 일괄 로드 직후 · 팔레트 렌더 직전 · 상세 팝업 직전에 정리
+  var _origAutoLoad = window.autoLoadAllSheets;
+  if(typeof _origAutoLoad === 'function'){
+    window.autoLoadAllSheets = function(){
+      var r = _origAutoLoad.apply(this, arguments);
+      if(r && typeof r.then === 'function'){
+        return r.then(function(v){ try{ _purgeNewsletter(); }catch(e){} return v; });
+      }
+      try{ _purgeNewsletter(); }catch(e){}
+      return r;
+    };
+  }
+  var _origOpenDetail = window.openPalDetail;
+  if(typeof _origOpenDetail === 'function'){
+    window.openPalDetail = function(){
+      try{ _purgeNewsletter(); }catch(e){}
+      return _origOpenDetail.apply(this, arguments);
+    };
+  }
+
+
+  // ══════════════════════════════════════════════════════════════
+  //  DISCOVERY 27FW COLOR PALETTE (사내 확정 팔레트)
+  //  ────────────────────────────────────────────────────────────
+  //  DISCOVERY_27FW_COLOR_PALETTE_2.html 의 데이터를 그대로 이식.
+  //  원본 CSS 는 .chip / .card 같은 일반 클래스명을 써서 index.html 과
+  //  충돌하므로, 전부 dcp- 접두사로 격리한 전용 스타일을 주입한다.
+  //  Trend-Matched 아래 · KOREA 위에 접이식으로 배치. 기본은 접힘.
+  // ══════════════════════════════════════════════════════════════
+  var DCP_SECT_ID = 'disc-27fw-palette';
+  var DCP_STYLE_ID = 'dcp-style';
+  var _dcpCollapsed = false;   // 04 에서는 항상 펼침 (토글 제거)
+
+  var DCP_CORE_1 = [
+    {name:'CRS', code:'036-90-02', hex:'F3F0E6'},
+    {name:'CRD', code:'033-90-02', hex:'F4EDE4'},
+    {name:'IVS', code:'034-80-03', hex:'D4CFC2'},
+    {name:'BES', code:'032-69-05', hex:'B9AC97'},
+    {name:'BGL', code:'037-61-06', hex:'A69B83'},
+    {name:'BGS', code:'035-51-09', hex:'978065'},
+    {name:'DWS', code:'029-25-07', hex:'493A2F'},
+    {name:'SAD', code:'032-49-04', hex:'87796A'},
+    {name:'CGS', code:'007-40-01', hex:'685E61'},
+    {name:'NYL', code:'122-36-01', hex:'4E5862'},
+    {name:'DGL', code:'122-28-04', hex:'3C4550'},
+    {name:'NYD', code:'120-21-10', hex:'253445'},
+    {gap:true},
+    {name:'IVM', pct:'',    tag:'B1020', melange:true, hex:'F5EEE4'},
+    {name:'MGL', pct:'1%',  tag:'BC02',  melange:true, hex:'D1CED4'},
+    {name:'MGS', pct:'8%',  tag:'BC06',  melange:true, hex:'9996A7'},
+    {name:'MGD', pct:'35%', tag:'B38',   melange:true, hex:'565661'}
+  ];
+  var DCP_CORE_2 = [
+    {name:'GRL', code:'129-84-00', hex:'D4D8DE'},
+    {name:'LGL', code:'123-76-02', hex:'B8C4CE'},
+    {name:'SIL', pantone:'14-4105 TPG', pname:'Micro Chip', hex:'BDBDC5'},
+    {name:'GRS', pantone:'17-3914 TCX', pname:'Sharkskin',  hex:'80848B'},
+    {name:'GRD', code:'149-40-00', hex:'5E5E67'},
+    {name:'DGS', code:'142-27-00', hex:'443F46'},
+    {name:'CGD', code:'152-25-00', hex:'3E3A42'},
+    {gap:true},
+    {name:'WHS', code:'040-92-00', hex:'F2EEE7'},
+    {name:'BKS', code:'139-18-00', hex:'2B2C31'}
+  ];
+  var DCP_MOODS = [
+    { title:'ACTIVE WELLNESS', rows:[
+      [ {name:'LPS', code:'155-72-12', hex:'DAA6B3'},
+        {name:'BLS', code:'101-66-11', hex:'81B5C2'},
+        {name:'LVL', code:'134-67-16', hex:'ACA5CF'} ],
+      [ {name:'SAS', code:'027-58-04', hex:'A08D7A'},
+        {name:'INS', code:'120-22-18', hex:'1B344F'},
+        {name:'TQL', code:'103-29-11', hex:'264D58'},
+        {name:'WIS', code:'151-22-09', hex:'452B3F'} ]
+    ]},
+    { title:'CASUAL COMMUTE', rows:[
+      [ {name:'LPS', code:'155-72-12', hex:'DAA6B3'},
+        {name:'SBD', code:'117-44-09', hex:'506F88'},
+        {name:'WID', code:'005-23-06', hex:'472F34'} ],
+      [ {name:'KAD', code:'043-24-06', hex:'443C2A'},
+        {name:'KAS', code:'049-34-04', hex:'585740'},
+        {name:'DNS', code:'124-20-03', hex:'262F3A'},
+        {name:'BRD', code:'031-31-11', hex:'5E442E'} ]
+    ]},
+    { title:'OUTDOOR RESORT', rows:[
+      [ {name:'BLL', code:'107-77-11', hex:'9FCADB'},
+        {name:'LPL', code:'154-81-12', hex:'EBC0CE'},
+        {name:'COL', code:'016-72-17', hex:'EBA491'},
+        {name:'MTS', code:'082-72-06', hex:'9FC5B8'},
+        {name:'LDS', code:'131-69-13', hex:'A1A4CF'} ],
+      [ {name:'NBS', code:'025-72-10', hex:'D4B198'},
+        {name:'SPS', pantone:'19-0910 TPG', pname:'Mulch', hex:'53433E'},
+        {name:'BDD', code:'004-23-16', hex:'5C2733'} ]
+    ]}
+  ];
+  var DCP_NOTE = 'CORE 컬러군과 BLS, LVL은 채도 +3%p 버전 HEX, 그 외 컬러(ACTIVE WELLNESS의 LPS·SAS·INS·TQL·WIS / CASUAL COMMUTE 전체 / OUTDOOR RESORT 전체)는 채도 +8%p·명도 -1%p 버전 HEX를 적용. Coloro/Pantone/멜란지 코드는 원본과 동일.';
+
+
+  // ══════════════════════════════════════════════════════════════
+  //  팔레트 파일 업로드 (CSV / XLSX)
+  //  ────────────────────────────────────────────────────────────
+  //  지금은 DISCOVERY 27FW 팔레트가 코드에 내장돼 있지만,
+  //  다른 사업부·시즌에서 자기 팔레트를 올려 쓸 수 있게 한다.
+  //  기대 컬럼: 구분(Mood) · 컬러명 · 컬러 코드 · 코드 종류 · HEX · 비고
+  //  헤더 이름은 키워드로 느슨하게 매칭한다.
+  // ══════════════════════════════════════════════════════════════
+  var DCP_UP_KEY = 'disc_palette_upload';
+  var _dcpCustom = null;          // { fileName, rows:[{mood,name,code,kind,hex,note}] }
+  try { _dcpCustom = JSON.parse(localStorage.getItem(DCP_UP_KEY) || 'null'); } catch(e){ _dcpCustom = null; }
+
+  function _dcpNorm(x){ return String(x == null ? '' : x).trim(); }
+
+  // 헤더 한 줄에서 컬럼 위치 찾기
+  function _dcpMapCols(header){
+    var idx = { mood:-1, name:-1, code:-1, kind:-1, hex:-1, note:-1 };
+    header.forEach(function(h, i){
+      var v = _dcpNorm(h).toLowerCase().replace(/\s|_/g, '');
+      if(idx.hex  < 0 && /hex|헥스|색상값/.test(v))                 idx.hex  = i;
+      else if(idx.mood < 0 && /구분|mood|무드|카테고리|group/.test(v)) idx.mood = i;
+      else if(idx.kind < 0 && /코드종류|kind|type|종류/.test(v))       idx.kind = i;
+      else if(idx.code < 0 && /코드|code|pantone|coloro/.test(v))    idx.code = i;
+      else if(idx.name < 0 && /컬러명|색상명|이름|name|color/.test(v)) idx.name = i;
+      else if(idx.note < 0 && /비고|note|메모|remark/.test(v))        idx.note = i;
+    });
+    return idx;
+  }
+
+  function _dcpRowsFromMatrix(matrix, fileName){
+    if(!matrix || !matrix.length) throw new Error('내용이 비어 있습니다');
+    // 헤더 후보: HEX 처럼 보이는 값이 없는 첫 줄
+    var hi = 0;
+    for(var i = 0; i < Math.min(matrix.length, 5); i++){
+      if(!matrix[i].some(function(c){ return /^#?[0-9A-Fa-f]{6}$/.test(_dcpNorm(c)); })){ hi = i; break; }
+    }
+    var idx = _dcpMapCols(matrix[hi]);
+    if(idx.hex < 0) throw new Error('HEX 컬럼을 찾지 못했습니다');
+    var rows = [];
+    for(var r = hi + 1; r < matrix.length; r++){
+      var row = matrix[r];
+      if(!row || !row.length) continue;
+      var hex = _dcpNorm(row[idx.hex]).replace(/^#/, '').toUpperCase();
+      if(!/^[0-9A-F]{6}$/.test(hex)) continue;
+      rows.push({
+        mood: idx.mood >= 0 ? _dcpNorm(row[idx.mood]) : 'CORE',
+        name: idx.name >= 0 ? _dcpNorm(row[idx.name]) : '',
+        code: idx.code >= 0 ? _dcpNorm(row[idx.code]) : '',
+        kind: idx.kind >= 0 ? _dcpNorm(row[idx.kind]) : '',
+        hex:  hex,
+        note: idx.note >= 0 ? _dcpNorm(row[idx.note]) : ''
+      });
+    }
+    if(!rows.length) throw new Error('유효한 HEX 행이 없습니다');
+    return { fileName: fileName, rows: rows };
+  }
+
+  // 따옴표를 감안한 CSV 파서
+  function _dcpParseCsv(text){
+    text = text.replace(/^\uFEFF/, '');
+    var out = [], row = [], cell = '', q = false;
+    for(var i = 0; i < text.length; i++){
+      var c = text[i];
+      if(q){
+        if(c === '"'){ if(text[i+1] === '"'){ cell += '"'; i++; } else q = false; }
+        else cell += c;
+      } else if(c === '"') q = true;
+      else if(c === ','){ row.push(cell); cell = ''; }
+      else if(c === '\n'){ row.push(cell); out.push(row); row = []; cell = ''; }
+      else if(c !== '\r') cell += c;
+    }
+    if(cell.length || row.length){ row.push(cell); out.push(row); }
+    return out.filter(function(r){ return r.some(function(c){ return _dcpNorm(c); }); });
+  }
+
+  function _dcpLoadSheetJs(){
+    return new Promise(function(res, rej){
+      if(window.XLSX) return res(window.XLSX);
+      var sc = document.createElement('script');
+      sc.src = 'https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js';
+      sc.onload = function(){ window.XLSX ? res(window.XLSX) : rej(new Error('XLSX 로드 실패')); };
+      sc.onerror = function(){ rej(new Error('XLSX 라이브러리를 불러오지 못했습니다 (네트워크 차단 가능). CSV 로 저장해 올려주세요.')); };
+      document.head.appendChild(sc);
+    });
+  }
+
+  function _dcpUpStatus(msg, isErr){
+    var el = document.getElementById('dcp-up-status');
+    if(!el) return;
+    el.textContent = msg || '';
+    el.style.color = isErr ? 'var(--warn)' : 'var(--text3)';
+  }
+
+  window._dcpHandleFile = function(input){
+    var f = input && input.files && input.files[0];
+    if(!f) return;
+    var name = f.name || 'palette';
+    _dcpUpStatus('읽는 중… ' + name);
+    var isXlsx = /\.(xlsx|xlsm|xls)$/i.test(name);
+    var rd = new FileReader();
+    rd.onerror = function(){ _dcpUpStatus('파일을 읽지 못했습니다', true); };
+    rd.onload = function(ev){
+      try {
+        if(isXlsx){
+          _dcpLoadSheetJs().then(function(XLSX){
+            var wb = XLSX.read(new Uint8Array(ev.target.result), { type: 'array' });
+            var ws = wb.Sheets[wb.SheetNames[0]];
+            var mat = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+            _dcpApplyUpload(_dcpRowsFromMatrix(mat, name));
+          }).catch(function(err){ _dcpUpStatus(err.message || String(err), true); });
+        } else {
+          _dcpApplyUpload(_dcpRowsFromMatrix(_dcpParseCsv(ev.target.result), name));
+        }
+      } catch(err){ _dcpUpStatus(err.message || String(err), true); }
+    };
+    if(isXlsx) rd.readAsArrayBuffer(f); else rd.readAsText(f, 'utf-8');
+    input.value = '';
+  };
+
+  function _dcpApplyUpload(data){
+    _dcpCustom = data;
+    try { localStorage.setItem(DCP_UP_KEY, JSON.stringify(data)); } catch(e){}
+    _dcpCollapsed = false;
+    _dcpRender();
+    try { _gapRender(); } catch(e){}     // 보완 후보도 새 팔레트 기준으로 재계산
+  }
+  window._dcpClearUpload = function(){
+    _dcpCustom = null;
+    try { localStorage.removeItem(DCP_UP_KEY); } catch(e){}
+    _dcpRender();
+    try { _gapRender(); } catch(e){}
+  };
+
+  // 업로드 데이터를 화면 구조(CORE 행 + 무드 열)로 변환
+  function _dcpCustomView(){
+    if(!_dcpCustom) return null;
+    var groups = {}, order = [];
+    _dcpCustom.rows.forEach(function(r){
+      var g = r.mood || 'CORE';
+      if(!groups[g]){ groups[g] = []; order.push(g); }
+      groups[g].push({
+        name: r.name || r.hex,
+        code: /coloro/i.test(r.kind) ? _dcpNorm(r.code).replace(/coloro\s*/i, '') : '',
+        pantone: /pantone/i.test(r.kind) ? _dcpNorm(r.code).replace(/pantone\s*/i, '') : '',
+        pname: '',
+        hex: r.hex,
+        note: r.note
+      });
+    });
+    var coreKey = order.filter(function(g){ return /core/i.test(g); })[0];
+    return {
+      core: coreKey ? groups[coreKey] : [],
+      moods: order.filter(function(g){ return g !== coreKey; }).map(function(g){
+        return { title: g, rows: [groups[g]] };
+      }),
+      total: _dcpCustom.rows.length,
+      fileName: _dcpCustom.fileName
+    };
+  }
+
+  function _dcpUploadPanel(){
+    var cur = _dcpCustom
+      ? '<span style="font-family:var(--mono);font-size:10px;color:var(--text2)">📄 ' + _dcpCustom.fileName
+        + ' · ' + _dcpCustom.rows.length + '색</span>'
+        + '<button onclick="_dcpClearUpload()" style="font-family:var(--mono);font-size:10px;padding:4px 10px;'
+        + 'border-radius:4px;cursor:pointer;border:1px solid var(--border);background:transparent;color:var(--text3)">내장 팔레트로</button>'
+      : '<span style="font-family:var(--mono);font-size:10px;color:var(--text4)">내장: DISCOVERY 27FW</span>';
+    return ''
+      + '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px;padding:10px 12px;'
+      +   'border:1px dashed var(--border2);border-radius:6px">'
+      +   '<label style="font-family:var(--mono);font-size:10px;padding:5px 12px;border-radius:4px;cursor:pointer;'
+      +     'border:1px solid var(--gold);background:rgba(160,120,64,0.14);color:var(--gold);font-weight:700">'
+      +     '팔레트 파일 올리기'
+      +     '<input type="file" accept=".csv,.xlsx,.xlsm,.xls" onchange="_dcpHandleFile(this)" style="display:none">'
+      +   '</label>'
+      +   cur
+      +   '<span id="dcp-up-status" style="font-family:var(--mono);font-size:10px;color:var(--text3)"></span>'
+      +   '<span style="margin-left:auto;font-family:var(--mono);font-size:9px;color:var(--text4)">'
+      +     'CSV · XLSX · 컬럼: 구분 / 컬러명 / 컬러 코드 / 코드 종류 / HEX / 비고</span>'
+      + '</div>';
+  }
+
+  function _dcpInjectStyle(){
+    if(document.getElementById(DCP_STYLE_ID)) return;
+    var st = document.createElement('style');
+    st.id = DCP_STYLE_ID;
+    st.textContent = [
+      '.dcp-scope .dcp-body{padding:18px 2px 4px}',
+      '.dcp-scope .dcp-core{display:flex;align-items:flex-start;gap:20px;margin-bottom:10px}',
+      '.dcp-scope .dcp-core-tag{background:#0f0f0f;color:#fff;font-weight:800;font-size:13px;letter-spacing:1px;padding:22px 16px;flex:0 0 auto;font-family:var(--mono)}',
+      '.dcp-scope .dcp-core-rows{display:flex;flex-direction:column;gap:20px;flex:1;min-width:0;overflow-x:auto;padding-bottom:4px}',
+      '.dcp-scope .dcp-row{display:flex;flex-wrap:nowrap;gap:10px}',
+      '.dcp-scope .dcp-chip{width:74px;flex:0 0 auto}',
+      '.dcp-scope .dcp-name{font-size:12px;font-weight:800;text-align:center;margin-bottom:4px;color:var(--text)}',
+      '.dcp-scope .dcp-tag{font-family:var(--mono);font-size:9px;font-weight:700;text-align:center;color:var(--text3);letter-spacing:0.3px}',
+      '.dcp-scope .dcp-pct{font-family:var(--mono);font-size:9px;font-weight:700;text-align:center;color:var(--text3);margin-bottom:2px}',
+      '.dcp-scope .dcp-card{border:1px solid var(--border);background:var(--surface);border-radius:3px;overflow:hidden}',
+      '.dcp-scope .dcp-code{font-family:var(--mono);font-size:8.5px;text-align:center;padding:4px 2px;border-bottom:1px solid var(--border);color:var(--text2);letter-spacing:0.2px}',
+      '.dcp-scope .dcp-fill{height:62px;display:flex;align-items:flex-end;justify-content:center;padding-bottom:5px}',
+      '.dcp-scope .dcp-hex{font-family:var(--mono);font-size:8.5px;text-align:center;padding:4px 2px;border-top:1px solid var(--border);color:var(--text3);letter-spacing:0.3px}',
+      '.dcp-scope .dcp-pnote{font-size:8.5px;text-align:center;padding:5px 3px 3px;color:var(--text2);line-height:1.3;border-top:1px solid var(--border)}',
+      '.dcp-scope .dcp-pnote b{display:block;font-size:9px;font-weight:800}',
+      '.dcp-scope .dcp-moods{display:flex;gap:0;margin-top:22px;border-top:2px solid var(--border2);padding-top:22px;flex-wrap:wrap}',
+      '.dcp-scope .dcp-mood{padding:0 22px;flex:1 1 300px;min-width:300px}',
+      '.dcp-scope .dcp-mood + .dcp-mood{border-left:1px solid var(--border)}',
+      '.dcp-scope .dcp-mood-title{text-align:center;font-family:var(--mono);font-size:11px;font-weight:800;letter-spacing:1px;margin-bottom:20px;color:var(--text)}',
+      '.dcp-scope .dcp-mood-rows{display:flex;flex-direction:column;gap:22px;align-items:center}',
+      '.dcp-scope .dcp-mood-row{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}',
+      '.dcp-scope .dcp-note{margin-top:24px;font-size:10px;color:var(--text4);line-height:1.6;border-top:1px solid var(--border);padding-top:12px}'
+    ].join('\n');
+    document.head.appendChild(st);
+  }
+
+  function _dcpTextOn(hex){
+    var r = parseInt(hex.substr(0,2),16), g = parseInt(hex.substr(2,2),16), b = parseInt(hex.substr(4,2),16);
+    return ((r*299 + g*587 + b*114) / 1000) >= 150 ? '#1a1a1a' : '#ffffff';
+  }
+
+  function _dcpChip(it){
+    if(it.gap) return '<div style="width:6px;flex:0 0 auto"></div>';
+    var head = '';
+    if(it.melange){
+      head += '<div class="dcp-tag">' + it.tag + '</div>';
+      head += '<div class="dcp-name">' + it.name + '</div>';
+      if(it.pct) head += '<div class="dcp-pct">' + it.pct + '</div>';
+    } else {
+      head += '<div class="dcp-name">' + it.name + '</div>';
+    }
+    var codeLine = it.code ? '<div class="dcp-code">COLORO ' + it.code + '</div>' : '';
+    var fill = '<div class="dcp-fill" style="background:#' + it.hex + '">'
+      + (it.melange ? '<span style="font-family:var(--mono);font-size:9px;font-weight:800;letter-spacing:0.5px;color:' + _dcpTextOn(it.hex) + '">BROS</span>' : '')
+      + '</div>';
+    var foot = it.pantone
+      ? '<div class="dcp-pnote"><b>PANTONE&reg;</b>' + it.pantone + (it.pname ? '<br>' + it.pname : '') + '</div>'
+      : '<div class="dcp-hex">#' + it.hex + '</div>';
+    return '<div class="dcp-chip" title="' + it.name + ' · #' + it.hex + '">'
+      + head + '<div class="dcp-card">' + codeLine + fill + foot + '</div></div>';
+  }
+
+  function _dcpBodyHtml(){
+    var cv = _dcpCustomView();
+    var coreRows = cv ? [cv.core] : [DCP_CORE_1, DCP_CORE_2];
+    var moodDefs = cv ? cv.moods : DCP_MOODS;
+    var core = '<div class="dcp-core">'
+      + '<div class="dcp-core-tag">CORE</div>'
+      + '<div class="dcp-core-rows">'
+      +   coreRows.map(function(r){ return '<div class="dcp-row">' + r.map(_dcpChip).join('') + '</div>'; }).join('')
+      + '</div></div>';
+    var moods = '<div class="dcp-moods">' + moodDefs.map(function(m){
+      return '<div class="dcp-mood">'
+        + '<div class="dcp-mood-title">' + m.title + '</div>'
+        + '<div class="dcp-mood-rows">'
+        +   m.rows.map(function(r){ return '<div class="dcp-mood-row">' + r.map(_dcpChip).join('') + '</div>'; }).join('')
+        + '</div></div>';
+    }).join('') + '</div>';
+    return '<div class="dcp-body">' + _dcpUploadPanel() + core + moods
+      + (cv ? '' : '<div class="dcp-note">' + DCP_NOTE + '</div>') + '</div>';
+  }
+
+  window._dcpToggle = function(){
+    _dcpCollapsed = !_dcpCollapsed;
+    _dcpRender();
+    try{ _discOrderSections(); }catch(e){}
+  };
+
+  function _dcpSection(){
+    // 04 Palette Review 로 이동 — 04 컨테이너가 준비되기 전이면 대기
+    var wrap = document.getElementById('disc-review-wrap');
+    if(!wrap) return null;
+    var sect = document.getElementById(DCP_SECT_ID);
+    if(!sect){
+      sect = document.createElement('div');
+      sect.id = DCP_SECT_ID;
+      sect.className = 'dcp-scope';
+      // 사내 확정 팔레트는 제안 섹션들과 성격이 달라 배경으로 구분한다
+      sect.style.cssText = 'margin:0 0 32px;padding:0';
+    }
+    if(!sect.parentNode) wrap.appendChild(sect);
+    return sect;
+  }
+
+  function _dcpRender(){
+    var sect = document.getElementById(DCP_SECT_ID);
+    if(!_inScope()){ if(sect) sect.style.display = 'none'; return; }
+    _dcpInjectStyle();
+    sect = _dcpSection();
+    if(!sect) return;
+    sect.style.display = 'block';
+    var cv0 = _dcpCustomView();
+    var cnt = cv0 ? cv0.total
+            : (DCP_CORE_1.filter(function(x){ return !x.gap; }).length
+             + DCP_CORE_2.filter(function(x){ return !x.gap; }).length
+             + DCP_MOODS.reduce(function(n,m){ return n + m.rows.reduce(function(k,r){ return k + r.length; }, 0); }, 0));
+    sect.innerHTML =
+        '<div class="spp-trend-market-hd" style="margin-bottom:0">'
+      +   '<span class="spp-trend-market-flame" style="color:var(--gold)">▣ 27FW PALETTE</span>'
+      +   '<span class="spp-trend-market-title">' + (cv0 ? '업로드 팔레트' : 'DISCOVERY 27FW Color Palette') + '</span>'
+      +   '<span class="spp-trend-market-sub">' + (cv0 ? cv0.fileName : '사내 확정 팔레트 · CORE + 무드 3종')
+      +     ' · 총 ' + cnt + '색</span>'
+      + '</div>'
+      + _dcpBodyHtml()
+      + '<div class="dcp-scope" style="margin-top:26px;padding-top:20px;border-top:1px solid var(--border)">'
+      +   '<div class="spp-trend-market-hd" style="margin-bottom:14px">'
+      +     '<span class="spp-trend-market-flame" style="color:var(--gold);font-size:14px">✎ REVIEW</span>'
+      +     '<span class="spp-trend-market-title" style="font-size:22px">팔레트 분석</span>'
+      +     '<span class="spp-trend-market-sub" style="font-size:13px">확정 팔레트를 마켓·트렌드 데이터에 비춰 계산한 결과</span>'
+      +   '</div>'
+      +   _rptHtml()
+      + '</div>';
+  }
+  window._discRender27fwPalette = _dcpRender;
+
+
+  // ══════════════════════════════════════════════════════════════
+  //  AI 추천 — 보완 후보 (GAP CANDIDATES)
+  //  ────────────────────────────────────────────────────────────
+  //  27FW 확정 팔레트(47색)에는 없는데, 마켓 빈도와 WGSN/Peclers
+  //  트렌드 양쪽에서 잡히는 색을 골라낸다.
+  //  = "우리 팔레트가 놓치고 있는데 시장·트렌드는 가리키는 색"
+  //  Trend-Matched 의 캡 적용 전 전체 매칭 목록을 기준으로 계산하므로,
+  //  상위 12개 컷에 밀려 화면에 안 나온 색도 후보로 올라온다.
+  // ══════════════════════════════════════════════════════════════
+  var GAP_SECT_ID = 'disc-gap-candidates';
+  var GAP_MIN_DE = 10;      // 확정 팔레트 색과 이만큼 떨어져야 '없는 색'으로 본다
+  var GAP_MAX = 12;         // 표시 개수
+  var GAP_ALLOW_DUP = false; // true = 걸친 카테고리에 모두 표시(주력 외에는 흐리게)
+                            // false = 비중 최대인 카테고리 한 곳에만 표시
+
+  // 확정 팔레트 47색을 평면 목록으로
+  function _gapPaletteList(){
+    var out = [];
+    // 업로드한 팔레트가 있으면 그것이 기준 — 내장 27FW 대신 사용한다.
+    // (이게 없으면 파일을 올려도 분석·보완후보가 내장 팔레트로 계산됐다)
+    if(typeof _dcpCustom !== 'undefined' && _dcpCustom && _dcpCustom.rows){
+      _dcpCustom.rows.forEach(function(r){
+        if(!r.hex) return;
+        out.push({ name: r.name || ('#' + r.hex), hex: '#' + String(r.hex).replace(/^#/, '').toUpperCase() });
+      });
+      return out;
+    }
+    function push(arr){
+      arr.forEach(function(it){
+        if(it.gap || !it.hex) return;
+        out.push({ name: it.name, hex: '#' + String(it.hex).toUpperCase() });
+      });
+    }
+    push(DCP_CORE_1); push(DCP_CORE_2);
+    DCP_MOODS.forEach(function(m){ m.rows.forEach(push); });
+    return out;
+  }
+
+  // 확정 팔레트에서 가장 가까운 색과 그 거리
+  function _gapNearest(hex){
+    var pal = _gapPaletteList(), best = null, bd = 1e9;
+    for(var i = 0; i < pal.length; i++){
+      var dd = _tmDeltaE(hex, pal[i].hex);
+      if(dd < bd){ bd = dd; best = pal[i]; }
+    }
+    return { color: best, de: bd };
+  }
+
+  function _gapBuild(){
+    if(!_tmLastBuild) { try { _tmBuild(); } catch(e){ return null; } }
+    if(!_tmLastBuild || !_tmLastBuild.buckets) return null;
+    // 대상은 Trend-Matched 화면에 실제로 표시된 색 — 위에서 본 색이 아래에서 다시 잡히도록.
+    var shownSet = _tmLastBuild.buckets;
+    var items = [];
+    ['key','sub','basic'].forEach(function(k){
+      (shownSet[k] || []).forEach(function(it){
+        var near = _gapNearest(it.trend.hex);
+        if(near.de < GAP_MIN_DE) return;                   // 이미 팔레트에 있는 색
+        items.push({ item: it, group: k, near: near.color, nearDe: Math.round(near.de) });
+      });
+    });
+    // 표시 밖(캡에 잘린 색) 중 미보유가 몇 개인지만 세어 둔다 — 놓친 양을 가늠할 수 있게
+    var hiddenGap = 0;
+    var raw = _tmLastBuild.raw || {};
+    ['key','sub','basic'].forEach(function(k){
+      var shownHex = {};
+      (shownSet[k] || []).forEach(function(it){ shownHex[it.trend.hex] = 1; });
+      (raw[k] || []).forEach(function(it){
+        if(shownHex[it.trend.hex]) return;
+        if(_gapNearest(it.trend.hex).de >= GAP_MIN_DE) hiddenGap++;
+      });
+    });
+    // 마켓 빈도순 — 시장에서 실제로 많이 쓰이는 것부터
+    items.sort(function(a,b){ return b.item.mkFreq - a.item.mkFreq; });
+    var scanned = ['key','sub','basic'].reduce(function(n,k){ return n + (shownSet[k]||[]).length; }, 0);
+    return { items: items, byCat: _gapSplitByCategory(items), scanned: scanned,
+             hiddenGap: hiddenGap, palette: _gapPaletteList().length };
+  }
+
+  // ── 무드 카테고리 분류 ────────────────────────────────────────
+  //  DISCOVERY_CAT_DEFS 의 brandList 로 판정한다. 같은 톤을 쓰는 브랜드가
+  //  여러 카테고리에 걸쳐 있으면 그 카테고리 모두에 나온다(배타 분류가 아님).
+  //  빈도는 '그 카테고리 브랜드가 이 톤을 쓴 횟수'만 합산한다 —
+  //  전체 빈도를 그대로 쓰면 Outdoor Resort 칸에 애슬레저 수치가 찍힌다.
+  function _gapCatDefs(){
+    if(typeof DISCOVERY_CAT_DEFS !== 'undefined' && Array.isArray(DISCOVERY_CAT_DEFS)) return DISCOVERY_CAT_DEFS;
+    return [];
+  }
+  // 카테고리별 마켓 데이터 총량 — 비중 계산의 분모.
+  // 브랜드마다 수집량이 크게 다르다(실데이터: Vuori 2304 vs Moncler 47).
+  // 절대 횟수로 비교하면 데이터가 많은 브랜드의 카테고리가 항상 이긴다.
+  function _gapCatTotals(maps, bkn){
+    var totals = maps.map(function(){ return 0; });
+    if(typeof compData === 'undefined' || !Array.isArray(compData)) return totals;
+    var sel = (typeof window._curMarketSel === 'function') ? window._curMarketSel() : null;
+    compData.forEach(function(cd){
+      if(!cd || !cd.brand || !cd.hex) return;
+      var src = cd.source || '';
+      if(src.indexOf('gl') < 0 && src.indexOf('kr') < 0) return;
+      if(sel && sel.size > 0 && !sel.has(bkn(cd.brand))) return;
+      if(typeof _passesCategoryFilter === 'function' && !_passesCategoryFilter(cd)) return;   // 분자와 동일 기준
+      var k = bkn(cd.brand), f = cd.freq || 1;
+      maps.forEach(function(m, i){ if(m.set[k]) totals[i] += f; });
+    });
+    return totals;
+  }
+
+  function _gapSplitByCategory(items){
+    var defs = _gapCatDefs();
+    var bkn = window._brandKeyNorm || function(x){ return (x||'').toLowerCase().replace(/[\s._\-]+/g,'').trim(); };
+    var maps = defs.map(function(def){
+      var set = {};
+      (def.brandList || []).forEach(function(b){ set[bkn(b)] = 1; });
+      return { def: def, set: set, list: [] };
+    });
+    var catTotals = _gapCatTotals(maps, bkn);
+    maps.forEach(function(m, i){ m.total = catTotals[i]; });
+    var etc = [];
+    items.forEach(function(g){
+      var nb = _tmNearBrands(g.item.trend.hex);
+      if(!nb.length) nb = g.item.brands.slice();
+      var counts = nb._counts || {};
+      // 한 색이 여러 카테고리 브랜드에 걸쳐도 한 곳에만 넣는다.
+      // 기준은 '그 카테고리 브랜드가 이 톤을 쓴 횟수' — 가장 많이 쓴 쪽이 주인.
+      var best = null;
+      maps.forEach(function(m){
+        var mine = nb.filter(function(b){ return m.set[bkn(b)]; });
+        if(!mine.length) return;
+        var f = mine.reduce(function(n,b){ return n + (counts[b] || 1); }, 0);
+        // 비중 = 이 톤을 쓴 횟수 ÷ 그 카테고리 전체 수집량.
+        // Moncler 47개 중 10개(21%)가 Vuori 2304개 중 15개(0.7%)를 이긴다.
+        var share = m.total ? (f / m.total) : 0;
+        if(!best || share > best.share) best = { map: m, brands: mine, freq: f, share: share, others: [] };
+      });
+      if(best){
+        maps.forEach(function(m){
+          if(m === best.map) return;
+          var mine = nb.filter(function(b){ return m.set[bkn(b)]; });
+          if(!mine.length) return;
+          var f = mine.reduce(function(n,b){ return n + (counts[b] || 1); }, 0);
+          best.others.push({ name: m.def.name, freq: f, total: m.total });
+        });
+        best.map.list.push({ g: g, brands: best.brands, freq: best.freq, share: best.share,
+                             total: best.map.total, others: best.others, primary: true });
+        if(GAP_ALLOW_DUP){
+          // 걸친 나머지 카테고리에도 넣되 '부수'로 — 주력이 어디인지는 칩에 남긴다
+          maps.forEach(function(m){
+            if(m === best.map) return;
+            var mine = nb.filter(function(b){ return m.set[bkn(b)]; });
+            if(!mine.length) return;
+            var f = mine.reduce(function(n,b){ return n + (counts[b] || 1); }, 0);
+            m.list.push({ g: g, brands: mine, freq: f, share: m.total ? (f/m.total) : 0,
+                          total: m.total, primary: false,
+                          others: [{ name: best.map.def.name, freq: best.freq, total: best.map.total }] });
+          });
+        }
+      } else {
+        etc.push({ g: g, brands: nb.slice(0,3), freq: g.item.mkFreq, share: 0, others: [], primary: true });
+      }
+    });
+    maps.forEach(function(m){
+      m.list.sort(function(a,b){
+        if(a.primary !== b.primary) return a.primary ? -1 : 1;    // 주력 먼저
+        return (b.share - a.share) || (b.freq - a.freq);
+      });
+    });
+    etc.sort(function(a,b){ return b.freq - a.freq; });
+    return { cats: maps, etc: etc };
+  }
+
+  // 분모가 큰 카테고리(Active Wellness 2610)에서는 0.1% 단위로 끊으면
+  // 대부분 0.0% 로 뭉개져 순위를 읽을 수 없다. 값 크기에 따라 자릿수를 늘린다.
+  function _gapPct(share){
+    var v = (share || 0) * 100;
+    if(v >= 1)   return v.toFixed(1) + '%';
+    if(v >= 0.1) return v.toFixed(2) + '%';
+    return v.toFixed(3) + '%';
+  }
+
+  var GAP_GROUP_LABEL = { key: 'KEY', sub: 'SUB', basic: 'BASIC' };
+  var GAP_GROUP_COLOR = { key: '#A090F0', sub: 'var(--blue)', basic: 'var(--gold)' };
+
+  // 주력 외 카테고리 표기 — 이름과 건수를 직접 적어 중복 표시 없이도 사용처가 보이게 한다.
+  //  칩 폭이 150px 이라 첫 항목만 적고 나머지는 '외 N'. 전체는 툴팁으로.
+  function _gapOthersLabel(e){
+    var o = e.others || [];
+    if(!o.length) return '';
+    if(e.primary === false) return '↳ 주력: ' + o[0].name;
+    var head = '+ ' + o[0].name + ' ' + o[0].freq + '건';
+    return o.length > 1 ? head + ' 외 ' + (o.length - 1) : head;
+  }
+  function _gapOthersTip(e){
+    var o = e.others || [];
+    var body = o.map(function(x){
+      return x.name + ' ' + x.freq + (x.total ? '/' + x.total + ' (' + _gapPct(x.freq/x.total) + ')' : '건');
+    }).join(' · ');
+    return (e.primary === false ? '주력 — ' : '이 카테고리에서도 사용 — ') + body;
+  }
+
+  function _gapCard(g, catEntry){
+    var it = g.item, t = it.trend;
+    var codeLine = _tmCodeLineHtml(t);
+    var src = (t.sources && t.sources.length) ? t.sources.join('·') : '';
+    var isKey = (g.group === 'key');
+    var nameEsc = String(t.name || t.hex).replace(/'/g, "\\'");
+    // 팝업에서 근거를 재구성할 수 있도록 레지스트리에 담아둔다
+    _gapIndex[t.hex] = { g: g, cat: catEntry };
+    var tip = (t.name || '') + ' ' + t.hex
+      + ' · ' + GAP_GROUP_LABEL[g.group]
+      + (catEntry && catEntry.total ? ' · ' + catEntry.freq + '/' + catEntry.total + ' (' + _gapPct(catEntry.share) + ')' : '')
+      + ' · 가장 가까운 확정색 ' + (g.near ? g.near.name : '-') + ' ΔE' + g.nearDe;
+    return ''
+      + '<div class="dcp-chip" style="cursor:pointer'
+      +   (catEntry && catEntry.primary === false ? ';opacity:0.5' : '') + '"'
+      +   ' onclick="_gapOpenDetail(\'' + t.hex + '\',\'' + nameEsc + '\')" title="' + tip + '">'
+      +   '<div class="dcp-name" style="font-size:10px;font-weight:700;color:var(--text3);letter-spacing:0.04em">' + (src || '&nbsp;') + '</div>'
+      +   '<div class="dcp-card">'
+      +     codeLine
+      +     '<div class="dcp-fill" style="background:' + t.hex + '">'
+      +       (isKey ? '<span style="font-family:var(--mono);font-size:8px;font-weight:800;color:' + _dcpTextOn(t.hex.slice(1)) + '">KEY</span>' : '')
+      +     '</div>'
+      +     '<div class="dcp-hex">' + t.hex + '</div>'
+      +   '</div>'
+      + '</div>';
+  }
+
+  // 보완 후보 전용 팝업 — Trend-Matched 근거 + 팔레트 미보유 근거를 함께 띄운다
+  var _gapIndex = {};
+  window._gapOpenDetail = function(hex, name){
+    var rec = _gapIndex[String(hex).toUpperCase()] || _gapIndex[hex];
+    if(typeof window._tmOpenDetail === 'function') window._tmOpenDetail(hex, name);
+    if(!rec) return;
+    var srcEl = document.getElementById('paldm-sources');
+    if(!srcEl) return;
+    var g = rec.g, ce = rec.cat;
+    var box = document.createElement('div');
+    box.style.cssText = 'padding:6px 8px;background:var(--bg3);border-radius:6px;margin-bottom:8px';
+    box.innerHTML = ''
+      + '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">'
+      +   '<span style="padding:2px 10px;border-radius:20px;font-family:var(--mono);font-size:9px;font-weight:600;color:var(--gold);border:1px solid var(--gold)">Palette Gap</span>'
+      +   '<span style="font-family:var(--mono);font-size:9px;color:var(--text3)">'
+      +     GAP_GROUP_LABEL[g.group]
+      +     (ce && ce.total ? ' · ' + (ce.primary === false ? '부수' : '주력') + ' ' + (ce.map ? '' : '')
+                            + ce.freq + '/' + ce.total + ' (' + _gapPct(ce.share) + ')' : '')
+      +     ' · 확정 팔레트 최근접 ' + (g.near ? g.near.name + ' ' + g.near.hex : '-') + ' ΔE' + g.nearDe
+      +   '</span>'
+      + '</div>'
+      + (ce && ce.others && ce.others.length
+          ? '<div style="font-family:var(--mono);font-size:9px;color:var(--text4);margin-top:4px">'
+            + _gapOthersTip(ce) + '</div>'
+          : '');
+    srcEl.insertBefore(box, srcEl.firstChild);
+  };
+
+  function _gapSection(){
+    var wrap = document.getElementById('disc-palette-wrap');
+    if(!wrap) return null;
+    var sect = document.getElementById(GAP_SECT_ID);
+    if(!sect){
+      sect = document.createElement('div');
+      sect.id = GAP_SECT_ID;
+      sect.className = 'dcp-scope';
+      sect.style.marginBottom = '32px';
+      sect.style.paddingBottom = '24px';
+      sect.style.borderBottom = '1px solid var(--border)';
+    }
+    if(!sect.parentNode) wrap.appendChild(sect);
+    return sect;
+  }
+
+  function _gapRender(){
+    var sect = document.getElementById(GAP_SECT_ID);
+    if(!_inScope()){ if(sect) sect.style.display = 'none'; return; }
+    sect = _gapSection();
+    if(!sect) return;
+    sect.style.display = 'block';
+
+    var r = _gapBuild();
+    var head = ''
+      + '<div class="spp-trend-market-hd" style="margin-bottom:6px">'
+      +   '<span class="spp-trend-market-flame" style="color:var(--gold)">✦ GAP</span>'
+      +   '<span class="spp-trend-market-title">보완 후보 컬러</span>'
+      +   '<span class="spp-trend-market-sub">27FW 확정 팔레트에 없는데 마켓·트렌드 양쪽에서 잡히는 색</span>'
+      + '</div>';
+    if(!r){
+      sect.innerHTML = head + '<div class="spp-empty">Trend-Matched 결과가 없어 계산할 수 없습니다.</div>';
+      return;
+    }
+    var meta = '<div style="font-family:var(--mono);font-size:9px;color:var(--text4);margin-bottom:18px">'
+      + 'Trend-Matched 표시 ' + r.scanned + '색 대조 · 확정 팔레트 ' + r.palette + '색 · 미보유 판정 Lab ΔE ≥ ' + GAP_MIN_DE
+      + ' · 후보 ' + r.items.length + '색 · 카테고리는 비중(수집량 대비) 기준' + (GAP_ALLOW_DUP ? ' · 걸친 카테고리에 모두 표시(주력 외 흐리게)' : ' · 주력 한 곳에만 표시')
+      + (r.hiddenGap ? ' · 표시 밖 미보유 ' + r.hiddenGap + '색은 제외됨' : '')
+      + '</div>';
+    if(!r.items.length){
+      sect.innerHTML = head + meta + '<div class="spp-empty">확정 팔레트가 매칭 결과를 모두 포함하고 있습니다 — 보완 후보 없음</div>';
+      return;
+    }
+
+    // 카테고리를 가로로 나란히 — 27FW 팔레트의 무드 3단과 같은 배치
+    function column(title, sub, color, list, isFirst){
+      var shown = list.slice(0, GAP_MAX);
+      return '<div style="flex:1 1 320px;min-width:320px;padding:0 18px'
+        +   (isFirst ? '' : ';border-left:1px solid var(--border)') + '">'
+        + '<div style="display:flex;align-items:baseline;gap:8px;margin-bottom:12px">'
+        +   '<span style="font-family:var(--mono);font-size:10px;font-weight:700;color:' + color + ';letter-spacing:0.1em">' + title + '</span>'
+        +   (sub ? '<span style="font-family:var(--mono);font-size:9px;color:var(--text4)">' + sub + '</span>' : '')
+        +   (list.length && list[0].total ? '<span style="font-family:var(--mono);font-size:8px;color:var(--text4)">· 수집 ' + list[0].total + '건</span>' : '')
+        +   '<span style="font-family:var(--mono);font-size:9px;color:var(--text3);margin-left:auto">'
+        +     (list.length ? shown.length + (list.length > GAP_MAX ? '/' + list.length : '') + '색' : '0색') + '</span>'
+        + '</div>'
+        + (shown.length
+            ? '<div class="dcp-mood-row" style="justify-content:flex-start;gap:10px">'
+              + shown.map(function(e){ return _gapCard(e.g, e); }).join('') + '</div>'
+            : '<div class="spp-empty" style="font-size:10px">보완 후보 없음</div>')
+        + '</div>';
+    }
+
+    var cols = r.byCat.cats.map(function(m, i){
+      return column((m.def.emoji ? m.def.emoji + ' ' : '') + m.def.name, m.def.subLabel, 'var(--gold)', m.list, i === 0);
+    });
+    if(r.byCat.etc.length){
+      cols.push(column('◦ 기타', '미분류 브랜드', 'var(--text3)', r.byCat.etc, false));
+    }
+    sect.innerHTML = head + meta
+      + '<div style="display:flex;flex-wrap:wrap;align-items:flex-start;row-gap:24px">' + cols.join('') + '</div>';
+  }
+  window._discRenderGapCandidates = _gapRender;
+
+  // ══════════════════════════════════════════════════════════════
+  //  DISCOVERY 27FW 에서 감출 원본 섹션
+  //  ────────────────────────────────────────────────────────────
+  //  KOREA Domestic · Intersection · Category Curation 제거 요청.
+  //  원본 DOM 은 지우지 않고 display 만 끈다 — 다른 시즌·브랜드에서는
+  //  그대로 보여야 하고, 원본 렌더 함수들이 이 요소를 참조하기 때문.
+  // ══════════════════════════════════════════════════════════════
+  var _hidRestore = [];
+  function _hidTargets(){
+    var out = [], wrap = document.getElementById('disc-palette-wrap');
+    if(wrap){
+      // China Market 은 Trend-Matched 의 중국 패널로 대체되어 03 에서는 숨긴다.
+      // 'China Market' 헤더부터 Intersection(또는 다음 섹션) 직전까지.
+      (function(){
+        var kids = Array.prototype.slice.call(wrap.children);
+        var st = -1, en = -1;
+        kids.forEach(function(el, i){
+          var txt = (el.textContent || '');
+          if(st < 0 && txt.indexOf('China Market') >= 0) st = i;
+          else if(st >= 0 && en < 0 &&
+                  (txt.indexOf('Intersection') >= 0 || el.id === 'disc-sales-section')) en = i;
+        });
+        if(st >= 0){
+          var stop = (en >= 0) ? en : kids.length;
+          for(var i = st; i < stop; i++){
+            if(kids[i].id === CNM_SECT_ID) continue;   // 내가 만든 매칭 섹션도 같이 제거되므로 제외
+            out.push(kids[i]);
+          }
+        }
+      })();
+      // KOREA 는 헤더와 SUB/KEY/BASIC 그리드가 한 컨테이너가 아니라
+      // disc-palette-wrap 의 형제 div 로 흩어져 있다.
+      // 'Korea Domestic' 헤더부터 'China Market' 헤더 직전까지를 범위로 잡는다.
+      var kids = Array.prototype.slice.call(wrap.children);
+      var startI = -1, endI = -1;
+      kids.forEach(function(el, i){
+        var txt = (el.textContent || '');
+        if(startI < 0 && txt.indexOf('Korea Domestic') >= 0) startI = i;
+        else if(startI >= 0 && endI < 0 && txt.indexOf('China Market') >= 0) endI = i;
+      });
+      if(startI >= 0){
+        var stop = (endI >= 0) ? endI : kids.length;
+        for(var i = startI; i < stop; i++) out.push(kids[i]);
+      }
+      // Intersection — disc-intersection-groups 를 품은 형제 div 통째로
+      var ig = document.getElementById('disc-intersection-groups');
+      if(ig){
+        var node = ig;
+        while(node && node.parentElement !== wrap) node = node.parentElement;
+        if(node) out.push(node);
+      }
+    }
+    var cc = document.getElementById('cat-curation-section');   // Category Curation
+    if(cc) out.push(cc);
+    return out;
+  }
+  function _hidApply(){
+    if(_hidRestore.length) return;
+    _hidTargets().forEach(function(el){
+      _hidRestore.push({ el: el, disp: el.style.display });
+      el.style.display = 'none';
+    });
+  }
+  function _hidRevert(){
+    _hidRestore.forEach(function(r){ r.el.style.display = r.disp || ''; });
+    _hidRestore = [];
+  }
+  function _hidSync(){
+    // 원본 렌더가 나중에 display 를 되살릴 수 있으므로 매번 다시 확인한다
+    if(_inScope()){
+      _hidRestore.length ? _hidTargets().forEach(function(el){ el.style.display = 'none'; }) : _hidApply();
+    } else {
+      _hidRevert();
+    }
+  }
+  window._discHideSections = _hidSync;
+
+
+  // ══════════════════════════════════════════════════════════════
+  //  Category Curation — Trend-Matched 전량을 카테고리별로 배치
+  //  ────────────────────────────────────────────────────────────
+  //  GAP 은 확정 팔레트로 한 번 걸러진 결과지만, 여기는 거르기 전
+  //  단계를 전부 보여준다. 배치는 GAP 과 동일한 비중 기준을 쓰되
+  //  수동으로 옮길 수 있고, 그 결과를 localStorage 에 저장한다.
+  // ══════════════════════════════════════════════════════════════
+  var CC_SECT_ID  = 'disc-cat-curation-tm';
+  var CC_STORE_KEY = 'disc27fw_cat_overrides';
+  var CC_ETC = 'etc';
+  var _ccEdit = false;
+  var CC_HIDE_KEY = 'disc27fw_cat_hidden';
+  var _ccSaved = {};     // 저장된 수동 배치 { hex: catKey }
+  var _ccDraft = {};     // 편집 중 임시본
+  var _ccHideSaved = {}; // 저장된 삭제 목록 { hex: 1 }
+  var _ccHideDraft = {};
+
+  try { _ccSaved = JSON.parse(localStorage.getItem(CC_STORE_KEY) || '{}') || {}; } catch(e) { _ccSaved = {}; }
+  try { _ccHideSaved = JSON.parse(localStorage.getItem(CC_HIDE_KEY) || '{}') || {}; } catch(e) { _ccHideSaved = {}; }
+  _ccDraft = JSON.parse(JSON.stringify(_ccSaved));
+  _ccHideDraft = JSON.parse(JSON.stringify(_ccHideSaved));
+
+  function _ccCatKeys(){
+    return _gapCatDefs().map(function(d){ return d.key; }).concat([CC_ETC]);
+  }
+  function _ccLabelOf(key){
+    var d = _gapCatDefs().filter(function(x){ return x.key === key; })[0];
+    return d ? ((d.emoji ? d.emoji + ' ' : '') + d.name) : '◦ 기타';
+  }
+
+  // Trend-Matched 표시분 전량을 카테고리별로 — 자동 배치 후 수동 배치로 덮어쓴다
+  function _ccBuild(){
+    if(!_tmLastBuild) { try { _tmBuild(); } catch(e){ return null; } }
+    if(!_tmLastBuild || !_tmLastBuild.buckets) return null;
+    var items = [];
+    ['key','sub','basic'].forEach(function(k){
+      (_tmLastBuild.buckets[k] || []).forEach(function(it){
+        if(_ccHideDraft[it.trend.hex]) return;                 // 삭제된 색 제외
+        items.push({ item: it, group: k });
+      });
+    });
+    var split = _gapSplitByCategory(items);
+    var lists = {};
+    split.cats.forEach(function(m){ lists[m.def.key] = { def: m.def, total: m.total, list: m.list.slice() }; });
+    lists[CC_ETC] = { def: { key: CC_ETC, name: '기타', subLabel: '미분류 브랜드' }, total: 0, list: split.etc.slice() };
+
+    // 수동 배치 반영 — 지정된 hex 를 해당 카테고리로 옮긴다
+    var keys = _ccCatKeys();
+    keys.forEach(function(k){
+      var box = lists[k]; if(!box) return;
+      box.list = box.list.filter(function(e){
+        var want = _ccDraft[e.g.item.trend.hex];
+        return !(want && want !== k);
+      });
+    });
+    var placed = {};
+    keys.forEach(function(k){
+      (lists[k] ? lists[k].list : []).forEach(function(e){ placed[e.g.item.trend.hex] = 1; });
+    });
+    Object.keys(_ccDraft).forEach(function(hex){
+      if(placed[hex]) return;
+      var target = _ccDraft[hex];
+      if(!lists[target]) return;
+      var found = null;
+      split.cats.forEach(function(m){
+        m.list.forEach(function(e){ if(e.g.item.trend.hex === hex) found = e; });
+      });
+      split.etc.forEach(function(e){ if(e.g.item.trend.hex === hex) found = e; });
+      if(!found){
+        var hit = items.filter(function(x){ return x.item.trend.hex === hex; })[0];
+        if(hit) found = { g: hit, brands: [], freq: hit.item.mkFreq, share: 0, total: 0, others: [], primary: true };
+      }
+      if(found) lists[target].list.push(found);
+    });
+    return { lists: lists, count: items.length };
+  }
+
+  // 편집 모드 이동 UI — SERGIO 큐레이션과 같은 '클릭 → 앵커 팝오버' 방식.
+  //  칩마다 작은 버튼을 깔면 폭 74px 안에서 눌리지 않아, 클릭 시 팝오버를 띄운다.
+  function _ccEnsurePop(){
+    var ov = document.getElementById('cc-move-ov');
+    if(!ov){
+      ov = document.createElement('div');
+      ov.id = 'cc-move-ov';
+      ov.style.cssText = 'position:fixed;inset:0;z-index:9998;display:none;background:transparent';
+      ov.onclick = function(){ _ccClosePop(); };
+      document.body.appendChild(ov);
+    }
+    var pop = document.getElementById('cc-move-pop');
+    if(!pop){
+      pop = document.createElement('div');
+      pop.id = 'cc-move-pop';
+      pop.style.cssText = 'position:fixed;z-index:9999;display:none;min-width:186px;padding:8px;'
+        + 'background:var(--surface);border:1px solid var(--border2);border-radius:8px;'
+        + 'box-shadow:0 8px 28px rgba(0,0,0,0.28)';
+      document.body.appendChild(pop);
+    }
+    return pop;
+  }
+  function _ccClosePop(){
+    var p = document.getElementById('cc-move-pop'), o = document.getElementById('cc-move-ov');
+    if(p) p.style.display = 'none';
+    if(o) o.style.display = 'none';
+  }
+  window._ccClosePop = _ccClosePop;
+
+  window._ccOpenMove = function(evt, hex, curKey){
+    evt.stopPropagation();
+    var pop = _ccEnsurePop();
+    var rows = _ccCatKeys().map(function(k){
+      var on = (k === curKey);
+      return '<button onclick="event.stopPropagation();_ccMove(\'' + hex + '\',\'' + k + '\')"'
+        + ' style="display:flex;align-items:center;gap:8px;width:100%;text-align:left;cursor:pointer;'
+        + 'font-family:var(--mono);font-size:11px;padding:7px 9px;margin-bottom:3px;border-radius:5px;'
+        + 'border:1px solid ' + (on ? 'var(--gold)' : 'transparent') + ';'
+        + 'background:' + (on ? 'rgba(160,120,64,0.16)' : 'transparent') + ';color:var(--text)">'
+        + '<span style="width:12px;display:inline-block;color:var(--gold)">' + (on ? '✓' : '') + '</span>'
+        + _ccLabelOf(k) + '</button>';
+    }).join('');
+    var isManual = !!_ccDraft[hex];
+    pop.innerHTML = ''
+      + '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">'
+      +   '<span style="width:20px;height:20px;border-radius:4px;background:' + hex + ';border:1px solid var(--border2);display:inline-block"></span>'
+      +   '<span style="font-family:var(--mono);font-size:10px;color:var(--text3)">' + hex + '</span>'
+      + '</div>'
+      + rows
+      + (isManual
+          ? '<button onclick="event.stopPropagation();_ccClear(\'' + hex + '\')" style="width:100%;cursor:pointer;'
+            + 'font-family:var(--mono);font-size:10px;padding:6px;margin-top:3px;border-radius:5px;'
+            + 'border:1px solid var(--border);background:transparent;color:var(--text3)">이 색만 자동 배치로</button>'
+          : '')
+      + '<button onclick="event.stopPropagation();_ccHide(\'' + hex + '\')" style="width:100%;cursor:pointer;'
+        + 'font-family:var(--mono);font-size:10px;padding:6px;margin-top:6px;border-radius:5px;'
+        + 'border:1px solid rgba(220,80,80,0.35);background:rgba(220,80,80,0.06);color:#d85a5a">✕ 이 색 삭제</button>';
+    pop.style.display = 'block';
+    var r = evt.currentTarget.getBoundingClientRect();
+    var top = r.bottom + 6, left = r.left;
+    if(left + 200 > window.innerWidth - 8) left = window.innerWidth - 208;
+    if(top + pop.offsetHeight > window.innerHeight - 8) top = Math.max(8, r.top - pop.offsetHeight - 6);
+    pop.style.top = top + 'px';
+    pop.style.left = left + 'px';
+    document.getElementById('cc-move-ov').style.display = 'block';
+  };
+
+  window._ccClear = function(hex){
+    delete _ccDraft[hex];
+    _ccClosePop();
+    _ccRender();
+  };
+  window._ccHide = function(hex){
+    _ccHideDraft[hex] = 1;
+    delete _ccDraft[hex];          // 숨긴 색의 수동 배치는 의미가 없으므로 같이 정리
+    _ccClosePop();
+    _ccRender();
+  };
+  window._ccUnhideAll = function(){
+    _ccHideDraft = {};
+    if(!_ccEdit){ _ccHideSaved = {}; try{ localStorage.removeItem(CC_HIDE_KEY); }catch(e){} }
+    _ccRender();
+  };
+
+  window._ccMove = function(hex, key){
+    _ccDraft[hex] = key;
+    _ccClosePop();
+    _ccRender();
+  };
+  window._ccToggleEdit = function(){
+    _ccEdit = !_ccEdit;
+    if(_ccEdit){                                                   // 편집 시작 시 저장본에서 출발
+      _ccDraft = JSON.parse(JSON.stringify(_ccSaved));
+      _ccHideDraft = JSON.parse(JSON.stringify(_ccHideSaved));
+    }
+    _ccRender();
+  };
+  window._ccSave = function(){
+    _ccSaved = JSON.parse(JSON.stringify(_ccDraft));
+    _ccHideSaved = JSON.parse(JSON.stringify(_ccHideDraft));
+    try {
+      localStorage.setItem(CC_STORE_KEY, JSON.stringify(_ccSaved));
+      localStorage.setItem(CC_HIDE_KEY, JSON.stringify(_ccHideSaved));
+    } catch(e){}
+    _ccEdit = false;
+    _ccRender();
+  };
+  window._ccCancel = function(){
+    _ccDraft = JSON.parse(JSON.stringify(_ccSaved));               // 저장본으로 되돌림
+    _ccHideDraft = JSON.parse(JSON.stringify(_ccHideSaved));
+    _ccEdit = false;
+    _ccRender();
+  };
+  window._ccReset = function(){
+    _ccDraft = {}; _ccSaved = {};
+    _ccHideDraft = {}; _ccHideSaved = {};
+    try {
+      localStorage.removeItem(CC_STORE_KEY);
+      localStorage.removeItem(CC_HIDE_KEY);
+    } catch(e){}
+    _ccRender();
+  };
+
+  function _ccChip(e, curKey){
+    var it = e.g.item, t = it.trend;
+    var codeLine = _tmCodeLineHtml(t);
+    var src = (t.sources && t.sources.length) ? t.sources.join('·') : '';
+    var isKey = (e.g.group === 'key');
+    var moved = !!_ccDraft[t.hex];
+    var nameEsc = String(t.name || t.hex).replace(/'/g, "\\'");
+    var tip = (t.name || '') + ' ' + t.hex + ' · ' + GAP_GROUP_LABEL[e.g.group]
+      + (e.total ? ' · ' + e.freq + '/' + e.total + ' (' + _gapPct(e.share) + ')' : '')
+      + (moved ? ' · 수동 배치' : '');
+    return ''
+      + '<div class="dcp-chip" style="cursor:' + (_ccEdit ? 'move' : 'pointer') + '"'
+      +   ' onclick="' + (_ccEdit
+            ? '_ccOpenMove(event,\'' + t.hex + '\',\'' + curKey + '\')'
+            : '_tmOpenDetail(\'' + t.hex + '\',\'' + nameEsc + '\')') + '"'
+      +   ' title="' + (_ccEdit ? '클릭해서 카테고리 이동' : tip) + '">'
+      +   '<div class="dcp-name" style="font-size:10px;font-weight:700;color:var(--text3);letter-spacing:0.04em">' + (src || '&nbsp;') + '</div>'
+      +   '<div class="dcp-card"' + (moved ? ' style="border-color:var(--gold)"' : '') + '>'
+      +     codeLine
+      +     '<div class="dcp-fill" style="background:' + t.hex + '">'
+      +       (isKey ? '<span style="font-family:var(--mono);font-size:8px;font-weight:800;color:' + _dcpTextOn(t.hex.slice(1)) + '">KEY</span>' : '')
+      +     '</div>'
+      +     '<div class="dcp-hex">' + t.hex + '</div>'
+      +   '</div>'
+      + '</div>';
+  }
+
+  function _ccSection(){
+    var wrap = document.getElementById('disc-palette-wrap');
+    if(!wrap) return null;
+    var sect = document.getElementById(CC_SECT_ID);
+    if(!sect){
+      sect = document.createElement('div');
+      sect.id = CC_SECT_ID;
+      sect.className = 'dcp-scope';
+      sect.style.marginBottom = '32px';
+      sect.style.paddingBottom = '24px';
+      sect.style.borderBottom = '1px solid var(--border)';
+    }
+    if(!sect.parentNode) wrap.appendChild(sect);
+    return sect;
+  }
+
+  function _ccRender(){
+    var sect = document.getElementById(CC_SECT_ID);
+    if(!_inScope()){ if(sect) sect.style.display = 'none'; return; }
+    sect = _ccSection();
+    if(!sect) return;
+    sect.style.display = 'block';
+
+    var r = _ccBuild();
+    var nMoved = Object.keys(_ccDraft).length;
+    var nHidden = Object.keys(_ccHideDraft).length;
+    var btnStyle = 'font-size:10px;padding:4px 10px;border-radius:4px;cursor:pointer;font-family:var(--mono);';
+    var ctrls = _ccEdit
+      ? '<button onclick="_ccSave()" style="' + btnStyle + 'border:none;background:#A07840;color:#fff;font-weight:700">저장</button>'
+        + '<button onclick="_ccCancel()" style="' + btnStyle + 'border:1px solid var(--border);background:transparent;color:var(--text2)">취소</button>'
+        + '<button onclick="_ccReset()" style="' + btnStyle + 'border:1px solid var(--border);background:transparent;color:var(--text3)">원래대로</button>'
+      : '<button onclick="_ccToggleEdit()" style="' + btnStyle + 'border:1px solid var(--border);background:transparent;color:var(--text2)">✎ 편집</button>'
+        + ((nMoved || nHidden) ? '<button onclick="_ccReset()" style="' + btnStyle + 'border:1px solid var(--border);background:transparent;color:var(--text3)">원래대로</button>' : '');
+    if(nHidden){
+      ctrls = '<button onclick="_ccUnhideAll()" style="' + btnStyle + 'border:1px solid var(--border);background:transparent;color:var(--text3)">삭제 ' + nHidden + '색 되살리기</button>' + ctrls;
+    }
+
+    var head = ''
+      + '<div class="spp-trend-market-hd" style="margin-bottom:6px">'
+      +   '<span class="spp-trend-market-flame" style="color:var(--gold)">◎ CURATION</span>'
+      +   '<span class="spp-trend-market-title">Category Curation</span>'
+      +   '<span class="spp-trend-market-sub">Trend-Matched 전량을 카테고리별로 배치 (확정 팔레트 필터 이전 단계)</span>'
+      +   '<span style="margin-left:auto;display:flex;gap:6px">' + ctrls + '</span>'
+      + '</div>'
+      + '<div style="font-family:var(--mono);font-size:9px;color:var(--text4);margin-bottom:14px">'
+      +   (r ? r.count + '색 · ' : '')
+      +   '자동 배치는 비중(카테고리 수집량 대비) 기준'
+      +   (nMoved ? ' · 수동 배치 ' + nMoved + '색' : '')
+      +   (nHidden ? ' · 삭제 ' + nHidden + '색' : '')
+      +   (_ccEdit ? ' · 편집 중 — 칩을 클릭해 이동·삭제' : '')
+      + '</div>';
+
+    if(!r){
+      sect.innerHTML = head + '<div class="spp-empty">Trend-Matched 결과가 없습니다.</div>';
+      return;
+    }
+    var keys = _ccCatKeys();
+    var cols = keys.map(function(k, i){
+      var box = r.lists[k];
+      if(!box) return '';
+      // 기타는 실제로 색이 있을 때만 노출한다.
+      // (예전엔 편집 중 '받을 칸'이 필요해 띄웠지만, 이동이 팝오버 방식으로 바뀌어 불필요)
+      if(k === CC_ETC && !box.list.length) return '';
+      var d = box.def;
+      return '<div style="flex:1 1 300px;min-width:300px;padding:0 16px'
+        + (i === 0 ? '' : ';border-left:1px solid var(--border)') + '">'
+        + '<div style="display:flex;align-items:baseline;gap:8px;margin-bottom:12px">'
+        +   '<span style="font-family:var(--mono);font-size:10px;font-weight:700;color:'
+        +     (k === CC_ETC ? 'var(--text3)' : 'var(--gold)') + ';letter-spacing:0.1em">' + _ccLabelOf(k) + '</span>'
+        +   (d.subLabel ? '<span style="font-family:var(--mono);font-size:9px;color:var(--text4)">' + d.subLabel + '</span>' : '')
+        +   '<span style="font-family:var(--mono);font-size:9px;color:var(--text3);margin-left:auto">' + box.list.length + '색</span>'
+        + '</div>'
+        + (box.list.length
+            ? '<div class="dcp-mood-row" style="justify-content:flex-start;gap:10px">'
+              + box.list.map(function(e){ return _ccChip(e, k); }).join('') + '</div>'
+            : '<div class="spp-empty" style="font-size:10px">없음</div>')
+        + '</div>';
+    }).join('');
+    sect.innerHTML = head
+      + '<div style="display:flex;flex-wrap:wrap;align-items:flex-start;row-gap:24px">' + cols + '</div>';
+  }
+  window._discRenderCatCuration = _ccRender;
+
+  // ── 섹션 순서 고정 ────────────────────────────────────────────
+  //  각 섹션이 제각기 "무엇의 앞/뒤"로 자리를 잡으면 서로를 밀어낸다.
+  //  (27FW 팔레트 토글 시 그것만 다시 그려지며 Curation 위로 올라가던 문제)
+  //  순서는 여기서 한 번에 정한다.
+  var DISC_SECT_ORDER = [TM_SECT_ID, CC_SECT_ID, GAP_SECT_ID];   // 27FW 팔레트는 04 로 이동
+  function _discOrderSections(){
+    var wrap = document.getElementById('disc-palette-wrap');
+    if(!wrap) return;
+    var first = null;
+    // 원본 섹션들(KOREA·CHINA 등) 중 첫 번째를 기준점으로 삼아 그 앞에 차례로 붙인다
+    for(var i = 0; i < wrap.children.length; i++){
+      var id = wrap.children[i].id;
+      if(DISC_SECT_ORDER.indexOf(id) < 0){ first = wrap.children[i]; break; }
+    }
+    DISC_SECT_ORDER.forEach(function(id){
+      var el = document.getElementById(id);
+      if(el) wrap.insertBefore(el, first);
+    });
+  }
+  window._discOrderSections = _discOrderSections;
+
+  // ══════════════════════════════════════════════════════════════
+  //  China Market — WGSN/Peclers 칩으로 제안
+  //  ────────────────────────────────────────────────────────────
+  //  원본은 중국 마켓 hex 를 그대로 보여준다. Trend-Matched 와 같은
+  //  방식으로 트렌드 풀과 매칭해 WGSN/Peclers 원본 컬러로 바꿔 놓고,
+  //  칩 레이아웃도 dcp 형태로 통일한다. 원본 그리드는 숨긴다.
+  // ══════════════════════════════════════════════════════════════
+  var CNM_SECT_ID = 'disc-cn-trendmatched';
+  var CNM_MAX = 4;   // 원본 China Market 이 SUB 4 · KEY 4 로 잘라 보여주므로 맞춘다
+
+  function _cnmBuild(){
+    if(typeof cnMarketData === 'undefined' || !Array.isArray(cnMarketData) || !cnMarketData.length) return null;
+    var trend = _tmTrendPool();
+    if(!trend.length) return null;
+    var used = {}, out = [];
+    cnMarketData.slice().sort(function(a,b){ return (b.freq||0) - (a.freq||0); }).forEach(function(c){
+      if(!c || !c.hex || !/^#[0-9A-Fa-f]{6}$/.test(c.hex)) return;
+      var hx = c.hex.toUpperCase(), best = null, bd = TM_DIST;
+      for(var i = 0; i < trend.length; i++){
+        var dd = rgbDist(hx, trend[i].hex);
+        if(dd < bd){ bd = dd; best = trend[i]; }
+      }
+      if(!best) return;
+      if(used[best.hex]){                                  // 같은 트렌드 칩이면 빈도만 합산
+        used[best.hex].freq += (c.freq || 1);
+        (c.brands || []).forEach(function(b){ if(used[best.hex].brands.indexOf(b) < 0) used[best.hex].brands.push(b); });
+        return;
+      }
+      used[best.hex] = { trend: best, freq: c.freq || 1, cnHex: hx, de: Math.round(bd),
+                         brands: (c.brands || []).slice() };
+      out.push(used[best.hex]);
+    });
+    out.sort(function(a,b){ return b.freq - a.freq; });
+    return { items: out, scanned: cnMarketData.length };
+  }
+
+  function _cnmChip(it){
+    var t = it.trend;
+    var codeLine = _tmCodeLineHtml(t);
+    var src = (t.sources && t.sources.length) ? t.sources.join('·') : '';
+    var nameEsc = String(t.name || t.hex).replace(/'/g, "\\'");
+    return ''
+      + '<div class="dcp-chip" style="cursor:pointer" onclick="_tmOpenDetail(\'' + t.hex + '\',\'' + nameEsc + '\')"'
+      +   ' title="중국 마켓 ' + it.cnHex + ' ×' + it.freq + ' · ΔRGB ' + it.de
+      +   (it.brands.length ? ' · ' + it.brands.slice(0,3).join(' · ') : '') + '">'
+      +   '<div class="dcp-name" style="font-size:10px;font-weight:700;color:var(--text3);letter-spacing:0.04em">' + (src || '&nbsp;') + '</div>'
+      +   '<div class="dcp-card">'
+      +     codeLine
+      +     '<div class="dcp-fill" style="background:' + t.hex + '">'
+      +       '<span style="font-family:var(--mono);font-size:8px;font-weight:800;color:' + _dcpTextOn(t.hex.slice(1)) + '">×' + it.freq + '</span>'
+      +     '</div>'
+      +     '<div class="dcp-hex">' + t.hex + '</div>'
+      +   '</div>'
+      + '</div>';
+  }
+
+  var _cnmHidden = [];
+  function _cnmHideOriginal(wrap){
+    // 원본 CN 스와치 줄을 숨긴다. 원본 렌더가 되살릴 수 있어 매번 다시 적용.
+    ['disc-sub-grid-cn','disc-key-grid-cn'].forEach(function(id){
+      var g = document.getElementById(id);
+      var box = g; while(box && box.parentElement !== wrap) box = box.parentElement;
+      if(!box) return;
+      if(!_cnmHidden.some(function(r){ return r.el === box; })) _cnmHidden.push({ el: box, disp: box.style.display });
+      box.style.display = 'none';
+    });
+  }
+  function _cnmShowOriginal(){
+    _cnmHidden.forEach(function(r){ r.el.style.display = r.disp || ''; });
+    _cnmHidden = [];
+  }
+
+  function _cnmRender(){
+    // 03 하단의 China Market 섹션은 제거됨 — 중국 결과는 Trend-Matched 의
+    // '중국 마켓' 패널에서만 보여준다. (_cnmBuild / _cnmChip 은 그 패널이 사용)
+    var sect = document.getElementById(CNM_SECT_ID);
+    if(sect) sect.style.display = 'none';
+    _cnmShowOriginal();
+    return;
+  }
+  function _cnmRenderLegacy(){
+    var sect = document.getElementById(CNM_SECT_ID);
+    if(!_inScope()){
+      if(sect) sect.style.display = 'none';
+      _cnmShowOriginal();
+      return;
+    }
+    var wrap = document.getElementById('disc-palette-wrap');
+    if(!wrap) return;
+    _cnmHideOriginal(wrap);
+
+    if(!sect){
+      sect = document.createElement('div');
+      sect.id = CNM_SECT_ID;
+      sect.className = 'dcp-scope';
+      sect.style.marginBottom = '24px';
+      var ref = null;
+      for(var i = 0; i < wrap.children.length; i++){
+        if((wrap.children[i].textContent || '').indexOf('China Market') >= 0){ ref = wrap.children[i].nextSibling; break; }
+      }
+      wrap.insertBefore(sect, ref);
+    }
+    sect.style.display = 'block';
+
+    var r = _cnmBuild();
+    if(!r || !r.items.length){
+      sect.innerHTML = '<div class="spp-empty" style="font-size:10px">중국 마켓 컬러와 매칭되는 트렌드 컬러가 없습니다</div>';
+      return;
+    }
+    // 원본과 같은 SUB / KEY 구분을 유지한다 (분류는 제안색 기준)
+    var g = { key: [], sub: [], basic: [] };
+    r.items.forEach(function(it){ g[_tmClassify(it.trend.hex)].push(it); });
+    var rows = [
+      ['SUB',   'var(--blue)', g.sub.concat(g.basic)],   // 원본이 SUB/KEY 두 줄이라 BASIC 은 SUB 로 합침
+      ['KEY',   '#A090F0',     g.key]
+    ];
+    sect.innerHTML =
+        '<div style="font-family:var(--mono);font-size:9px;color:var(--text4);margin-bottom:10px">'
+      +   '중국 마켓 ' + r.scanned + '색 → WGSN·Peclers 매칭 ' + r.items.length + '색 · 매칭 임계 ΔRGB ≤ ' + TM_DIST
+      + '</div>'
+      + rows.map(function(row){
+          var list = row[2].slice(0, CNM_MAX);
+          if(!list.length) return '';
+          return '<div style="margin-bottom:16px">'
+            + '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">'
+            +   '<span style="font-family:var(--mono);font-size:9px;font-weight:700;color:' + row[1] + ';letter-spacing:0.1em">' + row[0] + '</span>'
+            +   '<span style="font-family:var(--mono);font-size:9px;color:var(--text3)">' + list.length + '색</span>'
+            + '</div>'
+            + '<div class="dcp-mood-row" style="justify-content:flex-start;gap:10px">'
+            +   list.map(_cnmChip).join('') + '</div>'
+            + '</div>';
+        }).join('');
+  }
+  window._discRenderCnMatched = _cnmRender;
+
+
+  // ══════════════════════════════════════════════════════════════
+  //  04 Palette Review — 분석 리포트
+  //  ────────────────────────────────────────────────────────────
+  //  확정 팔레트를 마켓·트렌드 데이터에 비춰 계산한 결과를 서술한다.
+  //  모든 수치는 실제 데이터에서 산출한 값이고, 추정이나 창작은 없다.
+  //   · 검증됨   : 마켓에서 근거가 잡히는 확정색
+  //   · 근거 약함: 마켓에서 안 잡히는 확정색 (선행이거나 근거 부족)
+  //   · 보완 후보: 마켓·트렌드 양쪽에서 잡히는데 팔레트에 없는 색
+  // ══════════════════════════════════════════════════════════════
+  var RPT_VERIFY_DE = 10;   // 확정색이 '마켓에서 잡힌다'고 볼 Lab 거리
+
+  function _rptMarketPool(){
+    try { return _tmMarketPool(); } catch(e){ return []; }
+  }
+
+  function _rptBuild(){
+    var pal = _gapPaletteList();
+    if(!pal.length) return null;
+    var market = _rptMarketPool();
+    var trend  = _tmTrendPool();
+
+    // 1) 확정색별 마켓 근거
+    var verified = [], weak = [];
+    pal.forEach(function(p){
+      var best = null, bd = 1e9;
+      market.forEach(function(m){
+        var dd = _tmDeltaE(p.hex, m.hex);
+        if(dd < bd){ bd = dd; best = m; }
+      });
+      var rec = { pal: p, de: Math.round(bd * 10) / 10, freq: best ? best.freq : 0,
+                  mkHex: best ? best.hex : null, mkName: best ? (best.name || '') : '',
+                  // 확실히 맞음(ΔE 5 이내) / 맞는 편(5~10) — 정도를 구분한다
+                  tier: (bd <= 5 ? 'solid' : 'ok') };
+      (bd <= RPT_VERIFY_DE && best) ? verified.push(rec) : weak.push(rec);
+    });
+    verified.sort(function(a,b){ return b.freq - a.freq; });
+    weak.sort(function(a,b){ return a.de - b.de; });
+
+    // 2) 확정 팔레트 구성비 vs 매칭 결과 구성비
+    function ratio(list, hexOf){
+      var c = { basic:0, sub:0, key:0 };
+      list.forEach(function(x){ c[_tmClassify(hexOf(x))]++; });
+      var n = list.length || 1;
+      return { c: c, n: list.length,
+               p: { basic: Math.round(c.basic/n*100), sub: Math.round(c.sub/n*100), key: Math.round(c.key/n*100) } };
+    }
+    var palR = ratio(pal, function(x){ return x.hex; });
+    var mkList = [];
+    if(_tmLastBuild && _tmLastBuild.raw){
+      ['key','sub','basic'].forEach(function(k){ mkList = mkList.concat(_tmLastBuild.raw[k] || []); });
+    }
+    var mkR = ratio(mkList, function(x){ return x.trend.hex; });
+
+    // 3) 보완 후보 (GAP 과 동일 기준)
+    var gap = (typeof _gapBuild === 'function') ? _gapBuild() : null;
+
+    // 4) 색상 계열 분포
+    function fams(list, hexOf){
+      var f = {};
+      list.forEach(function(x){ var k = _tmFamily(hexOf(x)); f[k] = (f[k]||0)+1; });
+      return f;
+    }
+    return {
+      pal: pal, verified: verified, weak: weak,
+      palR: palR, mkR: mkR, gap: gap,
+      palFam: fams(pal, function(x){ return x.hex; }),
+      mkFam: fams(mkList, function(x){ return x.trend.hex; }),
+      trendN: trend.length, marketN: market.length
+    };
+  }
+
+  // 확정 팔레트 색의 코드(Coloro/Pantone) — 내장 데이터에서 hex 로 찾는다
+  // 트렌드/제안 색의 코드 — 원본 코드 우선, 없으면 hex 매핑(≈)
+  function _rptTrendCode(t){
+    var c = _tmCodeLabel(t.pantone);
+    if(c) return c;
+    var cc = (window.hexToColoro && window.hexToColoro(t.hex)) || null;
+    if(cc && cc.pantone) return 'Pantone ≈ ' + _tmPantoneCode(cc.pantone) + ' TCX';
+    return t.hex;
+  }
+
+  function _rptPalMeta(hex){
+    var hu = String(hex).toUpperCase().replace(/^#/, '');
+    var hit = null;
+    function scan(arr){ arr.forEach(function(it){ if(!it || it.gap || !it.hex) return;
+      if(String(it.hex).toUpperCase() === hu) hit = it; }); }
+    if(typeof _dcpCustom !== 'undefined' && _dcpCustom && _dcpCustom.rows){
+      _dcpCustom.rows.forEach(function(r){ if(String(r.hex).toUpperCase() === hu) hit = { code: r.code }; });
+      return hit && hit.code ? hit.code : '';
+    }
+    scan(DCP_CORE_1); scan(DCP_CORE_2);
+    DCP_MOODS.forEach(function(m){ m.rows.forEach(scan); });
+    if(!hit) return '';
+    if(hit.code) return 'COLORO ' + hit.code;
+    if(hit.pantone) return 'PANTONE ' + hit.pantone;
+    if(hit.tag) return hit.tag;
+    return '';
+  }
+
+  function _rptSw(hex, size){
+    return '<span style="display:inline-block;width:' + (size||11) + 'px;height:' + (size||11)
+      + 'px;border-radius:2px;background:' + hex + ';border:1px solid var(--border2);vertical-align:-1px;margin-right:3px"></span>';
+  }
+  // 위: 확정 팔레트 색 / 아래: 대응하는 마켓·트렌드 색 — 방향이 맞는지 눈으로 바로 보게
+  function _rptPair(topHex, topLabel, botHex, botLabel, foot, flip, opt){
+    var cell = function(hex, label, h){
+      return '<div style="height:' + h + 'px;background:' + (hex || 'transparent')
+        + (hex ? '' : ';background-image:repeating-linear-gradient(45deg,var(--border) 0 4px,transparent 4px 8px)')
+        + ';display:flex;align-items:flex-end;justify-content:center;padding-bottom:2px">'
+        + (label ? '<span style="font-family:var(--mono);font-size:10px;font-weight:700;color:'
+            + (hex ? _dcpTextOn(String(hex).slice(1)) : 'var(--text4)') + '">' + label + '</span>' : '')
+        + '</div>';
+    };
+    var codeLine = function(txt){
+      return '<div style="font-family:var(--mono);font-size:9.5px;color:var(--text3);text-align:center;'
+        + 'line-height:1.3;padding:3px 2px;min-height:26px;display:flex;align-items:center;justify-content:center">'
+        + (txt || '&nbsp;') + '</div>';
+    };
+    return '<div style="width:104px;flex:0 0 auto">'
+      + codeLine(opt && opt.topCode)
+      + '<div style="border:1px solid ' + (flip ? 'var(--gold)' : 'var(--border)') + ';border-radius:4px;overflow:hidden">'
+      +   cell(topHex, topLabel, 38)
+      +   '<div style="height:1px;background:var(--border)"></div>'
+      +   cell(botHex, botLabel, 62)
+      + '</div>'
+      + codeLine(opt && opt.botCode)
+      + '<div style="font-family:var(--mono);font-size:11px;color:var(--text3);text-align:center;margin-top:2px;'
+      +   'white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + foot + '</div>'
+      + '</div>';
+  }
+  function _rptPairRow(html, note){
+    return '<div style="display:flex;flex-wrap:wrap;gap:10px;margin:12px 0 18px">' + html + '</div>'
+      + (note ? '<div style="font-family:var(--mono);font-size:11px;color:var(--text4);margin:-10px 0 18px">' + note + '</div>' : '');
+  }
+
+  function _rptList(items, n, fmt){
+    return items.slice(0, n).map(fmt).join(', ') + (items.length > n ? ' 외 ' + (items.length - n) : '');
+  }
+
+  // ── 결론 — 데이터에서 도출되는 행동 항목 ────────────────────
+  //  수치 나열이 아니라 "그래서 무엇을 해야 하는가"를 먼저 보여준다.
+  //  판단 근거는 아래 1~4 섹션에 그대로 남는다.
+  //  권고에 올릴 색의 최소 조건 — 빈도만 보면 한 브랜드 쏠림을 못 거른다.
+  //  (빈도는 브랜드 구분 없이 합산된 값이라 '한 곳이 5번'과 '5곳이 1번씩'이 같은 5로 나온다)
+  var RPT_MIN_FREQ = 5;
+  var RPT_MIN_BRANDS = 2;
+  function _rptBrands(e){
+    var nb = _tmNearBrands(e.item.trend.hex);
+    if(!nb.length) nb = (e.item.brands || []).slice();
+    return nb;
+  }
+  function _rptStrong(e){
+    if((e.item.mkFreq || 0) < RPT_MIN_FREQ) return false;
+    return _rptBrands(e).length >= RPT_MIN_BRANDS;
+  }
+  function _rptWeakNote(list){
+    var f = list.reduce(function(n,e){ return n + (e.item.mkFreq||0); }, 0);
+    return list.length + '색 · 합산 빈도 ' + f;
+  }
+
+  function _rptConclusion(r, famNames){
+    var acts = [];
+    var vRate = Math.round(r.verified.length / r.pal.length * 100);
+
+    // (0) 잘 맞은 색 — 문제만 나열하면 무엇을 지켜야 할지 알 수 없다
+    var solid = r.verified.filter(function(x){ return x.tier === 'solid'; });
+    if(solid.length){
+      acts.push({
+        tag: '유지', title: '시장에서 확실히 검증된 ' + solid.length + '색은 그대로 간다',
+        why: '가장 가까운 마켓 컬러와 ΔE 5 이내로, 경쟁 브랜드가 사실상 같은 색을 쓰고 있습니다. '
+           + '확정 팔레트 ' + r.pal.length + '색 중 ' + Math.round(solid.length / r.pal.length * 100) + '% 입니다.'
+           + (r.verified.length > solid.length
+               ? ' 나머지 ' + (r.verified.length - solid.length) + '색은 ΔE 5~10 으로 같은 계열이지만 톤 차이가 있습니다.' : ''),
+        pals: solid.slice(0, 10)
+      });
+    }
+
+
+    // (1) KEY 비중
+    if(r.mkR.n && (r.mkR.p.key - r.palR.p.key) >= 8){
+      // 화면에 표시된 KEY 8색만 보면 후보가 거의 남지 않는다.
+      // 매칭된 KEY 전체에서 '팔레트에 없고 기준을 통과하는' 색을 다시 찾는다.
+      var keyPool = (_tmLastBuild && _tmLastBuild.raw && _tmLastBuild.raw.key) ? _tmLastBuild.raw.key : [];
+      var keyCands = keyPool.map(function(it){
+          var near = _gapNearest(it.trend.hex);
+          return { item: it, group: 'key', near: near.color, nearDe: Math.round(near.de) };
+        })
+        .filter(function(e){ return e.nearDe >= GAP_MIN_DE && _rptStrong(e); })
+        .sort(function(a,b){ return b.item.mkFreq - a.item.mkFreq; });
+      // 비중 차이를 그대로 색 수로 환산하면 과하게 나온다(시장 KEY 67% 같은 경우).
+      // 팔레트 규모의 15% 를 상한으로 둔다.
+      var need = Math.max(1, Math.round(r.pal.length * (r.mkR.p.key - r.palR.p.key) / 100));
+      need = Math.min(need, Math.max(2, Math.round(r.pal.length * 0.15)));
+      // KEY 0% 는 '포인트 컬러가 없다'가 아니라 'Lab C* 기준을 넘는 색이 없다'는 뜻이다.
+      // 팔레트가 채도를 낮게 잡은 설계일 수 있으므로 단정하지 않는다.
+      var zeroKey = (r.palR.c.key === 0);
+      acts.push({
+        tag: '보강',
+        title: 'KEY 비중을 ' + r.mkR.p.key + '% 수준으로 맞출지 결정한다'
+             + (keyCands.length ? ' (필요 ' + need + '색 · 후보 ' + keyCands.length + '색)'
+                                : ' (필요 ' + need + '색 · 후보 없음)'),
+        why: '팔레트 KEY 비중은 ' + r.palR.p.key + '%(' + r.palR.c.key + '색), 시장은 ' + r.mkR.p.key + '% 입니다. '
+           + (zeroKey
+               ? '다만 KEY 0% 는 포인트 컬러가 없다는 뜻이 아니라, 채도 기준(Lab C*≥' + TM_KEY_C
+                 + ')을 넘는 색이 없다는 뜻입니다. 팔레트 전반을 낮은 채도로 잡은 설계라면 의도된 결과입니다. '
+               : '')
+           + '비중을 맞추려면 ' + need + '색 안팎이 필요하지만, 팔레트에 없으면서 기준(빈도 ' + RPT_MIN_FREQ
+           + ' 이상 · ' + RPT_MIN_BRANDS + '개 브랜드 이상)을 통과한 후보는 '
+           + (keyCands.length ? keyCands.length + '색입니다.'
+                              : '없습니다. 추가할 색은 트렌드 자료에서 따로 찾아야 합니다.')
+           + (keyCands.length && keyCands.length < need
+               ? ' 나머지 ' + (need - keyCands.length) + '색은 별도로 찾아야 합니다.' : ''),
+        items: keyCands.slice(0, 10)
+      });
+    } else if(r.mkR.n && (r.palR.p.key - r.mkR.p.key) >= 8){
+      acts.push({
+        tag: '조정', title: 'KEY 컬러를 줄이거나 SUB 로 내린다',
+        why: '팔레트 KEY 비중 ' + r.palR.p.key + '% 는 시장 ' + r.mkR.p.key + '% 보다 높습니다. '
+           + '포인트가 많으면 서로를 상쇄합니다.', items: []
+      });
+    }
+
+    // (2) 근거 약한 색
+    if(r.weak.length){
+      acts.push({
+        tag: '재검토', title: '시장 근거가 없는 ' + r.weak.length + '색을 점검한다',
+        why: '가장 가까운 마켓 컬러와 ΔE ' + r.weak[0].de + ' 이상 떨어져 있습니다. '
+           + '선행 제안이면 유지하고, 근거를 두고 넣은 색이면 교체 대상입니다.',
+        pals: r.weak.slice(0, 8)
+      });
+    }
+
+    // (3) 빠진 계열
+    var missFam = Object.keys(r.mkFam).filter(function(k){ return !r.palFam[k]; });
+    if(missFam.length){
+      var cands = (r.gap && r.gap.items || []).filter(function(e){
+        return missFam.indexOf(_tmFamily(e.item.trend.hex)) >= 0;
+      });
+      var strong = cands.filter(_rptStrong);
+      var famLabel = missFam.map(function(k){ return famNames[k] || k; }).join(' · ');
+      if(strong.length){
+        acts.push({
+          tag: '추가', title: famLabel + ' 계열을 채울지 결정한다',
+          why: famLabel + ' 계열이 마켓에서 ' + _rptWeakNote(strong)
+             + ' 로 관측되는데 팔레트에는 한 색도 없습니다. 의도적으로 뺀 것이 아니라면 공백입니다.',
+          items: strong.slice(0, 6)
+        });
+      } else if(cands.length){
+        // 근거가 약해 단정하지 않는다
+        acts.push({
+          tag: '참고', title: famLabel + ' 계열 부재 — 판단 보류',
+          why: famLabel + ' 계열이 마켓에서 ' + _rptWeakNote(cands) + ' 로만 잡힙니다. '
+             + '빈도 ' + RPT_MIN_FREQ + ' 이상 · ' + RPT_MIN_BRANDS + '개 브랜드 이상 조건에 못 미쳐 '
+             + '공백으로 볼지는 판단이 필요합니다.',
+          items: cands.slice(0, 6)
+        });
+      }
+    }
+
+    // (4) 추가 후보 상위
+    if(r.gap && r.gap.items.length){
+      var strongGap = r.gap.items.filter(_rptStrong);
+      if(strongGap.length){
+        acts.push({
+          tag: '추가', title: '보완 후보 상위 ' + Math.min(5, strongGap.length) + '색을 우선 검토한다',
+          why: '마켓·트렌드 양쪽에서 잡히는데 팔레트에 없습니다. '
+             + '빈도 ' + RPT_MIN_FREQ + ' 이상이면서 ' + RPT_MIN_BRANDS + '개 이상 브랜드가 쓰는 색만 추렸습니다'
+             + (strongGap.length < r.gap.items.length
+                 ? ' (전체 후보 ' + r.gap.items.length + '색 중 ' + strongGap.length + '색).' : '.'),
+          items: strongGap.slice(0, 5)
+        });
+      }
+    }
+
+    // (5) 계열 쏠림
+    // 아우터 팔레트에서 뉴트럴이 절반인 것은 흔한 구성이라 신호로 보지 않는다.
+    // 유채색 계열이 과반을 넘을 때만 편중으로 본다.
+    var palTop = Object.keys(r.palFam).filter(function(k){ return k !== 'neutral'; })
+      .sort(function(a,b){ return r.palFam[b]-r.palFam[a]; })[0];
+    if(palTop && r.palFam[palTop] / r.pal.length >= 0.40){
+      acts.push({
+        tag: '조정', title: (famNames[palTop] || palTop) + ' 계열 ' + r.palFam[palTop] + '색의 편중을 확인한다',
+        why: '팔레트의 ' + Math.round(r.palFam[palTop]/r.pal.length*100) + '% 가 한 계열입니다. '
+           + '베이직 성격이면 정상이지만, 시즌 색상 폭이 좁아 보일 수 있습니다.', items: []
+      });
+    }
+
+    if(!acts.length){
+      acts.push({ tag: '유지', title: '현 팔레트를 유지한다',
+        why: '시장 검증률 ' + vRate + '% 이고 보완이 필요한 영역이 확인되지 않았습니다.', items: [] });
+    }
+
+    var TAGC = { 보강:'#A090F0', 추가:'var(--gold)', 재검토:'var(--warn)', 조정:'var(--blue)', 참고:'var(--text3)', 유지:'var(--text3)' };
+    return '<div style="border:1px solid var(--border2);border-radius:10px;padding:18px 20px;margin-bottom:26px">'
+      + '<div style="font-family:var(--mono);font-size:13px;font-weight:700;color:var(--gold);letter-spacing:0.1em;margin-bottom:6px">결론</div>'
+      + '<div style="font-size:14px;color:var(--text3);margin-bottom:16px;line-height:1.7">'
+      +   '확정 팔레트 ' + r.pal.length + '색 · 시장 검증률 ' + vRate + '% · 근거 약한 색 ' + r.weak.length + '색 · 보완 후보 '
+      +   (r.gap ? r.gap.items.length : 0) + '색 기준으로, 아래 ' + acts.length + '가지가 필요합니다.'
+      + '</div>'
+      + acts.map(function(a, i){
+          return '<div style="padding:14px 0;border-top:1px solid var(--border)">'
+            + '<div style="display:flex;align-items:baseline;gap:10px;margin-bottom:6px;flex-wrap:wrap">'
+            +   '<span style="font-family:var(--mono);font-size:11px;font-weight:700;color:' + (TAGC[a.tag]||'var(--gold)')
+            +     ';border:1px solid ' + (TAGC[a.tag]||'var(--gold)') + ';border-radius:3px;padding:2px 7px">' + a.tag + '</span>'
+            +   '<span style="font-size:16px;font-weight:700;color:var(--text)">' + (i+1) + '. ' + a.title + '</span>'
+            + '</div>'
+            + '<div style="font-size:14px;color:var(--text2);line-height:1.75;margin-bottom:' + ((a.items&&a.items.length)||(a.pals&&a.pals.length) ? '10px' : '0') + '">' + a.why + '</div>'
+            + (a.items && a.items.length
+                ? '<div style="display:flex;flex-wrap:wrap;gap:8px">'
+                  + a.items.map(function(e){
+                      return '<span title="' + e.item.trend.hex + ' · 빈도 ' + e.item.mkFreq + '" style="display:inline-flex;'
+                        + 'align-items:center;gap:6px;padding:3px 9px 3px 3px;border:1px solid var(--border);border-radius:20px">'
+                        + '<span style="width:22px;height:22px;border-radius:50%;background:' + e.item.trend.hex + '"></span>'
+                        + '<span style="font-family:var(--mono);font-size:11px;color:var(--text2)">'
+                        +   (_tmPantoneCode(e.item.trend.pantone) || e.item.trend.hex)
+                        +   ' · 빈도 ' + e.item.mkFreq
+                        +   (function(){ var nb = _rptBrands(e);
+                              return nb.length ? ' · ' + nb.length + '브랜드' : ''; })()
+                        +   '</span></span>';
+                    }).join('') + '</div>'
+                : '')
+            + (a.pals && a.pals.length
+                ? '<div style="display:flex;flex-wrap:wrap;gap:8px">'
+                  + a.pals.map(function(x){
+                      return '<span title="' + x.pal.hex + ' · ΔE ' + x.de + '" style="display:inline-flex;'
+                        + 'align-items:center;gap:6px;padding:3px 9px 3px 3px;border:1px solid var(--border);border-radius:20px">'
+                        + '<span style="width:22px;height:22px;border-radius:50%;background:' + x.pal.hex + '"></span>'
+                        + '<span style="font-family:var(--mono);font-size:11px;color:var(--text2)">'
+                        +   x.pal.name + ' ΔE' + x.de + '</span></span>';
+                    }).join('') + '</div>'
+                : '')
+            + '</div>';
+        }).join('')
+      + '</div>';
+  }
+
+  function _rptHtml(){
+    var r = _rptBuild();
+    if(!r) return '<div class="spp-empty">분석할 데이터가 없습니다. 01·02 에서 데이터를 먼저 로드하세요.</div>';
+    var P = function(t){ return '<p style="margin:0 0 14px;line-height:1.85;font-size:15px;color:var(--text2)">' + t + '</p>'; };
+    var H = function(t){ return '<div style="font-family:var(--mono);font-size:14px;font-weight:700;color:var(--gold);'
+      + 'letter-spacing:0.08em;margin:26px 0 10px">' + t + '</div>'; };
+    var B = function(t){ return '<strong style="color:var(--text)">' + t + '</strong>'; };
+
+    var vRate = Math.round(r.verified.length / r.pal.length * 100);
+    // Lab Hue 구간에는 저채도 색이 함께 들어온다.
+    //  오렌지 구간(15~45°) = 브라운·베이지·카키 포함, 옐로우 구간 = 카키·머스타드 포함.
+    //  '오렌지 13' 처럼만 쓰면 오렌지 13색으로 오해되므로 이름을 실제에 맞춘다.
+    var famNames = { neutral:'뉴트럴', red:'레드', pink:'핑크', purple:'퍼플·라일락', blue:'블루·네이비',
+                     teal:'틸·민트', green:'그린', yellow:'옐로우·머스타드', orange:'브라운·베이지·오렌지' };
+    // 팔레트에 없는데 마켓에 있는 계열 / 그 반대
+    var missFam = Object.keys(r.mkFam).filter(function(k){ return !r.palFam[k]; });
+    var onlyPal = Object.keys(r.palFam).filter(function(k){ return !r.mkFam[k]; });
+
+    var html = _rptConclusion(r, famNames);
+    html += '<div style="font-family:var(--mono);font-size:12px;color:var(--text4);margin:22px 0 4px;'
+      + 'letter-spacing:0.08em">— 판단 근거 —</div>';
+
+    var nSolid = r.verified.filter(function(x){ return x.tier === 'solid'; }).length;
+    html += H('1. 시장 검증 — 확정 팔레트 ' + r.pal.length + '색 중 ' + r.verified.length + '색 (확실 ' + nSolid + '색)');
+    html += P('확정 팔레트 ' + B(r.pal.length + '색') + '을 마켓 컬러 ' + r.marketN + '색과 대조한 결과, '
+      + B(r.verified.length + '색(' + vRate + '%)') + '이 Lab ΔE ' + RPT_VERIFY_DE + ' 이내에서 근거를 찾았습니다. '
+      + '경쟁 브랜드가 실제로 쓰고 있는 색이라는 뜻입니다.'
+      + (r.verified.length ? ' 마켓 빈도 상위는 아래와 같습니다.' : ''));
+    if(r.verified.length){
+      var tiers = [
+        ['확실히 맞음', 'ΔE 5 이내 — 경쟁 브랜드가 사실상 같은 색을 쓰고 있음', r.verified.filter(function(x){ return x.tier === 'solid'; })],
+        ['맞는 편',     'ΔE 5~10 — 같은 계열이지만 톤 차이가 있음',            r.verified.filter(function(x){ return x.tier === 'ok'; })]
+      ];
+      tiers.forEach(function(t){
+        if(!t[2].length) return;
+        html += '<div style="font-family:var(--mono);font-size:12px;color:var(--text2);margin:14px 0 2px">'
+          + '<strong style="color:var(--text)">' + t[0] + ' ' + t[2].length + '색</strong>'
+          + ' <span style="color:var(--text4)">· ' + t[1] + '</span></div>';
+        html += _rptPairRow(
+          t[2].slice(0, 12).map(function(x){
+            return _rptPair(x.pal.hex, x.pal.name, x.mkHex, '×' + x.freq, 'ΔE ' + x.de, false,
+              { topCode: _rptPalMeta(x.pal.hex) || x.pal.hex, botCode: x.mkHex || '' });
+          }).join(''), '');
+      });
+      html += '<div style="font-family:var(--mono);font-size:11px;color:var(--text4);margin:-10px 0 18px">'
+        + '위 = 확정 팔레트 · 아래 = 마켓·트렌드 · ΔE 가 작을수록 같은 색 · 마켓 빈도순</div>';
+    }
+
+    if(r.weak.length){
+      html += P(B(r.weak.length + '색') + '은 마켓에서 근거가 잡히지 않았습니다. '
+        + '선행 제안이라면 의도된 결과지만, 근거를 두고 넣은 색이라면 재검토가 필요합니다. '
+        + '가장 가까운 마켓 컬러와의 거리가 ΔE ' + r.weak[0].de + ' ~ ' + r.weak[r.weak.length-1].de + ' 범위입니다.');
+      html += _rptPairRow(
+        r.weak.slice(0, 12).map(function(x){
+          return _rptPair(x.pal.hex, x.pal.name, x.mkHex, x.mkHex ? 'ΔE' + x.de : '없음', '근거 약함', true,
+            { topCode: _rptPalMeta(x.pal.hex) || x.pal.hex, botCode: x.mkHex || '' });
+        }).join(''),
+        '위 = 확정 팔레트 · 아래 = 마켓·트렌드(가장 가까운 색이지만 거리 밖)');
+    }
+
+    html += H('2. 구성비 — BASIC / SUB / KEY');
+    html += P('확정 팔레트는 BASIC ' + B(r.palR.p.basic + '%') + ' · SUB ' + B(r.palR.p.sub + '%')
+      + ' · KEY ' + B(r.palR.p.key + '%') + ' 구성입니다. '
+      + (r.mkR.n
+          ? '같은 기준으로 분류한 마켓·트렌드 매칭 결과는 BASIC ' + r.mkR.p.basic + '% · SUB ' + r.mkR.p.sub
+            + '% · KEY ' + r.mkR.p.key + '% 입니다. '
+            + (Math.abs(r.palR.p.key - r.mkR.p.key) >= 8
+                ? 'KEY 비중이 ' + (r.palR.p.key > r.mkR.p.key ? '시장보다 높습니다' : '시장보다 낮습니다')
+                  + ' (' + r.palR.p.key + '% 대 ' + r.mkR.p.key + '%). 다운 아우터는 면적이 커서 KEY 비중이 곧 매대 인상으로 직결되니, 이 차이는 의도한 것인지 확인이 필요합니다.'
+                : 'KEY 비중은 시장과 큰 차이가 없습니다(' + r.palR.p.key + '% 대 ' + r.mkR.p.key + '%).')
+          : '비교할 매칭 결과가 없어 시장 구성비는 산출하지 못했습니다.'));
+
+    html += H('3. 색상 계열 분포');
+    html += P('확정 팔레트의 계열 구성은 '
+      + Object.keys(r.palFam).sort(function(a,b){ return r.palFam[b]-r.palFam[a]; })
+          .map(function(k){ return (famNames[k]||k) + ' ' + r.palFam[k]; }).join(' · ') + ' 입니다.'
+      + (missFam.length
+          ? ' 시장에서는 잡히는데 팔레트에 없는 계열은 ' + B(missFam.map(function(k){ return famNames[k]||k; }).join(' · '))
+            + ' 입니다. 해당 계열을 의도적으로 뺀 것인지 확인해볼 만합니다.'
+          : ' 시장에서 관측되는 계열은 모두 팔레트에 포함돼 있습니다.')
+      + (onlyPal.length
+          ? ' 반대로 ' + B(onlyPal.map(function(k){ return famNames[k]||k; }).join(' · '))
+            + ' 계열은 팔레트에만 있고 매칭 결과에는 없습니다.' : ''));
+    // 계열별로 실제 어떤 색이 묶였는지 — 숫자만 보면 'ㅇㅇ 13색' 이 무엇인지 알 수 없다
+    (function(){
+      var byFam = {};
+      r.pal.forEach(function(p){ var k = _tmFamily(p.hex); (byFam[k] = byFam[k] || []).push(p); });
+      var order = Object.keys(byFam).sort(function(a,b){ return byFam[b].length - byFam[a].length; });
+      html += '<div style="display:flex;flex-direction:column;gap:10px;margin:12px 0 18px">'
+        + order.map(function(k){
+            return '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">'
+              + '<span style="font-family:var(--mono);font-size:12px;color:var(--text3);min-width:110px">'
+              +   (famNames[k] || k) + ' <strong style="color:var(--text)">' + byFam[k].length + '</strong></span>'
+              + byFam[k].map(function(p){
+                  return '<span title="' + p.name + ' ' + p.hex + ' ' + (_rptPalMeta(p.hex) || '')
+                    + '" style="display:inline-flex;align-items:center;gap:4px;'
+                    + 'padding:2px 6px 2px 2px;border:1px solid var(--border);border-radius:4px">'
+                    + '<span style="width:20px;height:20px;border-radius:3px;background:' + p.hex + '"></span>'
+                    + '<span style="font-family:var(--mono);font-size:10px;color:var(--text3)">' + p.name + '</span>'
+                    + '</span>';
+                }).join('')
+              + '</div>';
+          }).join('')
+        + '</div>';
+    })();
+
+    if(r.gap && r.gap.items.length){
+      html += H('4. 추가 검토 대상 — 보완 후보 ' + r.gap.items.length + '색');
+      var top = r.gap.items.slice(0, 8);
+      html += P('마켓과 트렌드(WGSN·Peclers) 양쪽에서 잡히는데 확정 팔레트에는 없는 색이 '
+        + B(r.gap.items.length + '색') + ' 있습니다. '
+        + '가장 가까운 확정색과의 거리가 ΔE ' + top[0].nearDe + ' 이상이라 팔레트가 덮지 못하는 영역입니다.');
+      html += _rptPairRow(
+        r.gap.items.slice(0, 16).map(function(e){
+          var t = e.item.trend;
+          return _rptPair(
+            e.near ? e.near.hex : null, e.near ? e.near.name : '없음',
+            t.hex, '×' + e.item.mkFreq,
+            'ΔE ' + e.nearDe, true,
+            { topCode: e.near ? (_rptPalMeta(e.near.hex) || e.near.hex) : '',
+              botCode: _rptTrendCode(t) });
+        }).join(''),
+        '위 = 확정 팔레트(가장 가까운 색) · 아래 = 마켓·트렌드(추가 후보) · ΔE 가 작을수록 같은 색 · 마켓 빈도순');
+      if(r.gap.byCat && r.gap.byCat.cats){
+        var per = r.gap.byCat.cats.filter(function(m){ return m.list.length; })
+          .map(function(m){ return m.def.name + ' ' + m.list.length + '색'; });
+        if(per.length) html += P('카테고리별로는 ' + per.join(' · ') + ' 로 나뉩니다.');
+      }
+    } else {
+      html += H('4. 추가 검토 대상');
+      html += P('확정 팔레트가 매칭 결과를 모두 포함하고 있어 보완 후보가 없습니다.');
+    }
+
+    html += H('요약');
+    html += P('시장 검증률 ' + B(vRate + '%') + ' · 근거 약한 색 ' + B(r.weak.length + '색')
+      + ' · 보완 후보 ' + B((r.gap ? r.gap.items.length : 0) + '색') + '. '
+      + (vRate >= 70 ? '팔레트 대부분이 시장 근거를 갖고 있습니다. '
+                     : '검증되지 않은 색의 비중이 적지 않습니다. ')
+      + (r.weak.length ? '근거가 약한 색은 선행 의도인지 점검하고, ' : '')
+      + ((r.gap && r.gap.items.length) ? '보완 후보 중 빈도 상위 몇 색은 추가를 검토할 만합니다.' : '추가할 색은 현재 없습니다.'));
+
+    html += '<div style="font-family:var(--mono);font-size:11px;color:var(--text4);margin-top:22px;'
+      + 'border-top:1px solid var(--border);padding-top:14px;line-height:1.8">'
+      + '산출 기준 — 시장 검증 Lab ΔE ≤ ' + RPT_VERIFY_DE + ' · 보완 후보 판정 Lab ΔE ≥ ' + GAP_MIN_DE
+      + ' · 분류 BASIC C*&lt;' + TM_BASIC_C + ' / KEY C*≥' + TM_KEY_C
+      + ' · 마켓 ' + r.marketN + '색 · 트렌드 풀 ' + r.trendN + '색. '
+      + '수치는 현재 로드된 데이터에서 계산한 값이며, 브랜드·품목 필터를 바꾸면 결과도 달라집니다.'
+      + '</div>';
+    return html;
+  }
+
+  // ── 진단: 카테고리별 마켓 데이터 규모 ────────────────────────
+  //  콘솔에서 _discDataAudit() 로 호출. 모듈 스코프에서 실행되므로
+  //  compData 접근 문제가 없다. 결과는 표로 찍고 텍스트로도 반환한다.
+  window._discDataAudit = function(){
+    var bkn = window._brandKeyNorm || function(x){ return (x||'').toLowerCase().replace(/[\s._\-]+/g,'').trim(); };
+    var defs = (typeof DISCOVERY_CAT_DEFS !== 'undefined' && DISCOVERY_CAT_DEFS) ? DISCOVERY_CAT_DEFS : [];
+    var sel = (typeof window._curMarketSel === 'function') ? window._curMarketSel() : null;
+    if(typeof compData === 'undefined' || !Array.isArray(compData)){
+      console.warn('compData 를 찾을 수 없습니다.'); return 'compData 없음';
+    }
+    var perBrand = {}, total = 0, skippedSrc = 0, skippedSel = 0;
+    compData.forEach(function(cd){
+      if(!cd || !cd.brand || !cd.hex) return;
+      var src = cd.source || '';
+      if(src.indexOf('gl') < 0 && src.indexOf('kr') < 0){ skippedSrc++; return; }
+      if(sel && sel.size > 0 && !sel.has(bkn(cd.brand))){ skippedSel++; return; }
+      var f = cd.freq || 1;
+      perBrand[cd.brand] = (perBrand[cd.brand] || 0) + f;
+      total += f;
+    });
+    var brands = Object.keys(perBrand).sort(function(a,b){ return perBrand[b] - perBrand[a]; });
+    console.table(brands.map(function(b){
+      var cats = defs.filter(function(d){
+        return (d.brandList||[]).some(function(x){ return bkn(x) === bkn(b); });
+      }).map(function(d){ return d.name; });
+      return { 브랜드: b, freq합: perBrand[b],
+               비중: total ? (perBrand[b]/total*100).toFixed(1) + '%' : '-',
+               카테고리: cats.join(', ') || '(미분류)' };
+    }));
+    var lines = ['=== 브랜드별 ==='];
+    brands.forEach(function(b){ lines.push(b + '  ' + perBrand[b]); });
+    lines.push('전체 ' + total + ' · source 제외 ' + skippedSrc + ' · 브랜드체크 제외 ' + skippedSel);
+    lines.push('=== 카테고리별 ===');
+    defs.forEach(function(def){
+      var set = {}; (def.brandList||[]).forEach(function(b){ set[bkn(b)] = 1; });
+      var sum = 0, names = [];
+      brands.forEach(function(b){ if(set[bkn(b)]){ sum += perBrand[b]; names.push(b); } });
+      lines.push(def.name + '  ' + sum + ' (' + (total ? Math.round(sum/total*100) : 0) + '%)  ' + (names.join(', ') || '없음'));
+      var missing = (def.brandList||[]).filter(function(x){
+        return !brands.some(function(b){ return bkn(b) === bkn(x); });
+      });
+      if(missing.length) lines.push('   └ 데이터에 없는 brandList 항목: ' + missing.join(', '));
+    });
+    var unmatched = brands.filter(function(b){
+      return !defs.some(function(d){ return (d.brandList||[]).some(function(x){ return bkn(x) === bkn(b); }); });
+    });
+    if(unmatched.length) lines.push('=== 어느 카테고리에도 안 잡힌 브랜드 ===\n' + unmatched.join(', '));
+    var out = lines.join('\n');
+    console.log(out);
+    return out;
+  };
+
+  // 03 팔레트가 다시 그려질 때마다 같이 갱신
+  ['_renderDiscoveryPalette','discSetRegion'].forEach(function(fn){
+    var orig = window[fn];
+    if(typeof orig !== 'function') return;
+    window[fn] = function(){
+      var r = orig.apply(this, arguments);
+      try{ _tmRender(); }catch(e){ console.warn('[trend-matched] 렌더 오류:', e); }
+      try{ _dcpRender(); }catch(e){ console.warn('[27fw-palette] 렌더 오류:', e); }
+      try{ _gapRender(); }catch(e){ console.warn('[gap] 렌더 오류:', e); }
+      try{ _ccRender(); }catch(e){ console.warn('[curation] 렌더 오류:', e); }
+      try{ _discOrderSections(); }catch(e){}
+      try{ _cnmRender(); }catch(e){ console.warn('[cn-matched] 렌더 오류:', e); }
+      try{ _hidSync(); }catch(e){ console.warn('[hide] 오류:', e); }
+      return r;
+    };
+  });
+
+  document.addEventListener('DOMContentLoaded', sync);
+  sync();
+})();
 </script>
