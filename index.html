@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- BUILD_VERSION: DISC_STD_v306 (2026-09-18) — 05 F 셀단위 과부족(04 목표 소비) · 탭 라벨 한글 통일 · 04 밴드 폴백+희소밴드 병합 · 라이프스타일 명도 ΔL · (기존 탭재배치/3단/60색 유지) -->
+<!-- BUILD_VERSION: DISC_STD_v310 (2026-09-18) — 05 F 셀단위 과부족(04 목표 소비) · 탭 라벨 한글 통일 · 04 밴드 폴백+희소밴드 병합 · 라이프스타일 명도 ΔL · (기존 탭재배치/3단/60색 유지) -->
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
@@ -20540,6 +20540,7 @@ document.addEventListener('DOMContentLoaded',function(){
     try{ if(typeof _dcpRender === 'function') _dcpRender(); }catch(err){}
     try{ if(typeof _gapRender === 'function') _gapRender(); }catch(err){}
     try{ if(_inScope()){ if(_stdEnsureTab()) _stdRender(); _hideSalesSection(); } else _stdHideTab(); }catch(err){}
+    try{ if(window._discClsEnsure) window._discClsEnsure(); }catch(err){}
     try{ if(typeof _contempSeed === 'function') _contempSeed(); }catch(err){}
     try{ if(typeof _ccRender === 'function') _ccRender(); }catch(err){}
     try{ if(typeof _discOrderSections === 'function') _discOrderSections(); }catch(err){}
@@ -24846,6 +24847,182 @@ document.addEventListener('DOMContentLoaded',function(){
   window._discUiModal = _uiModal;
 
   // v306 — 리뷰 표의 작은 칩 클릭 → 컬러 코드 모달
+
+  // ══════════════════════════════════════════════════════════════
+  //  v309 — 05 Color Classification : 등급 분류 확인 (v310: 대상 = 01 마켓 컬러)
+  //   ① 원본 기준 = 등급분류기준 rev v3.0 (JSON 규칙)   ② 조정 기준 = 현재 툴(_stdTier)
+  // ══════════════════════════════════════════════════════════════
+  var CLS_TAB_KEY = 'disccls';
+  var CLS_RULE_V3 = {                     // 등급분류기준_core_seasonal_accent.json (rev v3.0 · axis 2026-08-27)
+    rev: 'v3.0', accent_chroma: 50.0, core_warm_chroma: 35.0, core_warm_light: 82.0,
+    rule: ['① 형광 안료이거나 C* ≥ 50 → Accent', '② 색상군 무채·네이비 → Core', '③ 색상군 베이지·브라운 · C* < 35 · L* < 82 → Core', '④ 그 밖 → Seasonal']
+  };
+  // v310 — 원본(rev v3.0) 색상군 판정 (조정 전 로직 그대로 · achro_gate 10)
+  function _clsHueV3(hex){
+    var a = _tmLCh(hex), H = a.H;
+    if(a.C < 10) return '무채';
+    if(H >= 230 && H <= 300 && a.L < 45) return '네이비';
+    if(H >= 40 && H <= 75  && a.L >= 60 && a.C < 25) return '베이지';
+    if(H >= 30 && H <= 95) return (a.L < 60 ? '브라운' : '베이지');
+    if(H > 95  && H <= 115) return '옐로';
+    if(H > 115 && H <= 165) return '그린';
+    if(H > 165 && H <= 205) return '틸';
+    if(H > 205 && H <= 288) return '블루';
+    if(H > 288 && H <= 330) return '퍼플';
+    if(H > 330 || H < 15) return '레드핑크';
+    return '오렌지';
+  }
+  // 원본 규칙: 등급분류기준 JSON (rev v3.0) 을 좌표에 그대로 적용
+  function _clsTierV3(hex){
+    var a = _tmLCh(hex);
+    if(a.C >= CLS_RULE_V3.accent_chroma) return 'Accent';
+    var h = _clsHueV3(hex);
+    if(h === '무채' || h === '네이비') return 'Core';
+    if((h === '베이지' || h === '브라운') && a.C < CLS_RULE_V3.core_warm_chroma && a.L < CLS_RULE_V3.core_warm_light) return 'Core';
+    return 'Seasonal';
+  }
+  // 01 마켓 컬러 (선택 브랜드 · GL/KR · 품목 필터 · ΔE<7 병합) 를 두 기준으로 분류
+  function _clsItems(){
+    var mk = []; try{ mk = _tmMarketPool(); }catch(e){}
+    return mk.map(function(m){
+      var h = String(m.hex).toUpperCase(), a = _tmLCh(h);
+      return { hex: h, freq: m.freq || 1, brands: m.brands || [], L: a.L, C: a.C, H: a.H,
+               hueV3: _clsHueV3(h), tV3: _clsTierV3(h), hueAdj: _stdHue(h), tAdj: _stdTier(h) };
+    }).filter(function(x){ return /^#[0-9A-F]{6}$/.test(x.hex); })
+      .sort(function(a, b){ return b.freq - a.freq; });
+  }
+  function _clsSw(x, which){
+    var t = which === 'v3' ? x.tV3 : x.tAdj, other = which === 'v3' ? x.tAdj : x.tV3, changed = t !== other;
+    var tip = x.hex + ' · 빈도 ' + x.freq + ' · L' + Math.round(x.L) + ' C' + Math.round(x.C) + ' H' + Math.round(x.H)
+      + ' · ' + (which === 'v3' ? x.hueV3 : x.hueAdj) + (changed ? ' · ' + (which === 'v3' ? '조정 기준 ' : '원본 기준 ') + other : '');
+    return '<div onclick="_swOpen(event,\'' + x.hex + '\',\'' + encodeURIComponent(tip) + '\',\'' + encodeURIComponent(t) + '\')" title="' + tip + '"'
+      + ' style="width:34px;text-align:center;cursor:pointer">'
+      + '<div style="height:26px;border-radius:3px;background:' + x.hex + ';box-sizing:border-box;border:' + (changed ? '2px solid var(--warn)' : '1px solid var(--border)') + '"></div>'
+      + '<div style="font-family:var(--mono);font-size:7.5px;color:' + (changed ? 'var(--warn)' : 'var(--text4)') + '">×' + x.freq + '</div></div>';
+  }
+  function _clsSection(title, sub, items, which){
+    var TIERS = [['Core','CORE','var(--gold)'], ['Seasonal','SEASONAL','var(--blue)'], ['Accent','ACCENT','#A090F0']];
+    var ORDER = ['무채','네이비','베이지','브라운','옐로','오렌지','레드','핑크','레드핑크','그린','틸','블루','퍼플'];
+    var tot = items.reduce(function(n, x){ return n + x.freq; }, 0) || 1;
+    var rows = TIERS.map(function(T){
+      var l = items.filter(function(x){ return (which === 'v3' ? x.tV3 : x.tAdj) === T[0]; });
+      var f = l.reduce(function(n, x){ return n + x.freq; }, 0);
+      var byFam = {};
+      l.forEach(function(x){ var k = which === 'v3' ? x.hueV3 : x.hueAdj; (byFam[k] = byFam[k] || []).push(x); });
+      var fams = Object.keys(byFam).sort(function(a2, b2){ return ORDER.indexOf(a2) - ORDER.indexOf(b2); });
+      return '<div style="margin-bottom:14px">'
+        + '<div style="font-family:var(--mono);font-size:12px;font-weight:800;color:' + T[2] + ';letter-spacing:0.08em;margin-bottom:6px">' + T[1]
+        +   ' <span style="color:var(--text4);font-weight:400">' + l.length + '색 · 빈도 ' + Math.round(f / tot * 1000) / 10 + '%</span></div>'
+        + (fams.length ? fams.map(function(fm){
+            return '<div style="display:grid;grid-template-columns:64px 1fr;gap:6px;align-items:start;margin-bottom:4px">'
+              + '<span style="font-family:var(--mono);font-size:9px;color:var(--text3);padding-top:6px">' + fm + ' <span style="color:var(--text4)">' + byFam[fm].length + '</span></span>'
+              + '<div style="display:flex;gap:2px;flex-wrap:wrap">' + byFam[fm].map(function(x){ return _clsSw(x, which); }).join('') + '</div></div>';
+          }).join('') : '<div class="spp-empty" style="font-size:10px">해당 없음</div>')
+        + '</div>';
+    }).join('');
+    return _tgtCard(title, sub, rows);
+  }
+  function _clsRender(){
+    var wrap = document.getElementById('disc-cls-page');
+    if(!wrap) return;
+    var items = _clsItems();
+    if(!items.length){ wrap.innerHTML = '<div class="spp-empty">마켓 데이터가 없습니다. 01 Market Analysis 에서 데이터를 먼저 불러오세요.</div>'; return; }
+    var wOf = function(x){ return x.freq; };
+    var dV3  = _cmpFrom(items, function(x){ return x.hex; }, wOf, function(x){ return x.tV3; });
+    var dAdj = _cmpFrom(items, function(x){ return x.hex; }, wOf, function(x){ return x.tAdj; });
+    var cnt = function(k){ var o = { Core:0, Seasonal:0, Accent:0 }; items.forEach(function(x){ o[x[k]]++; }); return o; };
+    var nV3 = cnt('tV3'), nAdj = cnt('tAdj');
+    var totF = items.reduce(function(n, x){ return n + x.freq; }, 0);
+    var row = function(label, sub, d, strong){
+      return '<div style="display:grid;grid-template-columns:190px 1fr;gap:12px;align-items:center;margin-bottom:8px">'
+        + '<div style="text-align:right"><div style="font-family:var(--mono);font-size:11px;font-weight:' + (strong ? 800 : 700) + ';color:' + (strong ? 'var(--gold)' : 'var(--text)') + '">' + label + '</div>'
+        +   '<div style="font-family:var(--mono);font-size:9px;color:var(--text4)">' + sub + '</div></div>'
+        + _cmpBar(d, 36) + '</div>';
+    };
+    var numTxt = function(n, d){ return 'Core ' + n.Core + '색(' + d.pct.Core + '%) · Seasonal ' + n.Seasonal + '색(' + d.pct.Seasonal + '%) · Accent ' + n.Accent + '색(' + d.pct.Accent + '%)'; };
+    var changed = items.filter(function(x){ return x.tV3 !== x.tAdj; });
+    var chF = changed.reduce(function(n, x){ return n + x.freq; }, 0);
+    // 변화 요약: 원본 → 조정 방향별
+    var moves = {};
+    changed.forEach(function(x){ var k = x.tV3 + ' → ' + x.tAdj; (moves[k] = moves[k] || []).push(x); });
+    var moveHtml = Object.keys(moves).sort(function(a2, b2){ return moves[b2].length - moves[a2].length; }).map(function(k){
+      var l = moves[k];
+      return '<div style="display:grid;grid-template-columns:150px 1fr;gap:8px;align-items:start;margin-bottom:6px">'
+        + '<span style="font-family:var(--mono);font-size:10px;font-weight:700;color:var(--warn);padding-top:6px">' + k + ' <span style="color:var(--text4);font-weight:400">' + l.length + '색</span></span>'
+        + '<div style="display:flex;gap:2px;flex-wrap:wrap">' + l.map(function(x){ return _clsSw(x, 'adj'); }).join('') + '</div></div>';
+    }).join('');
+    var html = ''
+      + '<div class="spp-trend-market-hd" style="margin-bottom:14px">'
+      +   '<span class="spp-trend-market-flame" style="color:var(--gold)">◈ COLOR CLASSIFICATION</span>'
+      +   '<span class="spp-trend-market-title">마켓 컬러 등급 분류</span>'
+      +   '<span class="spp-trend-market-sub">01 선택 마켓 ' + items.length + '색 · 빈도 ' + totF.toLocaleString() + ' · ① 원본 기준(rev ' + CLS_RULE_V3.rev + ') vs ② 조정 기준 · 칩 클릭 = 코드·좌표</span>'
+      + '</div>'
+      + _tgtCard('27FW 구성비 — 원본 기준 vs 조정 기준', '전체 마켓 · 빈도 가중 · 폭 = 비중',
+          row('① 원본 기준', 'rev ' + CLS_RULE_V3.rev + ' · ' + numTxt(nV3, dV3), dV3, false)
+        + row('② 조정 기준', '현재 툴 · ' + numTxt(nAdj, dAdj), dAdj, true)
+        + '<div style="display:flex;gap:14px;font-family:var(--mono);font-size:9px;color:var(--text3);margin:6px 0 0 202px;flex-wrap:wrap">'
+        +   ['Core','Seasonal','Accent'].map(function(t){ return '<span><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:' + FN_SOLID[t] + ';margin-right:4px"></span>' + t + '</span>'; }).join('')
+        + '</div>')
+      + _tgtCard('등급이 달라진 마켓 컬러 ' + changed.length + '색', '빈도 ' + Math.round(chF / (totF || 1) * 1000) / 10 + '% · 원본 → 조정 · 칩 아래 = 마켓 빈도',
+          changed.length ? moveHtml : '<div class="spp-empty" style="font-size:10px">변화 없음</div>')
+      + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:start">'
+      +   '<div>' + _clsSection('① 원본 기준 — 등급분류기준 rev ' + CLS_RULE_V3.rev, CLS_RULE_V3.rule.join(' · '), items, 'v3') + '</div>'
+      +   '<div>' + _clsSection('② 조정 기준 — 현재 툴', '베이지·브라운 C*<19 Core · 붉은기 브라운·다크 카키 Seasonal · 인디고 등 밝은 블루 Seasonal · 니어블랙 Core', items, 'adj') + '</div>'
+      + '</div>'
+      + '<div style="font-family:var(--mono);font-size:8px;color:var(--text4);margin-top:6px">'
+      +   '마켓 = 01 에서 선택한 브랜드의 GL·KR 컬러(품목 필터 · 유사색 ΔE<7 병합) · 계열별 빈도순 · 주황 테두리 = 두 기준에서 등급이 다른 색</div>';
+    wrap.innerHTML = html;
+  }
+  window._clsRender = _clsRender;
+  function _clsEnsureTab(){
+    var e = _els(); if(!e || !e.nav) return false;
+    var btn = e.nav.querySelector('button.tab[onclick*="' + CLS_TAB_KEY + '"]');
+    var pane = document.getElementById('tab-' + CLS_TAB_KEY);
+    if(!btn){
+      btn = document.createElement('button');
+      btn.className = 'tab';
+      btn.setAttribute('onclick', "switchTab('" + CLS_TAB_KEY + "', this); window._clsRender && window._clsRender();");
+      btn.innerHTML = '<span class="tab-num">05</span>Color Classification';
+      var cw = e.nav.querySelector('button.tab[onclick*="colorway"]');
+      if(cw && cw.nextSibling) e.nav.insertBefore(btn, cw.nextSibling); else e.nav.appendChild(btn);
+    }
+    if(!pane){
+      var host = document.getElementById('tab-palette');
+      if(!host || !host.parentNode) return false;
+      pane = document.createElement('div');
+      pane.id = 'tab-' + CLS_TAB_KEY;
+      pane.className = 'tab-content';
+      var wrap = document.createElement('div');
+      wrap.id = 'disc-cls-page'; wrap.className = 'dcp-scope tab-scroll';
+      pane.appendChild(wrap);
+      var nav = document.createElement('div');
+      nav.className = 'step-nav';
+      nav.innerHTML = '<button class="btn btn-sec" onclick="switchTabByName(\'colorway\')" style="' + STD_BTN_SEC + '">&#8592; 04 Palette Review</button>'
+        + '<div class="step-nav-info">STEP <strong>05</strong> / 05 &nbsp;&middot;&nbsp; Color Classification</div><div style="flex:1"></div>';
+      pane.appendChild(nav);
+      host.parentNode.appendChild(pane);
+    }
+    btn.style.display = ''; pane.style.display = '';
+    // 04 하단에 05 이동 버튼
+    var nav4 = document.querySelector('#tab-colorway .step-nav');
+    if(nav4 && !document.getElementById('disc-cls-nav-btn')){
+      var f = document.createElement('button');
+      f.id = 'disc-cls-nav-btn'; f.className = 'btn btn-primary';
+      f.setAttribute('onclick', "var b=document.querySelector('button.tab[onclick*=\\'" + CLS_TAB_KEY + "\\']'); switchTab('" + CLS_TAB_KEY + "', b); window._clsRender && window._clsRender();");
+      f.setAttribute('style', STD_BTN_PRI);
+      f.innerHTML = '05 Color Classification &#8594;';
+      nav4.appendChild(f);
+    }
+    var fb = document.getElementById('disc-cls-nav-btn'); if(fb) fb.style.display = '';
+    return true;
+  }
+  function _clsHideTab(){
+    var b = document.querySelector('button.tab[onclick*="' + CLS_TAB_KEY + '"]'); if(b) b.style.display = 'none';
+    var p2 = document.getElementById('tab-' + CLS_TAB_KEY); if(p2) p2.style.display = 'none';
+    var fb = document.getElementById('disc-cls-nav-btn'); if(fb) fb.style.display = 'none';
+  }
+  window._discClsEnsure = function(){ try{ if(_inScope()){ if(_clsEnsureTab()) _clsRender(); } else _clsHideTab(); }catch(e){} };
+
   window._swOpen = function(evt, hex, tipEnc, badgeEnc){
     if(evt) evt.stopPropagation();
     var h = String(hex).toUpperCase(), tip = decodeURIComponent(tipEnc || ''), badge = decodeURIComponent(badgeEnc || '');
@@ -25109,7 +25286,62 @@ document.addEventListener('DOMContentLoaded',function(){
       if(main.concat(add).some(function(f){ return _tmDeltaE(f.hex, h) < FN_DEDUP_DE; })) return;
       add.push({ kind: 'add', hex: h, name: (x.item.trend.sources || []).join('·') || 'Trend', x: x, ti: x.item, sn: _finSalesNear(h) });
     });
+    // v308 — 최종 등급 구성을 '전체 마켓' 비율(디커 기준 · 빈도 가중)에 맞춘다. 총 색 수는 그대로.
+    try{ _finFitRatio(main, add, out); }catch(e){}
     return { main: main, add: add, out: out };
+  }
+  var FIN_FIT_RATIO = true;
+  function _finFitRatio(main, add, out){
+    if(!FIN_FIT_RATIO) return;
+    var mk = []; try{ mk = _tmMarketPool(); }catch(e){}
+    if(!mk.length) return;
+    var w = { Core: 0, Seasonal: 0, Accent: 0 };
+    mk.forEach(function(m){ var h = String(m.hex).toUpperCase(); if(/^#[0-9A-F]{6}$/.test(h)) w[_stdTier(h)] += (m.freq || 1); });
+    var T = ['Core','Seasonal','Accent'];
+    var total = main.length + add.length;
+    if(!total) return;
+    var cap = _fnAlloc(total, T.map(function(t){ return w[t]; }));
+    T.forEach(function(t, i){ if(w[t] > 0 && cap[i] < 1){ cap[i] = 1; } });
+    var over = cap.reduce(function(a2, b2){ return a2 + b2; }, 0) - total;
+    while(over > 0){ var bi = cap.indexOf(Math.max.apply(null, cap)); cap[bi]--; over--; }
+    // 줄일 때 먼저 빼는 순서: 추가(빈도 낮은 순) → 공백 유지 → 세일즈 유지 → 보완 → 유지
+    var DROP = { add: 0, gap: 1, sales: 2, watch: 3, keep: 4 };
+    T.forEach(function(t, i){
+      var inT = function(f){ return _stdTier(f.hex) === t; };
+      var cur = main.filter(inT).length + add.filter(inT).length;
+      // 1) 과다 → 제거
+      while(cur > cap[i]){
+        var cand = main.concat(add).filter(inT).sort(function(a2, b2){
+          var d = DROP[a2.kind] - DROP[b2.kind]; if(d) return d;
+          var fa = (a2.ti && a2.ti.mkFreq) || (a2.x && a2.x.item.mkFreq) || 0, fb = (b2.ti && b2.ti.mkFreq) || (b2.x && b2.x.item.mkFreq) || 0;
+          return fa - fb;
+        })[0];
+        if(!cand) break;
+        var ai = add.indexOf(cand);
+        if(ai >= 0) add.splice(ai, 1);
+        else { main.splice(main.indexOf(cand), 1); out.push({ kind: 'out', hex: cand.orig || cand.hex, name: cand.name, st: cand.st, sn: cand.sn, ratioCut: true }); }
+        cur--;
+      }
+      // 2) 부족 → 03 트렌드 칩(빈도순)으로 채우고, 그래도 모자라면 제외됐던 자사 색을 되살린다
+      if(cur < cap[i]){
+        var chosen = main.concat(add);
+        var pool = _dcpTrendChips().filter(function(c){ return _stdTier(c.item.trend.hex) === t; })
+          .sort(function(a2, b2){ return (b2.item.mkFreq || 0) - (a2.item.mkFreq || 0); });
+        for(var k = 0; k < pool.length && cur < cap[i]; k++){
+          var h2 = pool[k].item.trend.hex;
+          if(chosen.some(function(f){ return _tmDeltaE(f.hex, h2) < FN_DEDUP_DE; })) continue;
+          var nf = { kind: 'add', hex: h2, name: (pool[k].item.trend.sources || []).join('·') || 'Trend',
+                     x: { item: pool[k].item, group: pool[k].group, near: null, de: 0, covered: false }, ti: pool[k].item,
+                     sn: _finSalesNear(h2), ratioFill: true };
+          add.push(nf); chosen.push(nf); cur++;
+        }
+        for(var k2 = out.length - 1; k2 >= 0 && cur < cap[i]; k2--){
+          var o = out[k2]; if(_stdTier(o.hex) !== t) continue;
+          main.push({ kind: 'keep', hex: o.hex, name: o.name, st: o.st, sn: o.sn, ti: null, ratioFill: true });
+          out.splice(k2, 1); cur++;
+        }
+      }
+    });
   }
   var FIN_KIND = {
     keep:  ['유지', '#5FA85F'],
@@ -25227,7 +25459,9 @@ document.addEventListener('DOMContentLoaded',function(){
     if(f.kind === 'add'){
       why.push(['판정', f.x.group === 'key' ? '확정 팔레트에 포인트 컬러가 부족 — ' + TM_GROUP_LABEL.key + ' 보강' : '확정 팔레트에 없는 톤(ΔE ' + DCP_WATCH_DE + ' 초과) — 신규 추가']);
     }
-    if(f.kind === 'out') why.push(['판정', '트렌드 칩과 ΔE ' + f.st.de + ' · 25FW 판매 근거도 약해 제외 검토']);
+    if(f.kind === 'out' && f.ratioCut) why.push(['판정', '마켓 등급 비율에 맞추기 위해 이 등급에서 우선순위가 낮아 제외']);
+    else if(f.kind === 'out') why.push(['판정', '트렌드 칩과 ' + (f.st ? 'ΔE ' + f.st.de : '거리') + ' · 25FW 판매 근거도 약해 제외 검토']);
+    if(f.ratioFill) why.push(['비율 조정', '마켓 등급 비율에 맞추기 위해 이 등급에 보충한 색']);
     if(f.kind === 'gap'){
       why.push(['판정', '트렌드 칩과 ΔE ' + f.st.de + ' 로 거리가 있지만, 03 에서 트렌드로 못 채운 칸이라 자사 색으로 유지']);
       why.push(['03 공백', f.cell.tier + ' ' + f.cell.fam + '·' + f.cell.band + ' — 목표 ' + f.gap.quota + ' 중 트렌드 채움 ' + f.gap.filled + ' · 부족 ' + f.gap.miss + ' · 마켓 비중 ' + f.gap.share + '%']);
@@ -26168,8 +26402,8 @@ document.addEventListener('DOMContentLoaded',function(){
   //  하단에는 표준 75칩(보유)과 실제 사용 30칩(SKU>0)을 비교한다.
   // ══════════════════════════════════════════════════════════════
   var STD_SECT_ID = 'disc-std-page';
-  var STD_CUT = { accent_chroma: 50.0, achro_gate: 5.0, core_warm_chroma: 22.5, core_warm_light: 82.0,   // v246: 35 → 22.5
-                  olive_h: 85, olive_l: 50,
+  var STD_CUT = { accent_chroma: 50.0, achro_gate: 5.0, core_warm_chroma: 19,   /* v307: 22.5 → 19 (탠·초콜릿 Seasonal, 베이지·모카·카키 Core) */ core_warm_light: 82.0,   // v246: 35 → 22.5
+                  olive_h: 88, olive_l: 50,   // v307: 85 → 88 (베이지 STD-N09 H87 Core 유지)
                   vivid_hue_c: 35,            // v278 선명한 색 계열 판정 기준
                   navy_c: 25,                 // v248 네이비 채도 상한
                   cream_l: 80, cream_c: 15,   // v291: 85 → 80 (IVS 아이보리 L83 Core 로)
@@ -26191,7 +26425,8 @@ document.addEventListener('DOMContentLoaded',function(){
     var a = _tmLCh(hex);
     if(a.C < STD_CUT.achro_gate) return '무채';
     var H = a.H;
-    if(H >= 260 && H <= 300 && a.L < 45 && a.C < STD_CUT.navy_c) return '네이비';   // v272: 하한 245→260 (#10364B H253 등 틸빛 다크블루는 네이비에서 제외)
+    // v307 — 인디고(L*≥32 · C*≥12)는 네이비가 아니라 블루(Seasonal). 진한 네이비와 저채도 네이비만 Core
+    if(H >= 260 && H <= 300 && a.L < 45 && a.C < STD_CUT.navy_c && (a.L < 32 || a.C < 12)) return '네이비';   // v272: 하한 245→260 (#10364B H253 등 틸빛 다크블루는 네이비에서 제외)
     if(a.L >= STD_CUT.cream_l && a.C < STD_CUT.cream_c && H >= 30 && H <= 110) return '베이지';   // v248: 크림·아이보리
     // v278 — 선명한 색(C*≥35)은 베이지·브라운으로 보지 않는다. 레드/오렌지/옐로로 구분.
     if(a.C >= STD_CUT.vivid_hue_c){
@@ -26232,7 +26467,7 @@ document.addEventListener('DOMContentLoaded',function(){
     // 밝은 저채도 크림·아이보리
     if(h === '베이지' && a.L >= STD_CUT.cream_l && a.C < STD_CUT.cream_c) return 'Core';
     // v291 — 붉은기 브라운(코코아·마호가니·로즈브라운, H<55° · C*≥10)과 다크 카키·올리브(H≥85° · L*<40 · C*≥12)는 Seasonal
-    if((h === '베이지' || h === '브라운') && a.H < STD_CUT.redbrown_h && a.C >= STD_CUT.redbrown_c) return 'Seasonal';
+    if((h === '베이지' || h === '브라운') && a.H < STD_CUT.redbrown_h && a.C >= STD_CUT.redbrown_c && a.L >= 20) return 'Seasonal';   // v307: L*<20 에스프레소는 Core
     if((h === '베이지' || h === '브라운') && a.H >= STD_CUT.khaki_h && a.L < STD_CUT.khaki_l && a.C >= STD_CUT.khaki_c) return 'Seasonal';
     // ③ 베이지·브라운 뉴트럴(샌드·토프·탠·초콜릿·모카). 밝은 올리브베이지 제외
     if((h === '베이지' || h === '브라운')
