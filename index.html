@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- BUILD_VERSION: DISC_STD_v311 (2026-09-18) — 05 F 셀단위 과부족(04 목표 소비) · 탭 라벨 한글 통일 · 04 밴드 폴백+희소밴드 병합 · 라이프스타일 명도 ΔL · (기존 탭재배치/3단/60색 유지) -->
+<!-- BUILD_VERSION: DISC_STD_v318 (2026-09-18) — 05 F 셀단위 과부족(04 목표 소비) · 탭 라벨 한글 통일 · 04 밴드 폴백+희소밴드 병합 · 라이프스타일 명도 ΔL · (기존 탭재배치/3단/60색 유지) -->
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
@@ -20781,7 +20781,7 @@ document.addEventListener('DOMContentLoaded',function(){
       if(typeof _passesCategoryFilter === 'function' && !_passesCategoryFilter(co)) return;
       var h = String(co.hex).toUpperCase();
       if(!/^#[0-9A-F]{6}$/.test(h)) return;
-      var f = co.freq || 1;
+      var f = co.count || co.freq || 1;   // v312: 같은 브랜드·같은 색 반복(상품 수)을 빈도에 반영
       if(byHex[h]){
         byHex[h].freq += f;
         brandsOf(co).forEach(function(b){ if(byHex[h].brands.indexOf(b) < 0) byHex[h].brands.push(b); });
@@ -21613,7 +21613,7 @@ document.addEventListener('DOMContentLoaded',function(){
       // 안 걸면 품목을 Outerwear 로 바꿨을 때 빈도는 줄고 분자는 그대로여서 어긋난다.
       if(typeof _passesCategoryFilter === 'function' && !_passesCategoryFilter(cd)) continue;
       if(!cnt[cd.brand]){ cnt[cd.brand] = 0; out.push(cd.brand); }
-      cnt[cd.brand] += (cd.freq || 1);
+      cnt[cd.brand] += (cd.count || cd.freq || 1);
     }
     out.sort(function(a,b){ return cnt[b] - cnt[a]; });      // 많이 쓴 브랜드부터
     out._counts = cnt;
@@ -22684,7 +22684,7 @@ document.addEventListener('DOMContentLoaded',function(){
       if(src.indexOf('gl') < 0 && src.indexOf('kr') < 0) return;
       if(sel && sel.size > 0 && !sel.has(bkn(cd.brand))) return;
       if(typeof _passesCategoryFilter === 'function' && !_passesCategoryFilter(cd)) return;   // 분자와 동일 기준
-      var k = bkn(cd.brand), f = cd.freq || 1;
+      var k = bkn(cd.brand), f = cd.count || cd.freq || 1;
       maps.forEach(function(m, i){ if(m.set[k]) totals[i] += f; });
     });
     return totals;
@@ -24015,7 +24015,7 @@ document.addEventListener('DOMContentLoaded',function(){
     return '<div style="margin:0 0 22px;padding:12px 14px;border:1px solid var(--border);border-radius:8px">'
       + '<div style="display:flex;align-items:baseline;gap:10px;margin-bottom:10px;flex-wrap:wrap">'
       +   '<span style="font-family:var(--mono);font-size:12px;font-weight:800;color:var(--text)">최종 ' + all.length + '색</span>'
-      +   '<span style="font-family:var(--mono);font-size:10px">' + sum + ' · <span style="color:var(--text4)">제외 ' + r.out.length + '</span></span>'
+      +   '<span style="font-family:var(--mono);font-size:10px">' + sum + ' · <span style="color:var(--text4)">제외 ' + r.out.length + '</span> · ' + _finFitLine() + '</span>'
       + '</div>'
       + (r.add.length
           ? '<div style="font-family:var(--mono);font-size:11px;font-weight:700;color:var(--warn);margin-bottom:6px">+ 추가 컬러칩 ' + r.add.length + '</div>'
@@ -24887,32 +24887,58 @@ document.addEventListener('DOMContentLoaded',function(){
     }).filter(function(x){ return /^#[0-9A-F]{6}$/.test(x.hex); })
       .sort(function(a, b){ return b.freq - a.freq; });
   }
-  function _clsSw(x, which){
-    var t = which === 'v3' ? x.tV3 : x.tAdj, other = which === 'v3' ? x.tAdj : x.tV3, changed = t !== other;
-    var tip = x.hex + ' · 빈도 ' + x.freq + ' · L' + Math.round(x.L) + ' C' + Math.round(x.C) + ' H' + Math.round(x.H)
-      + ' · ' + (which === 'v3' ? x.hueV3 : x.hueAdj) + (changed ? ' · ' + (which === 'v3' ? '조정 기준 ' : '원본 기준 ') + other : '');
-    return '<div onclick="_swOpen(event,\'' + x.hex + '\',\'' + encodeURIComponent(tip) + '\',\'' + encodeURIComponent(t) + '\')" title="' + tip + '"'
-      + ' style="width:34px;text-align:center;cursor:pointer">'
-      + '<div style="height:26px;border-radius:3px;background:' + x.hex + ';box-sizing:border-box;border:' + (changed ? '2px solid var(--warn)' : '1px solid var(--border)') + '"></div>'
-      + '<div style="font-family:var(--mono);font-size:7.5px;color:' + (changed ? 'var(--warn)' : 'var(--text4)') + '">×' + x.freq + '</div></div>';
+  // v318 — 비교군: ① 디스커버리 팔레트(260915 원본) vs ② 04 Palette Review ★ 최종 컬러 제안
+  //   두 쪽 모두 현재 툴 등급 기준(_stdTier · 조정 기준)으로 분류
+  var CLS_KIND = { keep:['유지','#5FA85F'], watch:['보완','var(--gold)'], sales:['세일즈','#3E8ED0'], gap:['공백','#8E6BB5'], add:['추가','var(--warn)'] };
+  function _clsPalItems(){
+    return _dcpPalUnique().map(function(p){
+      var h = String(p.hex).toUpperCase();
+      var code = ''; try{ code = _rptPalMeta(h) || ''; }catch(e){}
+      return { hex: h, name: p.name || '', code: code, tier: _stdTier(h), fam: _stdHue(h), L: _tmLCh(h).L };
+    }).filter(function(x){ return /^#[0-9A-F]{6}$/.test(x.hex); });
   }
-  function _clsSection(title, sub, items, which){
+  function _clsFinItems(){
+    var r = null; try{ r = _finBuild(); }catch(e){}
+    if(!r) return { list: [], out: [] };
+    var list = r.main.concat(r.add).map(function(f){
+      var h = String(f.hex).toUpperCase();
+      return { hex: h, name: f.kind === 'add' ? ((f.ti && f.ti.trend && (f.ti.trend.sources || []).join('·')) || f.name || 'Trend') : (f.name || ''),
+               kind: f.kind, orig: f.orig ? String(f.orig).toUpperCase() : null, tier: _stdTier(h), fam: _stdHue(h), L: _tmLCh(h).L };
+    });
+    var out = r.out.map(function(o){ var h = String(o.hex).toUpperCase(); return { hex: h, name: o.name || '', tier: _stdTier(h), fam: _stdHue(h), L: _tmLCh(h).L }; });
+    return { list: list, out: out };
+  }
+  function _clsSw(x, side){
+    var k = side === 'fin' ? CLS_KIND[x.kind] : null;
+    var tip = (x.name ? x.name + ' · ' : '') + x.hex + (x.code ? ' · ' + x.code : '') + ' · ' + x.tier + ' · ' + x.fam
+      + (k ? ' · ' + k[0] : '') + (x.orig ? ' · 원래 ' + x.orig : '');
+    var border = k ? (x.kind === 'add' ? '2px dashed ' + k[1] : (x.kind === 'keep' ? '1px solid var(--border)' : '2px solid ' + k[1])) : '1px solid var(--border)';
+    return '<div onclick="_swOpen(event,\'' + x.hex + '\',\'' + encodeURIComponent(tip) + '\',\'' + encodeURIComponent(k ? k[0] : x.tier) + '\')" title="' + tip + '"'
+      + ' style="width:44px;text-align:center;cursor:pointer">'
+      + '<div style="position:relative;height:30px;border-radius:4px;background:' + x.hex + ';box-sizing:border-box;border:' + border + '">'
+      +   (x.orig ? '<span style="position:absolute;left:2px;bottom:2px;width:9px;height:9px;border-radius:2px;border:1px solid #fff;background:' + x.orig + '"></span>' : '')
+      + '</div>'
+      + '<div style="font-family:var(--mono);font-size:8px;font-weight:700;color:var(--text2);white-space:nowrap;overflow:hidden">' + (x.name || x.hex) + '</div>'
+      + (k ? '<div style="font-family:var(--mono);font-size:7.5px;color:' + k[1] + '">' + k[0] + '</div>' : '')
+      + '</div>';
+  }
+  function _clsSection(title, sub, items, side){
     var TIERS = [['Core','CORE','var(--gold)'], ['Seasonal','SEASONAL','var(--blue)'], ['Accent','ACCENT','#A090F0']];
     var ORDER = ['무채','네이비','베이지','브라운','옐로','오렌지','레드','핑크','레드핑크','그린','틸','블루','퍼플'];
-    var tot = items.reduce(function(n, x){ return n + x.freq; }, 0) || 1;
+    var n = items.length || 1;
     var rows = TIERS.map(function(T){
-      var l = items.filter(function(x){ return (which === 'v3' ? x.tV3 : x.tAdj) === T[0]; });
-      var f = l.reduce(function(n, x){ return n + x.freq; }, 0);
+      var l = items.filter(function(x){ return x.tier === T[0]; });
       var byFam = {};
-      l.forEach(function(x){ var k = which === 'v3' ? x.hueV3 : x.hueAdj; (byFam[k] = byFam[k] || []).push(x); });
+      l.forEach(function(x){ (byFam[x.fam] = byFam[x.fam] || []).push(x); });
       var fams = Object.keys(byFam).sort(function(a2, b2){ return ORDER.indexOf(a2) - ORDER.indexOf(b2); });
       return '<div style="margin-bottom:14px">'
         + '<div style="font-family:var(--mono);font-size:12px;font-weight:800;color:' + T[2] + ';letter-spacing:0.08em;margin-bottom:6px">' + T[1]
-        +   ' <span style="color:var(--text4);font-weight:400">' + l.length + '색 · 빈도 ' + Math.round(f / tot * 1000) / 10 + '%</span></div>'
+        +   ' <span style="color:var(--text4);font-weight:400">' + l.length + '색 · ' + Math.round(l.length / n * 1000) / 10 + '%</span></div>'
         + (fams.length ? fams.map(function(fm){
+            byFam[fm].sort(function(a2, b2){ return a2.L - b2.L; });
             return '<div style="display:grid;grid-template-columns:64px 1fr;gap:6px;align-items:start;margin-bottom:4px">'
-              + '<span style="font-family:var(--mono);font-size:9px;color:var(--text3);padding-top:6px">' + fm + ' <span style="color:var(--text4)">' + byFam[fm].length + '</span></span>'
-              + '<div style="display:flex;gap:2px;flex-wrap:wrap">' + byFam[fm].map(function(x){ return _clsSw(x, which); }).join('') + '</div></div>';
+              + '<span style="font-family:var(--mono);font-size:9px;color:var(--text3);padding-top:8px">' + fm + ' <span style="color:var(--text4)">' + byFam[fm].length + '</span></span>'
+              + '<div style="display:flex;gap:3px;flex-wrap:wrap">' + byFam[fm].map(function(x){ return _clsSw(x, side); }).join('') + '</div></div>';
           }).join('') : '<div class="spp-empty" style="font-size:10px">해당 없음</div>')
         + '</div>';
     }).join('');
@@ -24921,52 +24947,52 @@ document.addEventListener('DOMContentLoaded',function(){
   function _clsRender(){
     var wrap = document.getElementById('disc-cls-page');
     if(!wrap) return;
-    var items = _clsItems();
-    if(!items.length){ wrap.innerHTML = '<div class="spp-empty">마켓 데이터가 없습니다. 01 Market Analysis 에서 데이터를 먼저 불러오세요.</div>'; return; }
-    var wOf = function(x){ return x.freq; };
-    var dV3  = _cmpFrom(items, function(x){ return x.hex; }, wOf, function(x){ return x.tV3; });
-    var dAdj = _cmpFrom(items, function(x){ return x.hex; }, wOf, function(x){ return x.tAdj; });
-    var cnt = function(k){ var o = { Core:0, Seasonal:0, Accent:0 }; items.forEach(function(x){ o[x[k]]++; }); return o; };
-    var nV3 = cnt('tV3'), nAdj = cnt('tAdj');
-    var totF = items.reduce(function(n, x){ return n + x.freq; }, 0);
+    var pal = _clsPalItems(), fr = _clsFinItems(), fin = fr.list;
+    if(!pal.length){ wrap.innerHTML = '<div class="spp-empty">디스커버리 팔레트 데이터가 없습니다.</div>'; return; }
+    var dPal = _cmpFrom(pal, function(x){ return x.hex; }, null, function(x){ return x.tier; });
+    var dFin = _cmpFrom(fin, function(x){ return x.hex; }, null, function(x){ return x.tier; });
+    var cnt = function(list){ var o = { Core:0, Seasonal:0, Accent:0 }; list.forEach(function(x){ o[x.tier]++; }); return o; };
+    var nPal = cnt(pal), nFin = cnt(fin);
     var row = function(label, sub, d, strong){
       return '<div style="display:grid;grid-template-columns:190px 1fr;gap:12px;align-items:center;margin-bottom:8px">'
         + '<div style="text-align:right"><div style="font-family:var(--mono);font-size:11px;font-weight:' + (strong ? 800 : 700) + ';color:' + (strong ? 'var(--gold)' : 'var(--text)') + '">' + label + '</div>'
         +   '<div style="font-family:var(--mono);font-size:9px;color:var(--text4)">' + sub + '</div></div>'
-        + _cmpBar(d, 36) + '</div>';
+        + (d.tot ? _cmpBar(d, 36) : '<div class="spp-empty" style="font-size:10px">데이터 없음</div>') + '</div>';
     };
-    var numTxt = function(n, d){ return 'Core ' + n.Core + '색(' + d.pct.Core + '%) · Seasonal ' + n.Seasonal + '색(' + d.pct.Seasonal + '%) · Accent ' + n.Accent + '색(' + d.pct.Accent + '%)'; };
-    var changed = items.filter(function(x){ return x.tV3 !== x.tAdj; });
-    var chF = changed.reduce(function(n, x){ return n + x.freq; }, 0);
-    // 변화 요약: 원본 → 조정 방향별
-    var moves = {};
-    changed.forEach(function(x){ var k = x.tV3 + ' → ' + x.tAdj; (moves[k] = moves[k] || []).push(x); });
-    var moveHtml = Object.keys(moves).sort(function(a2, b2){ return moves[b2].length - moves[a2].length; }).map(function(k){
-      var l = moves[k];
+    var numTxt = function(n, d){ return 'Core ' + n.Core + '색(' + (d.pct.Core||0) + '%) · Seasonal ' + n.Seasonal + '색(' + (d.pct.Seasonal||0) + '%) · Accent ' + n.Accent + '색(' + (d.pct.Accent||0) + '%)'; };
+    // 변경 내역: 추가 · 보완 · 제외 · 등급 이동
+    var adds = fin.filter(function(x){ return x.kind === 'add'; });
+    var watches = fin.filter(function(x){ return x.kind === 'watch'; });
+    var moved = watches.filter(function(x){ return x.orig && _stdTier(x.orig) !== x.tier; });
+    var group = function(label, color, list, side){
+      if(!list.length) return '';
       return '<div style="display:grid;grid-template-columns:150px 1fr;gap:8px;align-items:start;margin-bottom:6px">'
-        + '<span style="font-family:var(--mono);font-size:10px;font-weight:700;color:var(--warn);padding-top:6px">' + k + ' <span style="color:var(--text4);font-weight:400">' + l.length + '색</span></span>'
-        + '<div style="display:flex;gap:2px;flex-wrap:wrap">' + l.map(function(x){ return _clsSw(x, 'adj'); }).join('') + '</div></div>';
-    }).join('');
+        + '<span style="font-family:var(--mono);font-size:10px;font-weight:700;color:' + color + ';padding-top:8px">' + label + ' <span style="color:var(--text4);font-weight:400">' + list.length + '색</span></span>'
+        + '<div style="display:flex;gap:3px;flex-wrap:wrap">' + list.map(function(x){ return _clsSw(x, side); }).join('') + '</div></div>';
+    };
     var html = ''
       + '<div class="spp-trend-market-hd" style="margin-bottom:14px">'
       +   '<span class="spp-trend-market-flame" style="color:var(--gold)">◈ COLOR CLASSIFICATION</span>'
-      +   '<span class="spp-trend-market-title">마켓 컬러 등급 분류</span>'
-      +   '<span class="spp-trend-market-sub">01 선택 마켓 ' + items.length + '색 · 빈도 ' + totF.toLocaleString() + ' · ① 원본 기준(rev ' + CLS_RULE_V3.rev + ') vs ② 조정 기준 · 칩 클릭 = 코드·좌표</span>'
+      +   '<span class="spp-trend-market-title">디스커버리 팔레트 vs 최종 컬러 제안</span>'
+      +   '<span class="spp-trend-market-sub">① 27FW 팔레트 260915 원본 ' + pal.length + '색 vs ② 04 Palette Review ★ 최종 ' + fin.length + '색 · 등급 = 현재 툴(조정 기준) · 칩 클릭 = 코드·좌표</span>'
       + '</div>'
-      + _tgtCard('27FW 구성비 — 원본 기준 vs 조정 기준', '전체 마켓 · 빈도 가중 · 폭 = 비중',
-          row('① 원본 기준', 'rev ' + CLS_RULE_V3.rev + ' · ' + numTxt(nV3, dV3), dV3, false)
-        + row('② 조정 기준', '현재 툴 · ' + numTxt(nAdj, dAdj), dAdj, true)
+      + _tgtCard('27FW 구성비 — 디스커버리 팔레트 vs 최종 컬러 제안', '색 수 기준 · 폭 = 비중',
+          row('① 디스커버리 팔레트', '260915 원본 · ' + numTxt(nPal, dPal), dPal, false)
+        + row('② 최종 컬러 제안', '04 ★ 최종 · ' + numTxt(nFin, dFin), dFin, true)
         + '<div style="display:flex;gap:14px;font-family:var(--mono);font-size:9px;color:var(--text3);margin:6px 0 0 202px;flex-wrap:wrap">'
         +   ['Core','Seasonal','Accent'].map(function(t){ return '<span><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:' + FN_SOLID[t] + ';margin-right:4px"></span>' + t + '</span>'; }).join('')
         + '</div>')
-      + _tgtCard('등급이 달라진 마켓 컬러 ' + changed.length + '색', '빈도 ' + Math.round(chF / (totF || 1) * 1000) / 10 + '% · 원본 → 조정 · 칩 아래 = 마켓 빈도',
-          changed.length ? moveHtml : '<div class="spp-empty" style="font-size:10px">변화 없음</div>')
+      + _tgtCard('팔레트 → 최종 변경 내역', '추가 ' + adds.length + ' · 보완 ' + watches.length + (moved.length ? ' (등급 이동 ' + moved.length + ')' : '') + ' · 제외 ' + fr.out.length,
+          group('+ 추가 (트렌드 신규)', 'var(--warn)', adds, 'fin')
+        + group('보완 (톤 조정)', 'var(--gold)', watches, 'fin')
+        + group('제외', 'var(--text4)', fr.out, 'pal')
+        + (adds.length || watches.length || fr.out.length ? '' : '<div class="spp-empty" style="font-size:10px">변경 없음</div>'))
       + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:start">'
-      +   '<div>' + _clsSection('① 원본 기준 — 등급분류기준 rev ' + CLS_RULE_V3.rev, CLS_RULE_V3.rule.join(' · '), items, 'v3') + '</div>'
-      +   '<div>' + _clsSection('② 조정 기준 — 현재 툴', '베이지·브라운 C*<19 Core · 붉은기 브라운·다크 카키 Seasonal · 인디고 등 밝은 블루 Seasonal · 니어블랙 Core', items, 'adj') + '</div>'
+      +   '<div>' + _clsSection('① 디스커버리 팔레트 — 260915 원본', 'CORE + 라이프스타일 3종 · 고유 ' + pal.length + '색', pal, 'pal') + '</div>'
+      +   '<div>' + _clsSection('② 최종 컬러 제안 — 04 Palette Review', '유지 · 보완 · 세일즈 · 공백 유지 · 추가 · ' + fin.length + '색', fin, 'fin') + '</div>'
       + '</div>'
       + '<div style="font-family:var(--mono);font-size:8px;color:var(--text4);margin-top:6px">'
-      +   '마켓 = 01 에서 선택한 브랜드의 GL·KR 컬러(품목 필터 · 유사색 ΔE<7 병합) · 계열별 빈도순 · 주황 테두리 = 두 기준에서 등급이 다른 색</div>';
+      +   '등급·계열은 두 쪽 모두 현재 툴 기준(05 이전 버전의 ② 조정 기준) · 최종 칩 테두리: 금색 보완(왼쪽 아래 작은 칸 = 원래 자사 색) · 파랑 세일즈 · 보라 공백 · 주황 점선 추가</div>';
     wrap.innerHTML = html;
   }
   window._clsRender = _clsRender;
@@ -25278,15 +25304,48 @@ document.addEventListener('DOMContentLoaded',function(){
       var h = x.item.trend.hex;
       // 03 에서 정원 보충으로 들어온 색(목표 칸 밖)은 추가 후보에서 제외.
       // 단 ACCENT 는 목표 칸이 평균색 기준이라 생기지 않아(보류 이슈) 전부 '보충'으로 잡히므로 예외로 둔다.
-      if(x.item._extra && x.group !== 'key') return;
+      // v313 — 트렌드 우선: 03 보충 색도 자사 팔레트에 없는 톤이면 제안한다 (FIN_SKIP_EXTRA=false)
+      if(FIN_SKIP_EXTRA && x.item._extra && x.group !== 'key') return;
       if(main.concat(add).some(function(f){ return _tmDeltaE(f.hex, h) < FN_DEDUP_DE; })) return;
       add.push({ kind: 'add', hex: h, name: (x.item.trend.sources || []).join('·') || 'Trend', x: x, ti: x.item, sn: _finSalesNear(h) });
     });
+    // v316 — 확장 보완: 제외될 자사 색과 추가 칩이 ΔE 15 이내면 '추가 + 제외' 대신 '자사 색을 그 트렌드 톤으로 보완'
+    try{ _finExtendWatch(main, add, out); }catch(e){}
     // v308 — 최종 등급 구성을 '전체 마켓' 비율(디커 기준 · 빈도 가중)에 맞춘다. 총 색 수는 그대로.
     try{ _finFitRatio(main, add, out); }catch(e){}
     return { main: main, add: add, out: out };
   }
+  var FIN_EXT_WATCH_DE = 15;            // v316 — 확장 보완 한계 (ΔE 10~15)
+  function _finExtendWatch(main, add, out){
+    var pairs = [];
+    // 대상: 제외될 자사 색 + 트렌드 근거 없이 남은 자사 색(공백 유지·세일즈 유지)
+    var weak = out.concat(main.filter(function(f){ return f.kind === 'gap' || f.kind === 'sales'; }));
+    weak.forEach(function(o){
+      add.forEach(function(a){
+        var d = _tmDeltaE(o.hex, a.hex);
+        if(d <= FIN_EXT_WATCH_DE) pairs.push({ o: o, a: a, d: d });
+      });
+    });
+    pairs.sort(function(x, y){ return x.d - y.d; });
+    var usedO = [], usedA = [];
+    pairs.forEach(function(pr){
+      if(usedO.indexOf(pr.o) >= 0 || usedA.indexOf(pr.a) >= 0) return;
+      usedO.push(pr.o); usedA.push(pr.a);
+      var base = pr.o.st || {};
+      var st = {}; for(var k in base) st[k] = base[k];
+      st.de = Math.round(pr.d * 10) / 10; st.tHex = pr.a.hex; st.tier = 'watch';
+      if(pr.a.ti && pr.a.ti.trend) st.trend = pr.a.ti.trend;
+      main.push({ kind: 'watch', hex: pr.a.hex, orig: String(pr.o.orig || pr.o.hex), name: pr.o.name, st: st, sn: pr.o.sn, ti: pr.a.ti, extWatch: true, wasKind: pr.o.kind });
+    });
+    usedO.forEach(function(o){
+      var oi = out.indexOf(o); if(oi >= 0){ out.splice(oi, 1); return; }
+      var mi = main.indexOf(o); if(mi >= 0) main.splice(mi, 1);
+    });
+    usedA.forEach(function(a){ add.splice(add.indexOf(a), 1); });
+  }
   var FIN_FIT_RATIO = true;
+  var FIN_SKIP_EXTRA = false;          // v313 — true 로 두면 03 보충 색을 추가 후보에서 제외(v285 방식)
+  var _finFitInfo = null;
   function _finFitRatio(main, add, out){
     if(!FIN_FIT_RATIO) return;
     var mk = []; try{ mk = _tmMarketPool(); }catch(e){}
@@ -25300,22 +25359,23 @@ document.addEventListener('DOMContentLoaded',function(){
     T.forEach(function(t, i){ if(w[t] > 0 && cap[i] < 1){ cap[i] = 1; } });
     var over = cap.reduce(function(a2, b2){ return a2 + b2; }, 0) - total;
     while(over > 0){ var bi = cap.indexOf(Math.max.apply(null, cap)); cap[bi]--; over--; }
-    // 줄일 때 먼저 빼는 순서: 추가(빈도 낮은 순) → 공백 유지 → 세일즈 유지 → 보완 → 유지
-    var DROP = { add: 0, gap: 1, sales: 2, watch: 3, keep: 4 };
+    // v313 — 트렌드 우선: 넘치는 등급은 '자사 색 중 근거가 약한 것'부터 뺀다.
+    //   공백 유지 → 세일즈 유지 → 보완(트렌드와 ΔE 큰 순). 유지·트렌드 추가는 빼지 않는다.
+    var DROP = { gap: 0, sales: 1, watch: 2 };
+    _finFitInfo = { cap: {}, cur: {}, target: {} };
     T.forEach(function(t, i){
       var inT = function(f){ return _stdTier(f.hex) === t; };
       var cur = main.filter(inT).length + add.filter(inT).length;
-      // 1) 과다 → 제거
+      // 1) 과다 → 자사 약한 근거부터 제거
       while(cur > cap[i]){
-        var cand = main.concat(add).filter(inT).sort(function(a2, b2){
+        // v317 — 확장 보완(트렌드 추가를 흡수한 자사 색)은 트렌드 추가와 같게 보호한다
+        var cand = main.filter(function(f){ return inT(f) && DROP[f.kind] != null && !f.extWatch; }).sort(function(a2, b2){
           var d = DROP[a2.kind] - DROP[b2.kind]; if(d) return d;
-          var fa = (a2.ti && a2.ti.mkFreq) || (a2.x && a2.x.item.mkFreq) || 0, fb = (b2.ti && b2.ti.mkFreq) || (b2.x && b2.x.item.mkFreq) || 0;
-          return fa - fb;
+          return ((b2.st && b2.st.de) || 0) - ((a2.st && a2.st.de) || 0);
         })[0];
-        if(!cand) break;
-        var ai = add.indexOf(cand);
-        if(ai >= 0) add.splice(ai, 1);
-        else { main.splice(main.indexOf(cand), 1); out.push({ kind: 'out', hex: cand.orig || cand.hex, name: cand.name, st: cand.st, sn: cand.sn, ratioCut: true }); }
+        if(!cand) break;                                   // 더 뺄 자사 색이 없으면 비율보다 트렌드를 우선
+        main.splice(main.indexOf(cand), 1);
+        out.push({ kind: 'out', hex: cand.orig || cand.hex, name: cand.name, st: cand.st, sn: cand.sn, ratioCut: true });
         cur--;
       }
       // 2) 부족 → 03 트렌드 칩(빈도순)으로 채우고, 그래도 모자라면 제외됐던 자사 색을 되살린다
@@ -25323,9 +25383,12 @@ document.addEventListener('DOMContentLoaded',function(){
         var chosen = main.concat(add);
         var pool = _dcpTrendChips().filter(function(c){ return _stdTier(c.item.trend.hex) === t; })
           .sort(function(a2, b2){ return (b2.item.mkFreq || 0) - (a2.item.mkFreq || 0); });
+        var _palAll = _dcpPalUnique();
         for(var k = 0; k < pool.length && cur < cap[i]; k++){
           var h2 = pool[k].item.trend.hex;
           if(chosen.some(function(f){ return _tmDeltaE(f.hex, h2) < FN_DEDUP_DE; })) continue;
+          // v315 — 추가 칩 기준과 통일: 자사 팔레트에 ΔE 10 이내 색이 있으면 '이미 있는 톤' → 트렌드로 채우지 않는다
+          if(_palAll.some(function(p){ return _tmDeltaE(p.hex, h2) <= DCP_WATCH_DE; })) continue;
           var nf = { kind: 'add', hex: h2, name: (pool[k].item.trend.sources || []).join('·') || 'Trend',
                      x: { item: pool[k].item, group: pool[k].group, near: null, de: 0, covered: false }, ti: pool[k].item,
                      sn: _finSalesNear(h2), ratioFill: true };
@@ -25337,7 +25400,21 @@ document.addEventListener('DOMContentLoaded',function(){
           out.splice(k2, 1); cur++;
         }
       }
+      _finFitInfo.cap[t] = cap[i]; _finFitInfo.cur[t] = cur;
     });
+    var tot2 = main.length + add.length || 1, mt = T.reduce(function(n, t){ return n + w[t]; }, 0) || 1;
+    T.forEach(function(t){ _finFitInfo.target[t] = Math.round(w[t] / mt * 1000) / 10; });
+    _finFitInfo.pct = {}; T.forEach(function(t){ _finFitInfo.pct[t] = Math.round(_finFitInfo.cur[t] / tot2 * 1000) / 10; });
+  }
+  // 최종 구성 vs 마켓 비율 차이 한 줄 (±3%p 이상만)
+  function _finFitLine(){
+    if(!_finFitInfo || !_finFitInfo.pct) return '';
+    var diffs = ['Core','Seasonal','Accent'].map(function(t){
+      return { t: t, d: Math.round((_finFitInfo.pct[t] - _finFitInfo.target[t]) * 10) / 10 };
+    }).filter(function(x){ return Math.abs(x.d) >= 3; });
+    return '<span style="color:' + (diffs.length ? 'var(--warn)' : '#5FA85F') + '">'
+      + (diffs.length ? '마켓 대비 ' + diffs.map(function(x){ return x.t + ' ' + (x.d > 0 ? '+' : '') + x.d + '%p'; }).join(' · ') + ' (트렌드 추가 우선)'
+                      : '마켓 등급 비율과 일치') + '</span>';
   }
   var FIN_KIND = {
     keep:  ['유지', '#5FA85F'],
@@ -25424,7 +25501,8 @@ document.addEventListener('DOMContentLoaded',function(){
     })();
     return _rvCard('★ 최종 컬러 제안 — 확정 ' + r.main.length + '색 + 추가 ' + r.add.length + '색',
         '<div style="display:flex;gap:16px;font-family:var(--mono);font-size:12px;color:var(--text2);margin-bottom:16px;flex-wrap:wrap;align-items:center">'
-      +   '<span style="font-weight:700">유지 ' + n('keep') + ' · 보완 ' + n('watch') + ' · 세일즈 유지 ' + n('sales') + ' · 공백 유지 ' + n('gap') + ' · 제외 ' + r.out.length + '</span>' + legend + '</div>'
+      +   '<span style="font-weight:700">유지 ' + n('keep') + ' · 보완 ' + n('watch') + ' · 세일즈 유지 ' + n('sales') + ' · 공백 유지 ' + n('gap') + ' · 제외 ' + r.out.length + '</span>'
+      +   _finFitLine() + legend + '</div>'
       + _bandBox
       + '<div style="display:flex;gap:18px;align-items:flex-start;flex-wrap:wrap">'
       +   '<div style="flex:3 1 560px;min-width:0">' + col(r.main) + '</div>'
@@ -25448,7 +25526,8 @@ document.addEventListener('DOMContentLoaded',function(){
     if(f.kind === 'keep') why.push(['판정', '트렌드 칩과 ΔE ' + f.st.de + ' — 사실상 같은 색이라 그대로 유지']);
     if(f.kind === 'watch'){
       var rs = _dcpReason(f.orig, f.hex).parts.filter(function(x){ return x.size >= 2; });
-      why.push(['판정', '확정색 ' + f.name + ' → 트렌드 톤으로 조정 (ΔE ' + f.st.de + ')']);
+      why.push(['판정', '확정색 ' + f.name + ' → 트렌드 톤으로 조정 (ΔE ' + f.st.de + ')'
+        + (f.extWatch ? ' · 확장 보완: 새로 추가하기엔 기존 자사 색과 비슷해(ΔE ' + DCP_WATCH_DE + '~' + FIN_EXT_WATCH_DE + ') 자사 색을 보완' : '')]);
       rs.forEach(function(x){ why.push([x.label, x.text]); });
     }
     if(f.kind === 'sales') why.push(['판정', '트렌드 칩과 ΔE ' + f.st.de + ' 로 거리가 있지만 25FW 판매 성과로 유지']);
@@ -25566,7 +25645,7 @@ document.addEventListener('DOMContentLoaded',function(){
         var h = String(cd.hex).toUpperCase();
         if(!/^#[0-9A-F]{6}$/.test(h)) return;
         var t = tierMemo[h] || (tierMemo[h] = (mode === 'ours' ? FN_OURS_MAP[_tmClassify(h)] : _stdTier(h)));
-        var f = cd.freq || 1;
+        var f = cd.count || cd.freq || 1;
         maps.forEach(function(m){ if(m.set[k]){ m.w[t] += f; m.tot += f; m.hex[h] = 1; m.th[t][h] = (m.th[t][h] || 0) + f; } });
       });
     }
@@ -25712,7 +25791,7 @@ document.addEventListener('DOMContentLoaded',function(){
       bs = bs.filter(Boolean);
       if(sel && sel.size > 0 && !bs.some(function(b){ return sel.has(bkn(b)); })) return;
       if(typeof _passesCategoryFilter === 'function' && !_passesCategoryFilter(co)) return;
-      var h = String(co.hex).toUpperCase(), f = co.freq || 1;
+      var h = String(co.hex).toUpperCase(), f = co.count || co.freq || 1;
       var m = out[h] || (out[h] = {});
       bs.forEach(function(b){ m[b] = (m[b] || 0) + f; });
     });
@@ -26446,9 +26525,12 @@ document.addEventListener('DOMContentLoaded',function(){
     if(H > 115 && H <= 165) return '그린';
     if(H > 165 && H <= 205) return '틸';
     if(H > 205 && H <= 288) return '블루';
+    if(H > 288 && H <= 300 && a.C >= 30) return '블루';          // v314 — 선명한 코발트·로열블루(H 288~300°, C*≥30)는 블루
     if(H > 288 && H <= 330) return '퍼플';
     if(H > 330 || H < 15) return _rpSplit(a, H);
     // v298 — H 15~30° 는 이전에 모두 '오렌지'로 떨어졌다. 저채도(모브브라운·로즈그레이)는 브라운/베이지, 선명하면 레드.
+    // v314 — 밝고 색기가 있는(L*≥55 · C*≥20) 15~30° 는 로즈·코랄 핑크 (예: #E89DA4)
+    if(H >= 15 && H < 30 && a.L >= 55 && a.C >= 20 && a.C < STD_CUT.vivid_hue_c) return '핑크';
     if(H >= 15 && H < 30) return a.C < STD_CUT.vivid_hue_c ? (a.L < 60 ? '브라운' : '베이지') : '레드';
     return '오렌지';
   }
@@ -27016,7 +27098,7 @@ document.addEventListener('DOMContentLoaded',function(){
       var src = cd.source || '';
       if(src.indexOf('gl') < 0 && src.indexOf('kr') < 0){ skippedSrc++; return; }
       if(sel && sel.size > 0 && !sel.has(bkn(cd.brand))){ skippedSel++; return; }
-      var f = cd.freq || 1;
+      var f = cd.count || cd.freq || 1;
       perBrand[cd.brand] = (perBrand[cd.brand] || 0) + f;
       total += f;
     });
